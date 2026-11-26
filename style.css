@@ -1367,7 +1367,7 @@ button, input, textarea, select { font-family: inherit; }
 
 @media (max-width: 640px) {
   .topbar .timer-anchor { display: none; }
-  .wordmark span { display: none; }
+  .wordmark > span:not(.kubo-wrap) { display: none; }
   .nav-tab { padding: 0 8px; font-size: 13.5px; }
 }
 
@@ -1498,7 +1498,7 @@ button, input, textarea, select { font-family: inherit; }
   .topbar-inner { gap: 6px; }
   .topbar-left, .topbar-right, .nav-tabs { gap: 3px; }
   .wordmark { margin-right: 0; }
-  .nav-tab > span:not(.tab-count), .avatar-btn > span { display: none; }
+  .nav-tab > span:not(.tab-count), .avatar-btn > span:not(.kubo-wrap) { display: none; }
   .avatar-btn { padding: 5px; }
   .topbar .icon-ghost { width: 34px; }
   .unit-sprint-box { padding: 12px; }
