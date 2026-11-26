@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Course Studio</title>
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("course_studio_theme");
+        if (saved === null) {
+          saved = localStorage.getItem("schlossallee_theme");
+          if (saved !== null) localStorage.setItem("course_studio_theme", saved);
+        }
+        if (saved === "dark" || (saved === null && matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      } catch (_) {
+        if (matchMedia("(prefers-color-scheme: dark)").matches) document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js" integrity="sha384-rwykjmWNwVxboyFmvK9OXN0wj9hnMHA2aAHtits54DuACyCq0M2PrSNxhRb+hvXT" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="stylesheet" href="./style.css" />
+  <script>window.APP_CONFIG = {
+  "staticMode": true,
+  "assetBase": ".",
+  "localRunnerUrl": "http://127.0.0.1:8787",
+  "supabaseUrl": "https://tuqvcvrygdkphuhsqvyh.supabase.co",
+  "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1cXZjdnJ5Z2RrcGh1aHNxdnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2OTk0OTgsImV4cCI6MjExMTI3NTQ5OH0.TV-opLwGYhnzX9-EA5oTsIAp6NPUZeHaSwwntUsNBsM"
+};</script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <header id="topbar" class="topbar"></header>
+  <main id="app-root" class="app-root"></main>
+  <div id="lesson-footer-host"></div>
+  <div id="modal-host"></div>
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+  <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
+</body>
+</html>
