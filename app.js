@@ -6380,6 +6380,7 @@ function bindKuboGaze(beat) {
 function mountBeat(thread, beat, i, active) {
   const node = document.createElement("article");
   node.className = active ? "lesson-beat beat-enter" : "lesson-beat";
+  if (beat.kind === "viz") node.classList.add("viz-beat");
   node.tabIndex = -1;
   if (active) {
     node.id = "active-beat";
@@ -6407,6 +6408,15 @@ function mountBeat(thread, beat, i, active) {
   if (kind.startsWith("beat_") && beat.isLastOfStep && s.sources) {
     node.insertAdjacentHTML("beforeend", sourcesHtml(s.sources));
   }
+  const bench = node.querySelector(":scope > .code-bench");
+  if (bench) {
+    // Desktop splits the brief (heading, prompt, hints) from the editor workbench into two columns.
+    const brief = document.createElement("div");
+    brief.className = "code-brief";
+    brief.append(...[...node.children].filter((child) => child !== bench));
+    node.prepend(brief);
+    node.classList.add("code-beat");
+  }
   thread.append(node);
   if (kind === "viz") {
     mountViz(s.viz_type, node.querySelector("#viz-mount"));
@@ -6423,9 +6433,20 @@ function showLessonBeat(node, block = "start") {
   const beat = node.getBoundingClientRect();
   const inset = parseFloat(getComputedStyle(root).scrollPaddingTop) || 0;
   const offset = block === "center" ? Math.max(inset, (root.clientHeight - beat.height) / 2) : inset;
+  const rootTop = root.getBoundingClientRect().top;
+  let top = root.scrollTop + beat.top - rootTop - offset;
+  // When a playground or code workbench beat is taller than the viewport, slide just far enough that
+  // the whole interactive surface (canvas plus its controls) is visible, keeping its top edge in view.
+  const stage = block === "start" && node.querySelector("#viz-mount > .viz-stage, .code-bench");
+  if (stage) {
+    const box = stage.getBoundingClientRect();
+    const stageTop = root.scrollTop + box.top - rootTop;
+    const stageBottom = root.scrollTop + box.bottom - rootTop;
+    top = Math.max(top, Math.min(stageBottom - root.clientHeight + 12, stageTop - 12));
+  }
   node.focus({ preventScroll: true });
   root.scrollTo({
-    top: root.scrollTop + beat.top - root.getBoundingClientRect().top - offset,
+    top,
     behavior: prefersReducedMotion() ? "auto" : "smooth",
   });
 }
@@ -6617,6 +6638,7 @@ function missionBeatHtml(s, followsIntro = false) {
 
   if (s.kind === "code") {
     body += `<div class="prose">${mdToHtml(s.prompt_md)}</div>
+      <div class="code-bench">
       <p class="editor-help" id="editor-help">Press Esc, then Tab to leave the editor.</p>
       <div class="code-frame">
         <div id="code-shell" class="code-shell" style="--editor-height:${state.editorHeight}px">
@@ -6639,7 +6661,8 @@ function missionBeatHtml(s, followsIntro = false) {
         </div>
         <span id="draft-status" class="draft-status" role="status">${prefGet(draftKey(s)) === null ? "" : "Saved"}</span>
       </div>
-      <div id="code-logs" role="region" aria-label="Code verification" aria-live="polite">${codeResultsHtml(fb)}</div>`;
+      <div id="code-logs" role="region" aria-label="Code verification" aria-live="polite">${codeResultsHtml(fb)}</div>
+      </div>`;
     if (s.hints?.length) body += `<div id="hints-mount">${renderHints(s.id, s.hints)}</div>`;
   }
 
