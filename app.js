@@ -47,7 +47,7 @@ function clearUserStorage(purgeUserId = null) {
   try {
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith("course_studio_draft_" + scope) || k.startsWith("course_studio_bet_" + scope))) {
+      if (k && (k.startsWith("course_studio_draft_" + scope) || k.startsWith("course_studio_bet_" + scope) || k.startsWith("course_studio_beat_" + scope))) {
         localStorage.removeItem(k);
       }
     }
@@ -98,7 +98,7 @@ function cardHtml(value) {
 }
 
 function currentStepId() {
-  return state.view === "mission" ? state.data?.districts[state.districtIdx]?.steps[state.stepIdx]?.id : null;
+  return state.view === "mission" ? activeLessonBeat().stepId : null;
 }
 
 function renderPreserving(container, html, selector) {
@@ -115,8 +115,14 @@ function renderPreserving(container, html, selector) {
   const newTimer = template.content.querySelector('#timer-popover[data-open="true"]');
   if (oldTimer && newTimer) newTimer.replaceWith(oldTimer);
   container.replaceChildren(template.content);
-  if (style) requestAnimationFrame(() => {
-    if (previous.isConnected) previous.setAttribute("style", style);
+  if (style && style !== previous.getAttribute("style")) requestAnimationFrame(() => {
+    if (!previous.isConnected) return;
+    const lessonProgress = previous.closest(".lesson-progress") && !prefersReducedMotion();
+    previous.setAttribute("style", style);
+    if (lessonProgress) {
+      previous.classList.remove("progress-advance");
+      requestAnimationFrame(() => previous.classList.add("progress-advance"));
+    }
   });
 }
 
@@ -172,9 +178,8 @@ const state = {
   data: null,
   view: "map", // "map" | "mission" | "drill"
   districtIdx: 0,
-  stepIdx: 0,
-  navDir: "fade",
-  lastRenderedStepId: null,
+  beatIdx: 0,
+  lesson: null,
   selectedMcq: Object.create(null),
   hintState: Object.create(null),
   stepFeedback: Object.create(null),
@@ -188,7 +193,6 @@ const state = {
   drillCombo: 0,
   drillMood: "thinking",
   masteryOpen: false,
-  achShowAll: false,
   reviewedCards: Number(prefGet("reviewed_cards")) || 0,
   // Inline End-of-Unit Recall Sprint state (per district id)
   unitSprint: Object.create(null),
@@ -199,7 +203,6 @@ const state = {
   mascotShape: prefGet("mascot_shape") || "cube",
   achievements: loadAchievements(),
   timer: { mode: "focus", total: 1500, left: 1500, running: false, interval: null, popoverOpen: false, cycle: 0 },
-  speechTimer: null,
   sbClient: null,
   sbUser: null,
   sbProfile: null,
@@ -209,7 +212,6 @@ const state = {
   demoSquadOn: prefGet("demo_squad") === "1",
   modalOpen: false,
   inFlight: false,
-  footerCooldown: 0,
   ratingCooldown: 0,
   course: null,
   courses: [],
@@ -737,7 +739,7 @@ function prefersReducedMotion() {
   return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function spawnSparkles(anchorEl, count = 14) {
+function spawnSparkles(anchorEl, count = 14, spread = 1) {
   if (prefersReducedMotion()) return;
   const layer = document.getElementById("fx-layer");
   if (!layer) return;
@@ -755,8 +757,8 @@ function spawnSparkles(anchorEl, count = 14) {
     layer.appendChild(el);
     const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.35;
     const dist = 42 + Math.random() * 58;
-    const dx = Math.cos(angle) * dist;
-    const dy = Math.sin(angle) * dist - 18;
+    const dx = Math.cos(angle) * dist * spread;
+    const dy = (Math.sin(angle) * dist - 18) * spread;
     const anim = el.animate([
       { transform: "translate(-50%, -50%) scale(0.4) rotate(0deg)", opacity: 1 },
       { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.1) rotate(${120 + i * 25}deg)`, opacity: 1, offset: 0.65 },
@@ -764,6 +766,69 @@ function spawnSparkles(anchorEl, count = 14) {
     ], { duration: 540 + Math.random() * 180, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "forwards" });
     anim.onfinish = () => el.remove();
   }
+}
+
+function spawnConfetti(originEl, count = 28) {
+  const layer = document.getElementById("fx-layer");
+  if (!layer || !originEl || prefersReducedMotion() || !originEl.animate) return;
+  const { left, top, width, height } = originEl.getBoundingClientRect();
+  const colors = ["#6366F1", "#22C55E", "#F59E0B", "#38BDF8", "#F472B6"];
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement("span");
+    piece.className = `fx-confetti shape-${i % 3}`;
+    piece.style.left = `${left + width / 2}px`;
+    piece.style.top = `${top + height / 2}px`;
+    piece.style.backgroundColor = colors[i % colors.length];
+    const angle = (i / count) * Math.PI * 2;
+    const dx = Math.cos(angle) * (90 + Math.random() * 120);
+    const dy = Math.sin(angle) * 65;
+    layer.append(piece);
+    const animation = piece.animate([
+      { transform: "translate(0, 0) scale(.45)", opacity: 1 },
+      { transform: `translate(${dx * .7}px, ${dy - 90}px) rotate(180deg) scale(1)`, opacity: 1, offset: .45 },
+      { transform: `translate(${dx}px, ${dy + 125}px) rotate(420deg)`, opacity: 0 },
+    ], { duration: 700 + Math.random() * 300, easing: "cubic-bezier(.2,.7,.35,1)" });
+    animation.onfinish = animation.oncancel = () => piece.remove();
+  }
+}
+
+function recordLessonCheck(correct) {
+  const lesson = state.lesson;
+  lesson.correctChecks = correct ? lesson.correctChecks + 1 : 0;
+  lesson.bestCombo = Math.max(lesson.bestCombo, lesson.correctChecks);
+}
+
+function animateLessonCheck(correct, target, advanceCombo = true, sparkles = 14) {
+  if (!target) return;
+  if (advanceCombo) recordLessonCheck(correct);
+  const motionClass = correct ? "check-pop" : "nudge-shake";
+  target.classList.remove("check-pop", "nudge-shake");
+  requestAnimationFrame(() => target.classList.add(motionClass));
+  if (!correct) return;
+  spawnSparkles(target, sparkles);
+  const kubo = target.closest(".lesson-beat")?.querySelector(".kubo-wrap");
+  if (kubo) {
+    kubo.classList.remove("kubo-hop");
+    requestAnimationFrame(() => kubo.classList.add("kubo-hop"));
+  }
+}
+
+function countLessonXp(element, xp) {
+  if (xp <= 0) {
+    element.classList.add("xp-settle");
+    return;
+  }
+  let start;
+  const tick = (now) => {
+    if (!element.isConnected) return;
+    start ??= now;
+    const t = Math.min((now - start) / 800, 1);
+    element.textContent = `+${numberFormat.format(Math.round(xp * (1 - (1 - t) ** 3)))} XP`;
+    if (t < 1) requestAnimationFrame(tick);
+    else element.classList.add("xp-settle");
+  };
+  element.textContent = "+0 XP";
+  requestAnimationFrame(tick);
 }
 
 function spawnXpFloat(label, anchorEl) {
@@ -799,6 +864,10 @@ function unlockAchievement(id) {
   if (!def) return;
   state.achievements.push(id);
   prefSet("achievements", JSON.stringify(state.achievements));
+  if (state.view === "mission") {
+    claimAchievementXp(def);
+    return;
+  }
   playSound("achievement");
   const el = document.createElement("div");
   el.className = "toast-achievement";
@@ -812,14 +881,14 @@ function unlockAchievement(id) {
 // Awards the achievement XP once per progress record (event "ach-<id>"), locally or in the cloud course.
 async function claimAchievementXp(def) {
   if (!state.data || state.data.gamification.completed_events.includes(`ach-${def.id}`)) {
-    syncProgressToSupabase();
+    if (!cloudCourse()) syncProgressToSupabase();
     return;
   }
   const course = state.course;
   try {
     const res = await api("/api/achievement/claim", { achievement_id: def.id });
     if (state.course !== course || !res?.state) return;
-    state.data = res.state;
+    if (!cloudCourse() && localLessonWrites === 0) state.data = res.state;
     if (state.data && !state.passwordRecovery && state.view !== "courses") {
       renderTopbar();
       if (state.view === "map") renderMap();
@@ -827,7 +896,7 @@ async function claimAchievementXp(def) {
   } catch (err) {
     toast(err.message || "Achievement XP could not be saved.");
   }
-  syncProgressToSupabase();
+  if (!cloudCourse()) syncProgressToSupabase();
 }
 
 function stepCounts() {
@@ -938,6 +1007,7 @@ async function loadCloudProfileAndFriends() {
     state.achievements = Array.isArray(prof.achievements) ? [...prof.achievements] : [];
     prefSet("achievements", JSON.stringify(state.achievements));
   }
+  if (!/^[0-9a-f-]{36}$/i.test(state.sbUser?.id || "")) return;
   const { data: edges } = await state.sbClient
     .from("friendships")
     .select("user_id, friend_id")
@@ -957,7 +1027,7 @@ async function loadCloudProfileAndFriends() {
 async function syncProgressToSupabase() {
   if (!state.sbClient || !state.sbUser || !state.data) return;
   const g = state.data.gamification;
-  const next = findNextStep();
+  const next = findNextLesson()?.lesson.step_ids.find((id) => !isStepDone(id)) ?? null;
   const completedSteps = g.completed_events.filter((e) => e.startsWith("step-")).map((e) => e.slice(5));
   try {
     await state.sbClient
@@ -968,7 +1038,7 @@ async function syncProgressToSupabase() {
         mascot_shape: state.mascotShape,
         xp: g.xp,
         streak_days: g.streak_days,
-        current_step_id: next.s.id,
+        current_step_id: next,
         completed_steps: completedSteps,
         achievements: state.achievements,
       })
@@ -1080,7 +1150,13 @@ async function request(path, body = null, options = {}) {
 }
 
 async function api(path, body = null) {
-  if (!cloudCourse()) return request(path, body, { signal: AbortSignal.timeout(path === "/api/run_lab" ? 120000 : 25000) });
+  if (!cloudCourse()) {
+    const send = () => request(path, body, { signal: AbortSignal.timeout(path === "/api/run_lab" ? 120000 : 25000) });
+    if (!body || path === "/api/run_lab") return send();
+    const run = localProgressQueue.then(send);
+    localProgressQueue = run.catch(() => {});
+    return run;
+  }
   if (path === "/api/sound") {
     prefSet("sound", body.enabled ? "on" : "off");
     return { sound_enabled: body.enabled };
@@ -1092,15 +1168,118 @@ function isStepDone(stepId) {
   return state.data.gamification.completed_events.includes(`step-${stepId}`);
 }
 
-function findNextStep() {
-  for (let di = 0; di < state.data.districts.length; di++) {
-    const d = state.data.districts[di];
-    for (let si = 0; si < d.steps.length; si++) {
-      if (!isStepDone(d.steps[si].id)) return { di, si, d, s: d.steps[si] };
+const LESSON_KIND_LABELS = { concept: "Concept", interactive: "Interactive", code: "Code", review: "Review" };
+
+// The original course predates explicit lessons. These boundaries keep its related exercises together.
+const LEGACY_RL_LESSON_STARTS = [
+  ["m0_bet", "m0_s3", "m0_s4b", "m0_s7"],
+  ["m1_bet", "m1_s1e", "m1_s5"],
+  ["m2_bet", "m2_s1c", "m2_s2", "m2_s6"],
+  ["m3_bet", "m3_s2", "m3_s5"],
+  ["m4_bet", "m4_s4", "m4_s5", "m4_s7", "m4_s10"],
+  ["m5_bet", "m5_s2b", "m5_s3"],
+];
+
+const districtLessons = new WeakMap();
+const lessonBeats = new WeakMap();
+
+function lessonsForDistrict(district) {
+  if (districtLessons.has(district)) return districtLessons.get(district);
+  const ids = new Set(district.steps.map((step) => step.id));
+  const used = new Set();
+  const lessons = [];
+  for (const lesson of Array.isArray(district.lessons) ? district.lessons : []) {
+    if (typeof lesson?.title !== "string" || typeof lesson.id !== "string") continue;
+    const stepIds = Array.isArray(lesson?.step_ids)
+      ? lesson.step_ids.filter((id) => ids.has(id) && !used.has(id) && used.add(id))
+      : [];
+    if (stepIds.length) lessons.push({ ...lesson, step_ids: stepIds });
+  }
+
+  const remaining = district.steps.filter((step) => !used.has(step.id));
+  const starts = !lessons.length && LEGACY_RL_LESSON_STARTS.find((group) =>
+    group[0] === remaining[0]?.id && group.every((id) => ids.has(id)));
+  const groups = [];
+  for (const step of remaining) {
+    if (!groups.length || !starts || starts.includes(step.id)) groups.push([]);
+    groups.at(-1).push(step);
+  }
+  return lessons.concat(groups.map((steps) => {
+    const titleStep = steps.find((step) => step.kind !== "bet") || steps[0];
+    const kind = steps.some((step) => step.kind === "code") ? "code"
+      : steps.some((step) => LAB_KINDS.has(step.kind)) ? "interactive"
+      : steps.some((step) => ["story_concept", "bet"].includes(step.kind)) ? "concept" : "review";
+    const minutes = { bet: 1, story_concept: 2, viz: 3, numeric: 2, code: 5, live_lab: 3, debrief: 2 };
+    return {
+      id: steps[0].id, title: titleStep.title, kind,
+      est_minutes: steps.reduce((sum, step) => sum + (minutes[step.kind] || 1), 0),
+      step_ids: steps.map((step) => step.id),
+    };
+  }));
+}
+
+function flattenLessonBeats(district, lesson) {
+  if (lessonBeats.has(lesson)) return lessonBeats.get(lesson);
+  const steps = new Map(district.steps.map((step, index) => [step.id, { step, index }]));
+  return lesson.step_ids.flatMap((stepId) => {
+    const entry = steps.get(stepId);
+    if (!entry) return [];
+    const { step, index } = entry;
+    const authored = ["story_concept", "viz"].includes(step.kind) && Array.isArray(step.beats)
+      ? step.beats.flatMap((beat) => {
+        const kind = beat?.kind ?? (beat?.check ? "beat_check" : beat?.callout ? "beat_callout" : beat?.md ? "beat_md" : null);
+        return ["beat_md", "beat_callout", "beat_check"].includes(kind) ? [{ ...beat, kind }] : [];
+      }) : [];
+    const beats = step.kind === "viz" ? [...authored, { kind: "viz", followsIntro: authored.length > 0 }]
+      : authored.length ? authored : [{ kind: step.kind }];
+    return beats.map((beat, beatIndex) => ({
+      ...beat, step, stepId, stepIndex: index, beatIndex, isLastOfStep: beatIndex === beats.length - 1,
+    }));
+  });
+}
+
+function lessonDone(lesson) {
+  return lesson.step_ids.every(isStepDone);
+}
+
+function findNextLesson() {
+  const units = state.data.districts;
+  for (const [di, district] of units.entries()) {
+    const lessons = lessonsForDistrict(district);
+    const li = lessons.findIndex((lesson) => !lessonDone(lesson));
+    if (li >= 0) return { di, li, lesson: lessons[li] };
+  }
+  return null;
+}
+
+function openLesson(di, li, stepId = null) {
+  if (state.inFlight) return;
+  const district = state.data.districts[di];
+  const lesson = lessonsForDistrict(district)[li];
+  const beats = flattenLessonBeats(district, lesson);
+  if (!beats.length) return;
+  let start = stepId ? beats.findIndex((beat) => beat.stepId === stepId)
+    : beats.findIndex((beat) => !isStepDone(beat.stepId) && beat.beatIndex >= Number(prefGet(beatCheckpointKey(beat)) || 0));
+  if (start < 0) start = 0;
+  primeAudio();
+  state.districtIdx = di;
+  state.beatIdx = start;
+  state.lesson = {
+    lesson, beats, checks: new Map(), correctChecks: 0, bestCombo: 0,
+    gained: 0, startingCards: state.data.srs.unlocked_count, complete: false,
+  };
+  if (lessonDone(lesson) && !stepId) {
+    for (const id of lesson.step_ids) {
+      delete state.stepFeedback[id];
+      delete state.selectedMcq[id];
     }
   }
-  const d = state.data.districts[0];
-  return { di: 0, si: 0, d, s: d.steps[0] };
+  state.view = "mission";
+  render();
+}
+
+function beatCheckpointKey(beat) {
+  return "beat_" + draftKey(beat.step).slice("draft_".length);
 }
 
 // soundKind = null means the caller already played its sound (e.g. Continue inside the click gesture).
@@ -1226,7 +1405,7 @@ function timerWidgetHtml() {
         </svg>
         <div class="pomo-readout">
           <span id="pomo-time" class="pomo-time">${formatTime(t.left)}</span>
-          <span id="pomo-mode" class="pomo-mode">${mode.title}</span>
+          <span id="pomo-mode" class="pomo-mode">${esc(mode.title)}</span>
         </div>
       </div>
       <div class="pomo-controls">
@@ -1386,18 +1565,24 @@ document.addEventListener("keydown", (event) => {
 });
 
 // Calm Top Bar
+let lastPresentedStreak;
+
 function renderTopbar() {
   const bar = document.getElementById("topbar");
   const g = state.data.gamification;
+  const streakIncreased = lastPresentedStreak?.course === state.course
+    && lastPresentedStreak?.user === state.sbUser?.id
+    && g.streak_days > lastPresentedStreak?.days;
+  lastPresentedStreak = { course: state.course, user: state.sbUser?.id, days: g.streak_days };
   const themeIcon = state.theme === "dark" ? ICONS.sun : ICONS.moon;
   const themeLabel = state.theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
   const soundButton = `<button id="btn-sound" class="icon-ghost" aria-label="${g.sound_enabled ? "Mute sound effects" : "Turn on sound effects"}" aria-pressed="${g.sound_enabled}">${g.sound_enabled ? ICONS.volOn : ICONS.volOff}</button>`;
 
   if (state.view === "mission") {
-    const d = state.data.districts[state.districtIdx];
-    const ratio = (state.stepIdx + 1) / d.steps.length;
-    const milestones = d.steps.slice(1).map((_, i) => {
-      const at = (i + 1) / d.steps.length;
+    const { beats } = state.lesson;
+    const ratio = (state.beatIdx + 1) / beats.length;
+    const milestones = beats.slice(1).map((_, i) => {
+      const at = (i + 1) / beats.length;
       return `<span class="progress-milestone ${at < ratio ? "passed" : ""}" style="left:${(at * 100).toFixed(2)}%"></span>`;
     }).join("");
     renderPreserving(bar, `
@@ -1405,18 +1590,19 @@ function renderTopbar() {
         <div class="lesson-topbar-left">
           <button id="btn-exit-lesson" class="icon-ghost" aria-label="Back to course">${ICONS.close}</button>
         </div>
-        <div class="progress-track lesson-progress" role="progressbar" aria-label="Unit progress" aria-valuemin="0" aria-valuemax="${d.steps.length}" aria-valuenow="${state.stepIdx + 1}">
+        <div class="progress-track lesson-progress" role="progressbar" aria-label="Lesson progress" aria-valuemin="0" aria-valuemax="${beats.length}" aria-valuenow="${state.beatIdx + 1}">
           <div class="progress-fill" style="--progress: ${ratio.toFixed(4)}"></div>
           ${milestones}
         </div>
         <div class="lesson-topbar-right">
-          <span class="lesson-stat" title="Day streak"><span class="lesson-stat-icon warn">${ICONS.flame}</span><span class="tabular">${esc(g.streak_days)}</span><span class="sr-only"> day streak</span></span>
+          ${state.lesson.correctChecks >= 2 ? `<span class="lesson-combo" role="status">${state.lesson.correctChecks} in a row!</span>` : ""}
+          <span class="lesson-stat" title="Day streak"><span class="lesson-stat-icon warn ${streakIncreased ? "streak-lit" : ""}">${ICONS.flame}</span><span class="tabular">${esc(g.streak_days)}</span><span class="sr-only"> day streak</span></span>
           <span class="lesson-stat" title="Total XP"><span class="lesson-stat-icon accent">${ICONS.bolt}</span><span class="tabular">${numberFormat.format(g.xp)}</span><span class="sr-only"> XP</span></span>
           ${timerWidgetHtml()}
           ${soundButton}
         </div>
       </div>`, ".progress-fill");
-    document.getElementById("btn-exit-lesson").onclick = () => { if (state.inFlight) return; playSound("tap"); state.view = "map"; state.lastRenderedStepId = null; render(); };
+    document.getElementById("btn-exit-lesson").onclick = leaveLesson;
     document.getElementById("btn-sound").onclick = toggleSound;
     bindTimerControls();
     return;
@@ -1429,12 +1615,12 @@ function renderTopbar() {
       <div class="topbar-left">
         <button id="btn-brand" class="wordmark">${mascotHtml("idle", 28)}<span>Delightful Learn</span></button>
         <nav class="nav-tabs" aria-label="Sections">
+          ${state.sbUser ? `<button id="btn-courses" class="nav-tab courses-tab">${ICONS.book}<span>Courses</span></button>` : ""}
           <button id="tab-map" class="nav-tab ${state.view === "map" ? "active" : ""}" ${state.view === "map" ? 'aria-current="page"' : ""}>${ICONS.book}<span>Course</span></button>
           <button id="tab-drill" class="nav-tab ${state.view === "drill" ? "active" : ""}" ${state.view === "drill" ? 'aria-current="page"' : ""}>${ICONS.cards}<span>Anki Cards</span><span class="tab-count" aria-label="${numberFormat.format(state.data.srs.due_count)} due">${numberFormat.format(state.data.srs.due_count)}</span></button>
         </nav>
       </div>
       <div class="topbar-right">
-        ${state.sbUser ? `<button id="btn-courses" class="nav-tab courses-tab">Courses</button>` : ""}
         ${timerWidgetHtml()}
         <button id="btn-theme" class="icon-ghost" aria-label="${themeLabel}">${themeIcon}</button>
         ${soundButton}
@@ -1790,6 +1976,7 @@ function renderFriendsPanel(panel) {
   panel.querySelectorAll("[data-remove]").forEach((button) => {
     button.onclick = () => guarded(button, async () => {
       const me = state.sbUser.id, them = button.dataset.remove;
+      if (![me, them].every((id) => /^[0-9a-f-]{36}$/i.test(id || ""))) throw new Error("Invalid teammate ID.");
       const { error } = await state.sbClient.from("friendships").delete()
         .or(`and(user_id.eq.${me},friend_id.eq.${them}),and(user_id.eq.${them},friend_id.eq.${me})`);
       if (error) throw error;
@@ -1809,22 +1996,141 @@ function adoptLocalState(res) {
   if (res?.state && !cloudCourse()) state.data = res.state;
 }
 
-async function renderAnkiPanel(panel) {
-  panel.innerHTML = `<p class="settings-copy" role="status">Checking your local companion…</p>`;
-  let status = null;
-  try {
-    status = await request(ankiBase() + "/api/anki/status", null, { signal: AbortSignal.timeout(2500) });
-  } catch (_) {
-    status = null;
+function buildBrowserAnkiDeck(title, cards) {
+  const field = (value) => {
+    const math = String(value ?? "").replace(
+      /(?<!\\)\$\$([\s\S]+?)\$\$|(?<!\\)\$([^$\n]+?)\$/g,
+      (_, display, inline) => {
+        const tex = (display ?? inline).replace(/\s+/g, " ").replace(/</g, "&lt;");
+        return display !== undefined ? `\\[${tex}\\]` : `\\(${tex}\\)`;
+      },
+    );
+    const html = cardHtml(math).replace(/\r\n?|\n/g, "<br>").replace(/\t/g, "&#9;");
+    return '"' + html.replace(/"/g, '""') + '"';
+  };
+  const headerTitle = String(title).replace(/[\r\n\t]+/g, " ").trim();
+  const lines = ["#separator:tab", "#html:true", "#notetype:Basic",
+    `#deck:Delightful Learn - ${headerTitle}`, "#tags column:3"];
+  for (const card of cards) {
+    const tags = ["delightful-learn", card.module, ...(Array.isArray(card.tags) ? card.tags : [])]
+      .filter(Boolean).map((tag) => String(tag).replace(/[^\p{L}\p{N}_:-]+/gu, "-")).join(" ");
+    lines.push([field(card.front), field(card.back), tags].join("\t"));
   }
-  if (!panel.isConnected) return;
-  const download = `<a class="settings-link" href="${ankiBase()}/api/anki/download" download>Download Anki deck (.apkg)</a>`;
+  return lines.join("\n") + "\n";
+}
+
+function browserAnkiCards(onlyUnlocked) {
+  if (cloudCourse()) {
+    return state.course.content.cards.filter((card) => !onlyUnlocked || state.progress.srs_state[card.card_id]?.unlocked);
+  }
+  const srs = state.data?.srs || {};
+  if (Array.isArray(srs.all_cards) && srs.all_cards.length) {
+    return srs.all_cards.filter((card) => !onlyUnlocked || card.unlocked);
+  }
+  const seen = new Map();
+  for (const card of [...(srs.due_cards || []), ...Object.values(srs.unit_packs || {}).flat()]) {
+    if (card?.card_id && !seen.has(card.card_id)) seen.set(card.card_id, card);
+  }
+  return [...seen.values()];
+}
+
+function downloadBrowserAnkiDeck(onlyUnlocked) {
+  const meta = state.course?.content.meta || state.data.course_meta || {};
+  const title = state.course?.title || meta.title || "Reinforcement Learning & PPO";
+  const slug = (state.course?.slug || meta.slug || (cloudCourse() ? title : "slopoly-rl-ppo"))
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "course";
+  const cards = browserAnkiCards(onlyUnlocked);
+  if (!cards.length) return false;
+  const blob = new Blob([buildBrowserAnkiDeck(title, cards)], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slug}-anki.txt`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
+}
+
+function canUseAnkiCompanion() {
+  return !cloudCourse() || (state.course.slug || state.course.content.meta?.slug) === "slopoly-rl-ppo";
+}
+
+function renderAnkiPanel(panel) {
+  const { unlocked_count, due_count, total_cards } = state.data.srs;
+  panel.innerHTML = `
+    <section class="anki-settings-section">
+      <h3>Built-in Spaced Repetition</h3>
+      <p class="settings-copy">${cloudCourse() ? "Synced to your account" : "Saved locally"}. ${unlocked_count} unlocked, ${due_count} due.</p>
+      <button type="button" id="anki-open-cards" class="btn-tactile secondary pill">Open Anki Cards</button>
+    </section>
+    <section class="anki-settings-section">
+      <h3>Export to Anki app</h3>
+      <p class="settings-copy">Download your cards as a text file, then import it in Anki.</p>
+      <label class="anki-export-option"><input type="checkbox" id="anki-export-all"> Include locked cards too</label>
+      <div class="form-row wrap anki-export-actions">
+        <button type="button" id="anki-export-text" class="btn-tactile go pill" ${unlocked_count ? "" : "disabled"}>Download .txt</button>
+        <span id="anki-package-link"></span>
+      </div>
+      <p class="settings-copy" id="anki-export-status" role="status"></p>
+    </section>
+    <details class="settings-details">
+      <summary>AnkiWeb live sync (optional)</summary>
+      <div id="anki-live-panel"></div>
+    </details>`;
+  panel.querySelector("#anki-open-cards").onclick = () => { closeModal(); startDrillSession(); };
+  const all = panel.querySelector("#anki-export-all");
+  const button = panel.querySelector("#anki-export-text");
+  const pkg = panel.querySelector("#anki-package-link");
+  all.onchange = () => {
+    button.disabled = all.checked ? !total_cards : !unlocked_count;
+    const link = pkg.querySelector("a");
+    if (link) link.href = ankiBase() + "/api/anki/download" + (all.checked ? "?all_cards=true" : "");
+  };
+  button.onclick = () => {
+    const downloaded = downloadBrowserAnkiDeck(!all.checked);
+    panel.querySelector("#anki-export-status").textContent = downloaded ? "Download started." : "No cards to export yet.";
+  };
+  renderAnkiLivePanel(panel.querySelector("#anki-live-panel"), pkg, all);
+}
+
+async function readAnkiCompanionStatus() {
+  try {
+    return await request(ankiBase() + "/api/anki/status", null, { signal: AbortSignal.timeout(2500) });
+  } catch (_) {
+    return null;
+  }
+}
+
+function adoptAnkiStatus(status) {
+  const connected = Boolean(status?.connected);
+  state.data.anki_connected = connected;
+  if (state.view !== "drill") return;
+  const root = document.getElementById("app-root");
+  const old = root.querySelector(".anki-setup, .anki-auto-status");
+  if (old && document.activeElement !== old && old.classList.contains("anki-auto-status") !== connected) {
+    old.outerHTML = ankiStatusHtml();
+    bindDrillChrome(root);
+  }
+}
+
+async function renderAnkiLivePanel(panel, packageSlot, all) {
+  const supported = canUseAnkiCompanion();
+  const course = state.course;
+  if (supported) panel.innerHTML = `<p class="settings-copy" role="status">Checking local sync availability…</p>`;
+  const status = supported ? await readAnkiCompanionStatus() : null;
+  if (!panel.isConnected || state.course !== course) return;
+  adoptAnkiStatus(status);
+  packageSlot.innerHTML = status ? `<a class="settings-link" href="${esc(ankiBase())}/api/anki/download${all.checked ? "?all_cards=true" : ""}" download>Download .apkg</a>` : "";
   if (!status) {
-    panel.innerHTML = `
-      <p class="settings-copy">Automatic AnkiWeb sync runs through the local companion on your computer. Start it in the course folder, then check again:</p>
+    panel.innerHTML = supported ? `
+      <p class="settings-copy">For automatic two-way AnkiWeb sync, start the optional companion and check the connection.</p>
       <pre class="settings-code"><code>uv run rl-studio</code></pre>
-      <button type="button" id="anki-check" class="btn-tactile secondary">Check connection</button>`;
-    panel.querySelector("#anki-check").onclick = () => renderAnkiPanel(panel);
+      <button type="button" id="anki-check" class="btn-tactile secondary">Check connection</button>`
+      : `<p class="settings-copy">The local companion syncs the built-in RL course with AnkiWeb. Use the text export above for this course.</p>`;
+    const check = panel.querySelector("#anki-check");
+    if (check) check.onclick = () => renderAnkiLivePanel(panel, packageSlot, all);
     return;
   }
   if (status.connected) {
@@ -1834,10 +2140,10 @@ async function renderAnkiPanel(panel) {
       <p class="settings-copy">Unlocked cards sync to Anki automatically as you study.</p>
       <div class="form-row wrap">
         <button type="button" id="anki-sync" class="btn-tactile go">Sync now</button>
-        ${status.backend === "headless" ? `<button type="button" id="anki-logout" class="btn-tactile secondary">Disconnect AnkiWeb</button>` : ""}
+        ${status.backend === "headless" ? `<button type="button" id="anki-logout" class="btn-tactile secondary">Sign out of AnkiWeb</button>` : ""}
       </div>
       <div class="modal-msg" role="status"></div>
-      <p class="settings-fallback">${download}</p>`;
+`;
     const say = panelMessage(panel);
     const sync = panel.querySelector("#anki-sync");
     sync.onclick = () => guarded(sync, async () => {
@@ -1849,7 +2155,7 @@ async function renderAnkiPanel(panel) {
     const logout = panel.querySelector("#anki-logout");
     if (logout) logout.onclick = () => guarded(logout, async () => {
       adoptLocalState(await request(ankiBase() + "/api/anki/logout", {}));
-      await renderAnkiPanel(panel);
+      await renderAnkiLivePanel(panel, packageSlot, all);
     });
     return;
   }
@@ -1863,7 +2169,7 @@ async function renderAnkiPanel(panel) {
       <button type="submit" class="btn-tactile go">Connect AnkiWeb</button>
     </form>
     <div class="modal-msg" role="status"></div>
-    <p class="settings-fallback">${download}</p>`;
+`;
   const say = panelMessage(panel);
   const form = panel.querySelector("#anki-login");
   form.onsubmit = (event) => {
@@ -1875,7 +2181,7 @@ async function renderAnkiPanel(panel) {
         const res = await request(ankiBase() + "/api/anki/login", { username: form.elements.username.value.trim(), password: form.elements.password.value });
         adoptLocalState(res);
         toast("AnkiWeb connected. Your unlocked cards are synced.");
-        await renderAnkiPanel(panel);
+        await renderAnkiLivePanel(panel, packageSlot, all);
       } catch (err) {
         if (submit.isConnected) submit.textContent = "Connect AnkiWeb";
         say(err.message, true);
@@ -1971,35 +2277,116 @@ function nextUnlockHtml() {
     <span><strong class="tabular">Next unlock at ${numberFormat.format(n.threshold)} XP</strong> ${esc(n.label)}</span>${ICONS.chevronRight}</button>`;
 }
 
-function achievementRowsHtml() {
+function progressBarHtml(value, max, label) {
+  return `<div class="progress-track" role="progressbar" aria-label="${esc(label)}" aria-valuenow="${value}" aria-valuemax="${max}">
+    <div class="progress-fill" style="--progress: ${max ? value / max : 0}"></div>
+  </div>`;
+}
+
+function achievementProgress(id) {
+  const districts = state.data.districts;
+  const lessons = districts.flatMap(lessonsForDistrict);
+  const done = lessons.filter(lessonDone).length;
+  const steps = districts.flatMap((unit) => unit.steps);
+  const finished = (kind) => Number(steps.some((step) => kind(step.kind) && isStepDone(step.id)));
+  switch (id) {
+    case "first_step": return [finished(() => true), 1, "step"];
+    case "combo_3": return [state.combo, 3, "answers"];
+    case "combo_5": return [state.combo, 5, "answers"];
+    case "code_cracker": return [finished((kind) => kind === "code"), 1, "exercise"];
+    case "lab_explorer": return [finished((kind) => LAB_KINDS.has(kind)), 1, "lab"];
+    case "card_shark": return [state.reviewedCards, 10, "cards"];
+    case "sprint_done": return [0, 1, "focus session"];
+    case "style_icon": return [0, 1, "customization"];
+    case "district_clear": return [0, 1, "unit"];
+    case "halfway_hero": return [stepCounts().done, Math.ceil(steps.length / 2), "steps"];
+    case "ppo_boss": {
+      const unit = districts.find((district) => district.id === "M4") || districts[4];
+      return unit ? [unit.steps.filter((step) => isStepDone(step.id)).length, unit.steps.length, "steps"] : null;
+    }
+    case "full_mastery": return [done, lessons.length, "lessons"];
+  }
+}
+
+function achievementRowsHtml(filter = "all", preview = false) {
   const unlocked = (a) => state.achievements.includes(a.id);
-  const ordered = [...ACHIEVEMENT_DEFS.filter(unlocked), ...ACHIEVEMENT_DEFS.filter((a) => !unlocked(a))];
-  const shown = state.achShowAll ? ordered : ordered.slice(0, 6);
-  return shown.map((a) => `
-    <div class="ach-row ${unlocked(a) ? "unlocked" : ""}">
-      <span class="ach-badge">${ICONS[a.icon] || ICONS.star}</span>
-      <div class="ach-info">
-        <div class="ach-name">${esc(a.title)}</div>
-        <div class="ach-desc">${esc(a.desc)}</div>
-      </div>
+  const earned = ACHIEVEMENT_DEFS.filter(unlocked);
+  const locked = ACHIEVEMENT_DEFS.filter((a) => !unlocked(a));
+  const badges = filter === "unlocked" ? earned : filter === "locked" ? locked : [...earned, ...locked];
+  const shown = preview ? badges.slice(0, 4) : badges;
+  const tag = preview ? "button" : "article";
+  return shown.map((a) => {
+    const progress = !preview && !unlocked(a) ? achievementProgress(a.id) : null;
+    let progressHtml = "";
+    if (progress) {
+      const [value, goal, unit] = progress;
+      progressHtml = `<span class="ach-progress tabular">${value} / ${goal} ${unit}</span>
+        <span class="ach-meter" style="--progress: ${goal ? Math.min(value / goal, 1) : 0}" aria-hidden="true"><span></span></span>`;
+    }
+    return `
+    <${tag} ${preview ? 'type="button" aria-haspopup="dialog"' : ""} class="ach-row ${unlocked(a) ? "unlocked" : ""}">
+      <span class="ach-badge" aria-hidden="true">${ICONS[a.icon] || ICONS.star}
+        ${preview ? "" : `<span class="medal-status">${unlocked(a) ? ICONS.check : ICONS.lock}</span>`}
+      </span>
+      <span class="ach-info">
+        <span class="ach-name">${esc(a.title)}</span>
+        <span class="ach-desc">${esc(a.desc)}</span>
+        ${progressHtml}
+      </span>
       <span class="ach-xp tabular">+${a.xp} XP</span>
-    </div>`).join("");
+      ${preview ? "" : `<span class="sr-only">${unlocked(a) ? "Unlocked" : "Locked"}</span>`}
+    </${tag}>`;
+  }).join("") || '<p class="ach-empty">No badges match this filter yet.</p>';
+}
+
+function openAchievementsModal(trigger) {
+  const unlocked = ACHIEVEMENT_DEFS.filter((a) => state.achievements.includes(a.id));
+  const max = ACHIEVEMENT_DEFS.length;
+  const xp = unlocked.reduce((total, a) => total + a.xp, 0);
+  const filters = [["All", max], ["Unlocked", unlocked.length], ["Locked", max - unlocked.length]];
+  const maxXp = ACHIEVEMENT_DEFS.reduce((total, a) => total + a.xp, 0);
+  const dialog = showDialog("Achievements", `
+    <div class="ach-summary">
+      <span class="trophy-kubo" aria-hidden="true">${mascotHtml("proud", 62, null, false, "", "crown")}</span>
+      <div class="ach-summary-copy">
+        <strong>${unlocked.length} of ${max} badges earned</strong>
+        <span>${numberFormat.format(xp)} / ${numberFormat.format(maxXp)} badge XP</span>
+        ${progressBarHtml(xp, maxXp, "Badge XP earned")}
+      </div>
+    </div>
+    <div class="settings-tabs achievement-filters" role="group" aria-label="Filter achievements">
+      ${filters.map(([label, count], i) => `<button type="button" class="settings-tab" data-ach-filter="${label.toLowerCase()}" aria-pressed="${i === 0}">${label} <span class="tabular">${count}</span></button>`).join("")}
+    </div>
+    <div class="ach-grid-wrap" tabindex="0" role="region" aria-label="Badge collection">
+      <div class="ach-grid" aria-live="polite">${achievementRowsHtml()}</div>
+    </div>`, trigger, "wide trophy-dialog");
+  const buttons = [...dialog.querySelectorAll("[data-ach-filter]")];
+  const grid = dialog.querySelector(".ach-grid");
+  buttons.forEach((button) => {
+    button.onclick = () => {
+      buttons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+      grid.innerHTML = achievementRowsHtml(button.dataset.achFilter);
+      grid.parentElement.scrollTop = 0;
+    };
+  });
 }
 
 function jumpPopoversHtml() {
   const units = state.data.districts.map((d, di) => {
-    const done = d.steps.filter((s) => isStepDone(s.id)).length;
+    const lessons = lessonsForDistrict(d);
+    const done = lessons.filter(lessonDone).length;
     return `<li><button type="button" class="jump-item" data-jump-unit="${di}">
       <span class="jump-dot" style="background:${bannerColor(d.color)}"></span>
       <span class="jump-title">${esc(d.chapter)}</span>
-      <span class="jump-meta tabular">${done}/${d.steps.length}</span>
+      <span class="jump-meta tabular">${done}/${lessons.length}</span>
     </button></li>`;
   }).join("");
   const labs = state.data.districts.map((d, di) => {
-    const items = d.steps.map((s, si) => ({ s, si })).filter(({ s }) => LAB_KINDS.has(s.kind));
+    const lessons = lessonsForDistrict(d);
+    const items = d.steps.filter((s) => LAB_KINDS.has(s.kind));
     if (!items.length) return "";
     return `<li class="jump-group"><span class="jump-group-name">Unit ${di + 1}: ${esc(d.chapter)}</span><ul>
-      ${items.map(({ s, si }) => `<li><button type="button" class="jump-item" data-di="${di}" data-si="${si}">
+      ${items.map((s) => `<li><button type="button" class="jump-item" data-di="${di}" data-li="${lessons.findIndex((lesson) => lesson.step_ids.includes(s.id))}" data-step-id="${esc(s.id)}">
         <span class="jump-icon ${isStepDone(s.id) ? "done" : ""}">${isStepDone(s.id) ? sizedIcon("check", 14, 3) : sizedIcon(s.kind === "code" ? "code" : "sliders", 14)}</span>
         <span class="jump-title">${mdToHtml(s.title, true)}</span>
         <span class="jump-meta">${stepKindLabel(s.kind)}</span>
@@ -2017,23 +2404,27 @@ function renderMap({ sheen = false } = {}) {
   document.getElementById("lesson-footer-host").innerHTML = "";
   const root = document.getElementById("app-root");
   const g = state.data.gamification;
-  const next = findNextStep();
-  const { total: totalSteps, done: doneSteps } = stepCounts();
+  const next = findNextLesson();
+  const allLessons = state.data.districts.flatMap(lessonsForDistrict);
+  const totalLessons = allLessons.length;
+  const doneLessons = allLessons.filter(lessonDone).length;
   const totalLabs = state.data.districts.reduce((acc, d) => acc + d.steps.filter((s) => LAB_KINDS.has(s.kind)).length, 0);
   const squad = activeSquadList();
   const meta = state.data.course_meta || {};
   const title = state.course?.title || meta.title || "Reinforcement Learning & PPO";
-  const description = state.course?.description || meta.description || "An interactive path from the RL loop to a working PPO pipeline, with active recall and PyTorch labs.";
+  const description = state.course?.description || meta.description || "Master Reinforcement Learning from first principles to PPO. Bite-sized interactive lessons, hands-on visualizers, Python labs, and built-in flashcards.";
   const offsets = [0, 34, 0, -30, 0, 32, 0, -28, 0, 26];
 
   const pathHtml = state.data.districts.map((d, di) => {
-    const unitDone = d.steps.filter((s) => isStepDone(s.id)).length;
+    const lessons = lessonsForDistrict(d);
+    const unitDone = lessons.filter(lessonDone).length;
     const bg = bannerColor(d.color);
-    const nodes = d.steps.map((s, si) => {
-      const done = isStepDone(s.id);
-      const isCurrent = di === next.di && si === next.si;
+    const nodes = lessons.map((s, li) => {
+      const completed = s.step_ids.filter(isStepDone).length;
+      const done = completed === s.step_ids.length;
+      const isCurrent = di === next?.di && li === next?.li;
       const cls = isCurrent ? "current" : (done ? "done" : "upcoming");
-      const hereFriends = squad.filter((f) => f.current_step_id === s.id);
+      const hereFriends = squad.filter((f) => s.step_ids.includes(f.current_step_id));
       const friendPinsHtml = hereFriends.length
         ? `<div class="friend-pins">${hereFriends.map((f) =>
             `<span class="friend-pin" title="${esc(f.display_name)}, ${numberFormat.format(f.xp)} XP">${mascotHtml("idle", 18, f.mascot_color, false, "", f.mascot_accessory || "none", f.mascot_shape || "cube")}<span>${esc(f.display_name)}</span></span>`
@@ -2042,24 +2433,28 @@ function renderMap({ sheen = false } = {}) {
 
       return `
         <div class="path-node-row ${isCurrent ? "is-current" : ""}">
-          <div class="node-slot" style="--offset:${offsets[si % offsets.length]}px;">
+          <div class="node-slot" style="--offset:${offsets[li % offsets.length]}px;">
             <div class="node-wrap">
+              ${li < lessons.length - 1 ? `<svg class="node-connector" width="120" height="114" viewBox="0 0 120 114" aria-hidden="true">
+                <path d="M 60 0 C 60 74 ${60 + offsets[(li + 1) % offsets.length] - offsets[li % offsets.length]} 40 ${60 + offsets[(li + 1) % offsets.length] - offsets[li % offsets.length]} 114"/>
+              </svg>` : ""}
               ${isCurrent ? `
                 <svg class="node-active-ring" viewBox="0 0 128 106" fill="none" aria-hidden="true">
                   <ellipse cx="64" cy="56" rx="56" ry="42" stroke="var(--accent-border)" stroke-width="3"/>
                   <ellipse cx="64" cy="56" rx="48" ry="35" stroke="var(--accent-solid)" stroke-width="2" stroke-dasharray="6 5" opacity="0.55"/>
                 </svg>
+                <span class="node-kubo-side" aria-hidden="true"><span>${mascotHtml("happy", 42)}</span></span>
                 <div class="node-start-pill"><span class="start-bubble">${g.xp > 0 ? "Next" : "Start"}</span></div>` : ""}
-              <button class="node-puck ${cls}" tabindex="-1" aria-hidden="true" data-di="${di}" data-si="${si}">
+              <button class="node-puck ${cls}" tabindex="-1" aria-hidden="true" data-di="${di}" data-li="${li}">
                 <span class="node-puck-base"></span>
                 <span class="node-puck-face">${stepPuckGlyph(s.kind, done, isCurrent)}</span>
               </button>
             </div>
           </div>
           <div class="node-label-col">
-            <button class="node-label ${cls === "upcoming" ? "muted" : ""}" ${isCurrent ? 'aria-current="step"' : ""} data-di="${di}" data-si="${si}">
+            <button class="node-label ${cls === "upcoming" ? "muted" : ""}" ${isCurrent ? 'aria-current="step"' : ""} data-di="${di}" data-li="${li}">
               <span class="node-label-title">${mdToHtml(s.title, true)}</span>
-              <span class="node-label-kind">${stepKindLabel(s.kind)}</span>
+              <span class="node-label-kind">${esc(LESSON_KIND_LABELS[s.kind] || "Lesson")}${Number(s.est_minutes) > 0 ? ` (${esc(s.est_minutes)} min)` : ""}${completed > 0 && !done ? `, ${completed} of ${s.step_ids.length} steps` : ""}</span>
             </button>
             ${friendPinsHtml}
           </div>
@@ -2073,7 +2468,7 @@ function renderMap({ sheen = false } = {}) {
             <div class="unit-kicker">Unit ${di + 1}</div>
             <h2 class="unit-title" id="unit-title-${di}">${esc(d.chapter)}</h2>
           </div>
-          <span class="unit-progress-pill" aria-label="${unitDone} of ${d.steps.length} steps done">${unitDone} / ${d.steps.length}</span>
+          <span class="unit-progress-pill" aria-label="${unitDone} of ${lessons.length} lessons done">${unitDone} / ${lessons.length}</span>
         </div>
         <div class="nodes-track">${nodes}</div>
       </section>`;
@@ -2086,7 +2481,7 @@ function renderMap({ sheen = false } = {}) {
     mascot_accessory: equippedAccessory(),
     mascot_shape: equippedShape(),
     xp: g.xp,
-    current_step_id: next.s.id,
+    current_step_id: next?.lesson.step_ids.find((id) => !isStepDone(id)),
     isMe: true,
   };
   const squadHtml = squad.length
@@ -2106,27 +2501,32 @@ function renderMap({ sheen = false } = {}) {
   renderPreserving(root, `
     <div class="path-layout">
       <aside class="path-sidebar" aria-label="Course overview">
+        <div class="path-quick-actions" aria-label="Squad and achievements">
+          <button type="button" class="stat-pill" id="quick-achievements" aria-haspopup="dialog">${ICONS.star} Achievements <span class="tabular">${state.achievements.length} / ${ACHIEVEMENT_DEFS.length}</span></button>
+          <button type="button" class="stat-pill" id="quick-squad" aria-haspopup="dialog">${ICONS.users} Squad</button>
+        </div>
         <div class="sidebar-panel">
           <section class="sidebar-section">
             <h1 class="course-title">${esc(title)}</h1>
             <p class="overview-tagline">${esc(description)}</p>
             <div class="stat-pills">
+              <span class="stat-pill"><span class="tabular">${totalLessons}</span> Lessons</span>
               <div class="jump-anchor">
                 <button type="button" class="stat-pill" id="pill-units" aria-haspopup="dialog" aria-expanded="false" aria-controls="jump-units">${ICONS.book}<span class="tabular">${state.data.districts.length}</span> Units${ICONS.chevronDown}</button>
                 ${pops.units}
               </div>
-              <div class="jump-anchor">
+              ${totalLabs ? `<div class="jump-anchor">
                 <button type="button" class="stat-pill" id="pill-labs" aria-haspopup="dialog" aria-expanded="false" aria-controls="jump-labs">${ICONS.sliders}<span class="tabular">${totalLabs}</span> Labs${ICONS.chevronDown}</button>
                 ${pops.labs}
-              </div>
+              </div>` : ""}
               <button type="button" class="stat-pill" id="pill-cards">${ICONS.cards}<span class="tabular">${numberFormat.format(state.data.srs.total_cards)}</span> Cards</button>
             </div>
           </section>
 
           <section class="sidebar-section">
             <div class="next-card-kicker">Up next</div>
-            <p class="next-card-title">${mdToHtml(next.s.title, true)}</p>
-            <button id="btn-sidebar-start" class="btn-tactile go full pill ${sheen ? "sheen-once" : ""}">${g.xp > 0 ? "Continue" : "Start"}</button>
+            <p class="next-card-title">${next ? mdToHtml(next.lesson.title, true) : "Course complete"}</p>
+            <button id="btn-sidebar-start" class="btn-tactile go full pill ${sheen ? "sheen-once" : ""}">${next ? (g.xp > 0 ? "Continue" : "Start") : "Replay first lesson"}</button>
           </section>
 
           <section class="sidebar-section">
@@ -2146,7 +2546,7 @@ function renderMap({ sheen = false } = {}) {
             </div>
             <div class="xp-bar-track"><div class="xp-bar-fill" style="--progress: ${(g.pct / 100).toFixed(4)}"></div></div>
             <div class="rank-meta">
-              <span class="tabular">${doneSteps} of ${totalSteps} steps</span>
+              <span class="tabular">${doneLessons} of ${totalLessons} lessons</span>
               <span>${numberFormat.format(state.data.srs.unlocked_count)} cards unlocked</span>
             </div>
             ${nextUnlockHtml()}
@@ -2168,26 +2568,16 @@ function renderMap({ sheen = false } = {}) {
         <div class="ach-card">
           <div class="rail-head">
             <h2>Achievements <span class="rail-count tabular">${state.achievements.length}/${ACHIEVEMENT_DEFS.length}</span></h2>
-            <button id="btn-ach-all" class="rail-link" aria-expanded="${state.achShowAll}">${state.achShowAll ? "Top 6" : `All ${ACHIEVEMENT_DEFS.length}`}</button>
+            <button id="btn-ach-all" class="rail-link" aria-haspopup="dialog">View all →</button>
           </div>
-          <div class="ach-list ${state.achShowAll ? "expanded" : ""}">${achievementRowsHtml()}</div>
+          <div class="ach-list">${achievementRowsHtml("all", true)}</div>
         </div>
       </aside>
     </div>`, ".sidebar-panel .xp-bar-fill");
 
   renderMath(root);
-  const openStep = (di, si) => {
-    if (state.inFlight) return;
-    primeAudio();
-    state.districtIdx = di;
-    state.stepIdx = si;
-    state.navDir = "fade";
-    state.lastRenderedStepId = null;
-    state.view = "mission";
-    render();
-  };
   root.querySelectorAll("[data-di]").forEach((el) => {
-    el.onclick = () => openStep(Number(el.dataset.di), Number(el.dataset.si));
+    el.onclick = () => openLesson(Number(el.dataset.di), Number(el.dataset.li), el.dataset.stepId);
   });
   root.querySelectorAll("[data-jump-unit]").forEach((el) => {
     el.onclick = () => {
@@ -2201,31 +2591,412 @@ function renderMap({ sheen = false } = {}) {
     pill.onclick = (event) => { event.stopPropagation(); toggleMapPopover(pill); };
   });
   document.getElementById("pill-cards").onclick = () => { playSound("tap"); startDrillSession(); };
-  document.getElementById("btn-sidebar-start").onclick = () => openStep(next.di, next.si);
+  document.getElementById("btn-sidebar-start").onclick = () => openLesson(next?.di ?? 0, next?.li ?? 0);
   document.getElementById("btn-rank-reward").onclick = (event) => { playSound("tap"); openRewardsModal(event.currentTarget); };
   const ms = document.getElementById("btn-manage-squad");
   ms.onclick = () => { playSound("tap"); openSettingsModal("friends", ms); };
   const os = document.getElementById("btn-open-squad");
   if (os) os.onclick = () => { playSound("tap"); openSettingsModal("friends", os); };
-  const all = document.getElementById("btn-ach-all");
-  all.onclick = () => {
-    state.achShowAll = !state.achShowAll;
-    all.setAttribute("aria-expanded", String(state.achShowAll));
-    all.textContent = state.achShowAll ? "Top 6" : `All ${ACHIEVEMENT_DEFS.length}`;
-    const list = root.querySelector(".ach-list");
-    list.classList.toggle("expanded", state.achShowAll);
-    list.innerHTML = achievementRowsHtml();
-  };
+  document.getElementById("quick-squad").onclick = (event) => { playSound("tap"); openSettingsModal("friends", event.currentTarget); };
+  root.querySelectorAll("#btn-ach-all, #quick-achievements, .ach-list button").forEach((button) => {
+    button.onclick = () => openAchievementsModal(button);
+  });
 }
 
 // Theme-Aware Interactive Visualizers
+function vizIdSelector(id) {
+  return "#" + id + ', [data-viz-id="' + id + '"]';
+}
+
 function setRangeFill(el) {
   const pct = ((Number(el.value) - Number(el.min)) / (Number(el.max) - Number(el.min))) * 100;
   el.style.setProperty("--fill", `${pct.toFixed(1)}%`);
 }
 
-function mountVisualizer(vizType, container) {
-  const mounts = { bellman_backup: mountBellmanBackup, policy_baseline: mountPolicyBaseline, reward_shaping: mountRewardShaping };
+function mountAgentLoop(container) {
+  const phases = ["Observe sₜ", "Pick action aₜ", "World reacts", "Get reward rₜ", "Learn & repeat"];
+  const scenarios = {
+    "Board Game": [
+      "The agent sees its position, cash, and the properties it can buy.",
+      "The policy chooses to buy the property where the player landed.",
+      "The board registers the new owner and deducts the price from the player's cash.",
+      "The environment reports the new ownership and a reward under the game's scoring rule.",
+      "The agent uses the outcome to improve how it chooses between buying and saving.",
+    ],
+    "Robot Grid": [
+      "The robot sees its grid position, a wall, and the goal.",
+      "The policy chooses to move one square east.",
+      "The grid checks the move and updates the robot's position.",
+      "The robot receives its new position and a reward for reaching the goal.",
+      "The agent uses that experience to favor moves that help it reach future goals.",
+    ],
+  };
+  container.innerHTML = `<div class="viz-stage discovery-viz agent-loop">
+    <div class="viz-actions" role="group" aria-label="Scenario">
+      ${Object.keys(scenarios).map((name) => `<button type="button" class="btn-ghost pill" data-scenario="${name}">${name}</button>`).join("")}
+    </div>
+    <svg class="loop-diagram" viewBox="0 0 520 200" role="img" aria-label="The agent sends an action to the environment, which returns the next state and reward.">
+      <path class="loop-arc" data-action d="M143 81 C200 23 320 23 377 81"/>
+      <path class="loop-arc" data-outcome d="M377 119 C320 177 200 177 143 119"/>
+      <path class="loop-arrow" data-action-head d="m367 78 10 3-3-10"/>
+      <path class="loop-arrow" data-outcome-head d="m153 122-10-3 3 10"/>
+      <text x="260" y="24">Action aₜ</text>
+      <text x="260" y="181">Next state sₜ₊₁ &amp; reward rₜ</text>
+      <rect class="loop-node" data-agent x="15" y="65" width="128" height="70" rx="14"/>
+      <rect class="loop-node" data-world x="377" y="65" width="128" height="70" rx="14"/>
+      <text x="79" y="97">Agent</text><text class="loop-detail" x="79" y="119">Policy π</text>
+      <text x="441" y="97">Environment</text><text data-world-label class="loop-detail" x="441" y="119"></text>
+      <g data-pulse class="loop-pulse" hidden><circle class="loop-halo" r="11"/><circle r="6"/></g>
+    </svg>
+    <ol class="loop-phases">${phases.map((phase, i) => `<li><button type="button" class="loop-phase-btn" aria-pressed="false">${i + 1}. ${phase}</button></li>`).join("")}</ol>
+    <p class="viz-insight" role="status" aria-live="polite"></p>
+    <div class="viz-actions">
+      <button type="button" class="btn-tactile go pill" data-next>Next step</button>
+      <button type="button" class="btn-ghost pill" data-play aria-pressed="false">Auto-play</button>
+      <button type="button" class="btn-ghost pill" data-reset>Reset</button>
+    </div>
+  </div>`;
+  const find = (selector) => selector.startsWith("#")
+    ? container.querySelector(vizIdSelector(selector.slice(1))) : container.querySelector(selector);
+  const scenarioButtons = [...container.querySelectorAll("[data-scenario]")];
+  const phaseButtons = [...container.querySelectorAll(".loop-phase-btn")];
+  const insight = find(".viz-insight");
+  const play = find("[data-play]");
+  const pulse = find("[data-pulse]");
+  let scenario = "Board Game", phase = 0, timer = null, movement = null, arcDraw = null;
+  function draw() {
+    scenarioButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.scenario === scenario)));
+    phaseButtons.forEach((button, i) => button.setAttribute("aria-pressed", String(i === phase)));
+    find("[data-world-label]").textContent = scenario === "Board Game" ? "Board" : "Robot grid";
+    insight.textContent = scenarios[scenario][phase];
+    find("[data-agent]").classList.toggle("is-active", [0, 1, 4].includes(phase));
+    find("[data-world]").classList.toggle("is-active", [2, 3].includes(phase));
+    const action = find("[data-action]"), outcome = find("[data-outcome]");
+    action.classList.toggle("is-active", phase === 1);
+    outcome.classList.toggle("is-active", phase === 3);
+    find("[data-action-head]").classList.toggle("is-active", phase === 1);
+    find("[data-outcome-head]").classList.toggle("is-active", phase === 3);
+    arcDraw?.cancel();
+    movement?.cancel();
+    pulse.setAttribute("hidden", "");
+    if ((phase !== 1 && phase !== 3) || prefersReducedMotion() || !pulse.animate) return;
+    const path = phase === 1 ? action : outcome;
+    const distance = path.getTotalLength();
+    arcDraw = path.animate([
+      { strokeDasharray: `${distance}px`, strokeDashoffset: distance },
+      { strokeDasharray: `${distance}px`, strokeDashoffset: 0 },
+    ], { duration: 420, easing: getComputedStyle(path).getPropertyValue("--ease-out").trim() || "ease-out" });
+    pulse.removeAttribute("hidden");
+    movement = pulse.animate(Array.from({ length: 21 }, (_, i) => {
+      const { x, y } = path.getPointAtLength(distance * i / 20);
+      return { transform: `translate(${x}px, ${y}px)`, opacity: i === 0 || i === 20 ? 0 : 1 };
+    }), { duration: 640, delay: 420, fill: "both", easing: "cubic-bezier(0.65, 0, 0.35, 1)" });
+  }
+  const next = () => { phase = (phase + 1) % phases.length; draw(); };
+  const pause = () => {
+    clearInterval(timer);
+    timer = null;
+    insight.setAttribute("aria-live", "polite");
+    play.textContent = "Auto-play";
+    play.setAttribute("aria-pressed", "false");
+  };
+  const reset = () => { pause(); phase = 0; draw(); };
+  phaseButtons.forEach((button, i) => {
+    button.onclick = () => { pause(); phase = i; draw(); };
+  });
+  find("[data-next]").onclick = () => { pause(); next(); };
+  find("[data-reset]").onclick = reset;
+  play.onclick = () => {
+    if (timer !== null) return pause();
+    insight.setAttribute("aria-live", "off");
+    play.textContent = "Pause";
+    play.setAttribute("aria-pressed", "true");
+    next();
+    timer = setInterval(() => {
+      const beat = container.closest(".lesson-beat");
+      if (!container.isConnected || play.disabled || (beat && !beat.hasAttribute("aria-current"))) pause();
+      else if (!document.hidden) next();
+    }, 1500);
+  };
+  scenarioButtons.forEach((button) => {
+    button.onclick = () => { scenario = button.dataset.scenario; reset(); };
+  });
+  draw();
+}
+
+function mountExploreExploit(container) {
+  const arms = [
+    { name: "Neighborhood Café", shortName: "Café", chance: .45 },
+    { name: "New Bistro", shortName: "Bistro", chance: .78 },
+    { name: "Corner Diner", shortName: "Diner", chance: .30 },
+  ];
+  const bestArm = arms.reduce((best, arm, i) => arm.chance > arms[best].chance ? i : best, 0);
+  container.innerHTML = `<div class="viz-stage discovery-viz">
+    <p>Each restaurant serves a great meal (+1) with its own hidden probability. Which would you keep visiting?</p>
+    <div class="bandit-choices">
+      ${arms.map((arm, i) => `<button type="button" class="bandit-arm" data-arm="${i}">
+        <strong>${arm.name}</strong><span data-sample>No visits yet</span>
+        <span class="viz-meter" aria-hidden="true"><span></span><i class="viz-target" style="--at:${arm.chance}"></i></span>
+        <span class="bandit-reward" data-reward aria-hidden="true"></span>
+      </button>`).join("")}
+    </div>
+    <div class="range-group">
+      <label for="bandit-epsilon"><span>Exploration rate ε</span><output id="bandit-epsilon-value" for="bandit-epsilon">15%</output></label>
+      <input id="bandit-epsilon" class="slider-range" type="range" min="0" max="100" step="1" value="15">
+      <div class="bandit-range-labels"><span>0% Greedy</span><span>100% Random</span></div>
+    </div>
+    <dl class="viz-stats bandit-stats">
+      <div><dt>Pulls</dt><dd data-pulls>0</dd></div>
+      <div><dt>Total reward</dt><dd data-total>0</dd></div>
+      <div><dt>Estimated best</dt><dd><span data-best>Pending</span><span class="viz-stat-sub" data-best-hint>Keep sampling</span></dd></div>
+      <div><dt>True best</dt><dd data-true>Hidden</dd></div>
+      <div><dt>Optimal picks</dt><dd data-optimal>0%</dd></div>
+    </dl>
+    <p class="viz-insight" role="status"></p>
+    <div class="viz-actions">
+      <button type="button" class="btn-tactile go pill" data-auto aria-pressed="false">Auto-pull 10×</button>
+      <button type="button" class="btn-ghost pill" data-reveal aria-pressed="false">Reveal true averages</button>
+      <button type="button" class="btn-ghost pill" data-reset>Reset</button>
+    </div>
+  </div>`;
+  const find = (selector) => selector.startsWith("#")
+    ? container.querySelector(vizIdSelector(selector.slice(1))) : container.querySelector(selector);
+  const choices = [...container.querySelectorAll("[data-arm]")];
+  const slider = find("input");
+  const reveal = find("[data-reveal]");
+  const auto = find("[data-auto]");
+  let counts, totals, last = null, shown = false, batchTimer = null;
+  const average = (i) => counts[i] ? totals[i] / counts[i] : 0;
+  const leaders = () => {
+    const highest = Math.max(...counts.map((count, i) => count ? average(i) : -1));
+    return counts.flatMap((count, i) => count && average(i) === highest ? [i] : []);
+  };
+  function draw() {
+    const pulls = counts.reduce((total, count) => total + count);
+    const best = leaders();
+    choices.forEach((choice, i) => {
+      choice.querySelector("[data-sample]").textContent = [
+        counts[i] ? `${counts[i]} visit${counts[i] === 1 ? "" : "s"}, ${Math.round(average(i) * 100)}% great meals` : "No visits yet",
+        shown ? `${Math.round(arms[i].chance * 100)}% true chance` : "",
+      ].filter(Boolean).join(". ");
+      choice.classList.toggle("shows-target", shown);
+      choice.querySelector(".viz-meter > span").style.setProperty("--amount", average(i));
+    });
+    setRangeFill(slider);
+    find("#bandit-epsilon-value").textContent = slider.value + "%";
+    find("[data-pulls]").textContent = pulls;
+    find("[data-total]").textContent = totals.reduce((total, reward) => total + reward);
+    const leader = best.length === 1 ? arms[best[0]] : null;
+    const bestValue = find("[data-best]");
+    bestValue.textContent = leader?.shortName ?? (best.length ? "Tie" : "Pending");
+    bestValue.title = leader?.name ?? "";
+    find("[data-best-hint]").hidden = Boolean(leader);
+    const optimal = pulls ? counts[bestArm] / pulls : 0;
+    find("[data-optimal]").textContent = `${Math.round(optimal * 100)}%`;
+    find("[data-optimal]").classList.toggle("is-winning", optimal >= .6);
+    const trueValue = find("[data-true]");
+    trueValue.textContent = shown ? arms[bestArm].shortName : "Hidden";
+    trueValue.title = shown ? arms[bestArm].name : "";
+    reveal.setAttribute("aria-pressed", String(shown));
+    reveal.textContent = shown ? "Hide true averages" : "Reveal true averages";
+    const lesson = Number(slider.value) === 0
+      ? "A lucky first meal can make a greedy policy stick with a mediocre restaurant and leave better choices untested."
+      : "Try 10–20% exploration. Occasional visits to alternatives can uncover a better restaurant while most visits go to the current favorite.";
+    find(".viz-insight").textContent = (last ? `${last.name} just earned +${last.reward}. ` : "") + lesson;
+  }
+  function pull(i) {
+    const arm = arms[i];
+    const reward = Number(Math.random() < arm.chance);
+    counts[i]++;
+    totals[i] += reward;
+    last = { name: arm.name, reward };
+    const pop = choices[i].querySelector("[data-reward]");
+    pop.textContent = `+${reward}`;
+    if (reward) spawnSparkles(choices[i], 5, 0.4);
+    pop.classList.toggle("is-winning", reward === 1);
+    choices[i].getAnimations?.().forEach((animation) => animation.cancel());
+    if (!prefersReducedMotion()) choices[i].animate?.(
+      [{ transform: "scale(1.03)" }, { transform: "scale(1)" }], { duration: 160, easing: "ease-out" });
+    pop.getAnimations?.().forEach((animation) => animation.cancel());
+    if (!prefersReducedMotion()) pop.animate?.([
+      { transform: "translateY(5px) scale(.8)", opacity: 0 },
+      { transform: "translateY(-6px) scale(1.12)", opacity: 1, offset: .3 },
+      { transform: "translateY(-18px) scale(1)", opacity: 0 },
+    ], { duration: 600, easing: "ease-out" });
+    draw();
+  }
+  function stopAuto() {
+    clearTimeout(batchTimer);
+    batchTimer = null;
+    auto.setAttribute("aria-pressed", "false");
+    auto.textContent = "Auto-pull 10×";
+  }
+  function reset() {
+    stopAuto();
+    counts = arms.map(() => 0);
+    totals = arms.map(() => 0);
+    choices.forEach((choice) => choice.querySelector("[data-reward]").getAnimations?.().forEach((animation) => animation.cancel()));
+    last = null;
+    shown = false;
+    slider.value = "15";
+    draw();
+  }
+  auto.onclick = () => {
+    if (batchTimer !== null) return stopAuto();
+    auto.setAttribute("aria-pressed", "true");
+    auto.textContent = "Stop";
+    let remaining = 10;
+    const step = () => {
+      const beat = container.closest(".lesson-beat");
+      if (!container.isConnected || (beat && !beat.hasAttribute("aria-current"))) return stopAuto();
+      const best = leaders();
+      const explore = !best.length || Math.random() * 100 < Number(slider.value);
+      const options = explore ? arms.map((_, i) => i) : best;
+      pull(options[Math.floor(Math.random() * options.length)]);
+      if (--remaining === 0) return stopAuto();
+      batchTimer = setTimeout(step, prefersReducedMotion() ? 0 : 115);
+    };
+    step();
+  };
+  choices.forEach((choice, i) => { choice.onclick = () => pull(i); });
+  slider.oninput = draw;
+  reveal.onclick = () => { shown = !shown; draw(); };
+  find("[data-reset]").onclick = reset;
+  reset();
+}
+
+function mountRlLandscape(container) {
+  // These are qualitative teaching ratings for typical implementations, not benchmark measurements.
+  const algorithms = {
+    DQN: { group: "Model-free", category: "Value-based, off‑policy", ratings: [3, 4, 3, 3], library: "CleanRL",
+      use: "Learn values for a small, discrete set of choices and reuse experience with replay.", skip: "The agent needs to choose continuous actions." },
+    REINFORCE: { group: "Model-free", category: "Policy-based, on‑policy", ratings: [2, 1, 4, 5], library: "Gymnasium",
+      use: "Study policy gradients with a small environment and short episodes.", skip: "You need sample efficiency or more stable updates on long episodes." },
+    PPO: { group: "Model-free", category: "Actor-critic, on‑policy", ratings: [5, 3, 5, 3], library: "Stable-Baselines3",
+      use: "You can collect fresh rollouts and want stable updates. For board games, mask illegal moves before sampling.", skip: "New environment interactions are expensive and you need extensive replay." },
+    SAC: { group: "Model-free", category: "Actor-critic, off‑policy", ratings: [4, 5, 2, 2], library: "Stable-Baselines3",
+      use: "Continuous controls and costly interactions make replay useful.", skip: "You need a straightforward method for a discrete set of legal moves." },
+    AlphaZero: { group: "Model-based", category: "Planning with MCTS", ratings: [3, 3, 5, 1], library: "Gymnasium",
+      use: "An exact simulator lets search compare legal moves several turns ahead.", skip: "You have no reliable simulator or little compute for search and self-play." },
+  };
+  const presets = [
+    ["Board game (legal-action mask)", ["PPO"]],
+    ["Continuous robot arm", ["SAC", "PPO"]],
+    ["Chess / Go (exact simulator)", ["AlphaZero"]],
+    ["Simple discrete arcade", ["DQN", "PPO"]],
+  ];
+  const strengths = ["Stability", "Sample efficiency", "Action masking", "Simplicity"];
+  container.innerHTML = `<div class="viz-stage discovery-viz">
+    <div class="viz-actions algorithm-presets" role="group" aria-label="Task scenario">
+      ${presets.map(([name], i) => `<button type="button" class="btn-ghost pill" data-preset="${i}">${name}</button>`).join("")}
+    </div>
+    ${["Model-free", "Model-based"].map((group) => `<section class="algorithm-group">
+      <h3>${group}</h3>
+      <div class="algorithm-choices algorithm-grid">
+        ${Object.entries(algorithms).filter(([, a]) => a.group === group).map(([name, a]) => `<button type="button" class="algorithm-card" data-algorithm="${name}">
+          <strong>${name}</strong><span>${a.category}</span><small data-fit hidden>Scenario fit</small>
+        </button>`).join("")}
+      </div>
+    </section>`).join("")}
+    <section class="algorithm-detail" aria-label="Selected algorithm profile">
+      <h3 data-algorithm-title></h3>
+      <p class="algorithm-scale">Illustrative strengths on a 1–5 scale. Actual performance depends on the task and implementation.</p>
+      <div class="algorithm-strengths">${strengths.map((label) => `<div class="algorithm-strength"><span>${label}</span>
+        <span class="strength-pips" aria-hidden="true">${Array.from({ length: 5 }, () => '<span class="strength-pip"></span>').join("")}</span><span class="tabular" data-rating></span>
+      </div>`).join("")}</div>
+      <div class="algorithm-advice" aria-live="polite"></div>
+    </section>
+  </div>`;
+  const buttons = [...container.querySelectorAll("[data-algorithm]")];
+  const scenarios = [...container.querySelectorAll("[data-preset]")];
+  const title = container.querySelector("[data-algorithm-title]");
+  const advice = container.querySelector(".algorithm-advice");
+  const bars = [...container.querySelectorAll(".algorithm-strength")];
+  let selected = "PPO", scenario = 0, previous;
+  function draw() {
+    const a = algorithms[selected];
+    const matches = presets[scenario][1];
+    const changed = previous !== selected;
+    previous = selected;
+    title.textContent = selected;
+    scenarios.forEach((button, i) => button.setAttribute("aria-pressed", String(scenario === i)));
+    buttons.forEach((button) => {
+      const name = button.dataset.algorithm;
+      button.setAttribute("aria-pressed", String(name === selected));
+      button.querySelector("[data-fit]").hidden = !matches.includes(name);
+      button.classList.toggle("fits-scenario", matches.includes(name));
+    });
+    bars.forEach((bar, i) => {
+      const rating = a.ratings[i];
+      bar.querySelectorAll(".strength-pip").forEach((pip, index) => {
+        pip.dataset.on = String(index < rating);
+        pip.dataset.tier = rating <= 2 ? "low" : rating === 3 ? "mid" : "high";
+        if (changed && index < rating && !prefersReducedMotion()) {
+          pip.getAnimations?.().forEach((animation) => animation.cancel());
+          pip.animate?.([{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1)" }],
+            { duration: 180, delay: index * 30, fill: "backwards", easing: "ease-out" });
+        }
+      });
+      bar.querySelector("[data-rating]").textContent = `${a.ratings[i]}/5`;
+    });
+    advice.innerHTML = `<div><h4>When to use it</h4><p>${a.use}</p></div>
+      <div><h4>When to skip it</h4><p>${a.skip}</p></div>
+      <p class="algorithm-library">${a.library === "Gymnasium" ? "Environment API" : "Implementation library"} <strong>${a.library}</strong></p>`;
+    if (changed && !prefersReducedMotion()) {
+      const detail = advice.closest(".algorithm-detail");
+      detail.getAnimations?.().forEach((animation) => animation.cancel());
+      detail.animate?.([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "translateY(0)" }],
+        { duration: 180, easing: "cubic-bezier(0.22, 0.9, 0.32, 1)" });
+    }
+  }
+  scenarios.forEach((button, i) => { button.onclick = () => { scenario = i; selected = presets[i][1][0]; draw(); }; });
+  buttons.forEach((button) => { button.onclick = () => { selected = button.dataset.algorithm; draw(); }; });
+  draw();
+}
+
+// Chart draws keep the same element order. Reuse those nodes so changes to SVG
+// geometry can transition and the chart remains mounted during direct manipulation.
+function updateVizChart(svg, markup) {
+  const next = document.createElementNS(svg.namespaceURI, "svg");
+  next.innerHTML = markup;
+  function update(parent, source) {
+    [...source.children].forEach((child, index) => {
+      const node = parent.children[index];
+      if (!node) {
+        parent.append(child);
+        return;
+      }
+      for (const { name, value } of child.attributes) {
+        if (node.getAttribute(name) !== value) node.setAttribute(name, value);
+      }
+      if (child.childElementCount) update(node, child);
+      else if (node.textContent !== child.textContent) node.textContent = child.textContent;
+    });
+  }
+  update(svg, next);
+}
+
+function bindVizInputs(container, draw) {
+  container.querySelectorAll("input").forEach((input) => {
+    if (input.type === "range") {
+      input.oninput = () => {
+        container.classList.add("viz-dragging");
+        draw();
+      };
+      input.onchange = input.onblur = () => container.classList.remove("viz-dragging");
+    } else {
+      input.onchange = draw;
+    }
+  });
+}
+
+function setVizInsight(container, message) {
+  const insight = container.querySelector(".viz-insight");
+  if (insight.textContent !== message) insight.textContent = message;
+}
+
+function mountViz(vizType, container) {
+  const mounts = { agent_loop: mountAgentLoop, explore_exploit: mountExploreExploit, rl_landscape: mountRlLandscape, bellman_backup: mountBellmanBackup, policy_baseline: mountPolicyBaseline, reward_shaping: mountRewardShaping };
   if (Object.hasOwn(mounts, vizType)) return mounts[vizType](container);
   if (vizType === "gamma_horizon") {
     container.innerHTML = `
@@ -2250,43 +3021,45 @@ function mountVisualizer(vizType, container) {
             <svg id="svg-ret" viewBox="0 0 340 192" width="100%"></svg>
           </div>
         </div>
+        <p class="viz-insight" role="status"></p>
       </div>`;
     const draw = () => {
-      const sg = container.querySelector("#s-gamma"), sw = container.querySelector("#s-win");
+      const sg = container.querySelector(vizIdSelector("s-gamma")), sw = container.querySelector(vizIdSelector("s-win"));
       setRangeFill(sg); setRangeFill(sw);
       const g = Number(sg.value), w = Number(sw.value);
-      container.querySelector("#v-gamma").textContent = g.toFixed(3);
-      container.querySelector("#v-win").textContent = w;
+      container.querySelector(vizIdSelector("v-gamma")).textContent = g.toFixed(3);
+      container.querySelector(vizIdSelector("v-win")).textContent = w;
       const hor = (1 / Math.max(1 - g, 1e-4)).toFixed(0);
       const g0 = Math.pow(g, w);
-      container.querySelector("#t-hor").textContent = `Horizon ≈ ${hor} steps`;
-      container.querySelector("#t-g0").textContent = `G₀ = ${g0.toFixed(3)}`;
+      container.querySelector(vizIdSelector("t-hor")).textContent = `Horizon ≈ ${hor} steps`;
+      container.querySelector(vizIdSelector("t-g0")).textContent = `G₀ = ${g0.toFixed(3)}`;
 
       const pts1 = [];
       for (let k = 0; k <= 95; k += 2) pts1.push(`${(32 + (k / 95) * 292).toFixed(1)},${(156 - Math.pow(g, k) * 132).toFixed(1)}`);
       const wx = 32 + (w / 95) * 292, wy = 156 - g0 * 132;
-      container.querySelector("#svg-decay").innerHTML = `
+      updateVizChart(container.querySelector(vizIdSelector("svg-decay")), `
         <line x1="32" y1="24" x2="324" y2="24" stroke="var(--line)"/>
         <line x1="32" y1="90" x2="324" y2="90" stroke="var(--line)"/>
         <line x1="32" y1="156" x2="324" y2="156" stroke="var(--line-strong)"/>
         <polygon points="32,156 ${pts1.join(" ")} 324,156" fill="var(--accent-tint)"/>
         <polyline points="${pts1.join(" ")}" fill="none" stroke="var(--accent-solid)" stroke-width="2.6"/>
-        <line x1="${wx}" y1="24" x2="${wx}" y2="156" stroke="var(--go)" stroke-dasharray="4 3" stroke-width="1.6"/>
+        <line transform="translate(${wx} 0)" x1="0" y1="24" x2="0" y2="156" stroke="var(--go)" stroke-dasharray="4 3" stroke-width="1.6"/>
         <circle cx="${wx}" cy="${wy}" r="5.5" fill="var(--go)" stroke="var(--surface)" stroke-width="2"/>
-        <text x="178" y="182" font-size="13" fill="var(--ink-2)" text-anchor="middle">Future steps k (0 → 95)</text>`;
+        <text x="178" y="182" font-size="13" fill="var(--ink-2)" text-anchor="middle">Future steps k (0 → 95)</text>`);
 
       const pts2 = [];
       for (let t = 0; t <= w; t++) pts2.push(`${(32 + (t / Math.max(w, 1)) * 292).toFixed(1)},${(156 - Math.pow(g, w - t) * 132).toFixed(1)}`);
-      container.querySelector("#svg-ret").innerHTML = `
+      updateVizChart(container.querySelector(vizIdSelector("svg-ret")), `
         <line x1="32" y1="24" x2="324" y2="24" stroke="var(--line)"/>
         <line x1="32" y1="90" x2="324" y2="90" stroke="var(--line)"/>
         <line x1="32" y1="156" x2="324" y2="156" stroke="var(--line-strong)"/>
         <polygon points="32,156 ${pts2.join(" ")} 324,156" fill="var(--go-tint)"/>
         <polyline points="${pts2.join(" ")}" fill="none" stroke="var(--go)" stroke-width="2.6"/>
         <circle cx="32" cy="${(156 - g0 * 132).toFixed(1)}" r="5.5" fill="var(--accent-solid)" stroke="var(--surface)" stroke-width="2"/>
-        <text x="178" y="182" font-size="13" fill="var(--ink-2)" text-anchor="middle">Decision step t (0 → ${w})</text>`;
+        <text x="178" y="182" font-size="13" fill="var(--ink-2)" text-anchor="middle">Decision step t (0 → ${w})</text>`);
+      setVizInsight(container, `A win ${w} steps away contributes ${g0.toFixed(3)} to the return now. ${g0 < .1 ? "Raise γ to give distant rewards more weight." : "Lower γ to give distant rewards less weight."}`);
     };
-    container.querySelectorAll("input").forEach((el) => (el.oninput = draw));
+    bindVizInputs(container, draw);
     draw();
   }
 
@@ -2299,10 +3072,8 @@ function mountVisualizer(vizType, container) {
         <div class="viz-controls">
           ${names.map((n, i) => `
             <div class="range-group">
-              <label for="m-log-${i}">
-                <span><input type="checkbox" id="m-leg-${i}" ${initM[i] ? "checked" : ""}/> ${n}</span>
-                <span id="m-val-${i}" class="range-val">${initL[i].toFixed(1)}</span>
-              </label>
+              <label for="m-log-${i}"><span>${n}</span><span id="m-val-${i}" class="range-val">${initL[i].toFixed(1)}</span></label>
+              <label class="mask-legality"><input type="checkbox" id="m-leg-${i}" aria-label="${n} legal" ${initM[i] ? "checked" : ""}/> Legal</label>
               <input class="slider-range" type="range" id="m-log-${i}" min="-3" max="4" step="0.1" value="${initL[i]}"/>
             </div>`).join("")}
         </div>
@@ -2316,18 +3087,19 @@ function mountVisualizer(vizType, container) {
             <svg id="svg-mask-h" viewBox="0 0 340 192" width="100%"></svg>
           </div>
         </div>
+        <p class="viz-insight" role="status"></p>
       </div>`;
     const sm = (a) => { const m = Math.max(...a), e = a.map((v) => Math.exp(v - m)), s = e.reduce((x, y) => x + y, 0); return e.map((v) => v / s); };
     const ent = (ps) => -ps.reduce((a, p) => (p > 1e-12 ? a + p * Math.log(p) : a), 0);
     const draw = () => {
-      const logits = names.map((_, i) => { const el = container.querySelector(`#m-log-${i}`); setRangeFill(el); return Number(el.value); });
-      const legal = names.map((_, i) => container.querySelector(`#m-leg-${i}`).checked);
-      logits.forEach((v, i) => (container.querySelector(`#m-val-${i}`).textContent = v.toFixed(1)));
-      if (!legal.some(Boolean)) { legal[0] = true; container.querySelector("#m-leg-0").checked = true; }
+      const logits = names.map((_, i) => { const el = container.querySelector(vizIdSelector(`m-log-${i}`)); setRangeFill(el); return Number(el.value); });
+      const legal = names.map((_, i) => container.querySelector(vizIdSelector(`m-leg-${i}`)).checked);
+      logits.forEach((v, i) => (container.querySelector(vizIdSelector(`m-val-${i}`)).textContent = v.toFixed(1)));
+      if (!legal.some(Boolean)) { legal[0] = true; container.querySelector(vizIdSelector("m-leg-0")).checked = true; }
       const rawP = sm(logits);
       const mP = sm(logits.map((v, i) => (legal[i] ? v : -1e9))).map((p, i) => (legal[i] ? p : 0));
       const hRaw = ent(rawP), hMask = ent(mP), k = legal.filter(Boolean).length, hMax = Math.log(Math.max(k, 1));
-      container.querySelector("#t-ent").textContent = `H = ${hMask.toFixed(3)} nats`;
+      container.querySelector(vizIdSelector("t-ent")).textContent = `H = ${hMask.toFixed(3)} nats`;
 
       let bars = `<line x1="20" y1="154" x2="326" y2="154" stroke="var(--line-strong)"/>`;
       names.forEach((n, i) => {
@@ -2337,7 +3109,7 @@ function mountVisualizer(vizType, container) {
         bars += `<text x="${bx + 35}" y="${147 - h2}" font-size="12.5" font-weight="700" fill="var(--ink)" text-anchor="middle">${mP[i].toFixed(2)}</text>`;
         bars += `<text x="${bx + 23}" y="178" font-size="12.5" font-weight="700" fill="${legal[i] ? "var(--ink)" : "var(--danger)"}" text-anchor="middle">${n}</text>`;
       });
-      container.querySelector("#svg-mask-p").innerHTML = bars;
+      updateVizChart(container.querySelector(vizIdSelector("svg-mask-p")), bars);
 
       const maxH = Math.max(hRaw, hMax, 1.45);
       const items = [["Unmasked", hRaw, "var(--line-strong)"], ["Masked", hMask, "var(--accent-solid)"], [`Max ln(${k})`, hMax, "var(--go)"]];
@@ -2348,9 +3120,10 @@ function mountVisualizer(vizType, container) {
         hb += `<text x="${bx + 28}" y="${146 - bh}" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">${val.toFixed(3)}</text>`;
         hb += `<text x="${bx + 28}" y="178" font-size="12.5" font-weight="700" fill="var(--ink-2)" text-anchor="middle">${lbl}</text>`;
       });
-      container.querySelector("#svg-mask-h").innerHTML = hb;
+      updateVizChart(container.querySelector(vizIdSelector("svg-mask-h")), hb);
+      setVizInsight(container, `${names.length - k} of ${names.length} actions are masked. ${k === 1 ? "The only legal action gets all the probability." : "The legal actions share all the probability."}`);
     };
-    container.querySelectorAll("input").forEach((el) => (el.oninput = draw));
+    bindVizInputs(container, draw);
     draw();
   }
 
@@ -2373,14 +3146,15 @@ function mountVisualizer(vizType, container) {
             <svg id="svg-gae-c" viewBox="0 0 340 192" width="100%"></svg>
           </div>
         </div>
+        <p class="viz-insight" role="status"></p>
       </div>`;
     const draw = () => {
-      const sg = container.querySelector("#sg-g"), sl = container.querySelector("#sg-l"), sr = container.querySelector("#sg-r");
+      const sg = container.querySelector(vizIdSelector("sg-g")), sl = container.querySelector(vizIdSelector("sg-l")), sr = container.querySelector(vizIdSelector("sg-r"));
       setRangeFill(sg); setRangeFill(sl); setRangeFill(sr);
       const g = Number(sg.value), l = Number(sl.value), rIdx = Number(sr.value);
-      container.querySelector("#g-g").textContent = g.toFixed(2);
-      container.querySelector("#g-l").textContent = l.toFixed(2);
-      container.querySelector("#g-r").textContent = rIdx;
+      container.querySelector(vizIdSelector("g-g")).textContent = g.toFixed(2);
+      container.querySelector(vizIdSelector("g-l")).textContent = l.toFixed(2);
+      container.querySelector(vizIdSelector("g-r")).textContent = rIdx;
       let wS = `<line x1="20" y1="154" x2="326" y2="154" stroke="var(--line-strong)"/>`;
       let cS = `<line x1="20" y1="92" x2="326" y2="92" stroke="var(--line-strong)"/>`;
       let sum = 0;
@@ -2397,15 +3171,16 @@ function mountVisualizer(vizType, container) {
         cS += `<rect x="${bx + 4}" y="${cy}" width="16" height="${ch}" rx="3" fill="${contrib >= 0 ? "var(--go)" : "var(--danger)"}"/>`;
         cS += `<text x="${bx + 12}" y="178" font-size="12.5" fill="var(--ink-2)" text-anchor="middle">${lag}</text>`;
       });
-      if (rIdx < 7) {
-        wS += `<line x1="${wallX}" y1="16" x2="${wallX}" y2="158" stroke="var(--danger)" stroke-width="2" stroke-dasharray="4 3"/>`;
-        cS += `<line x1="${wallX}" y1="16" x2="${wallX}" y2="158" stroke="var(--danger)" stroke-width="2" stroke-dasharray="4 3"/>`;
+      {
+        wS += `<line visibility="${rIdx < 7 ? "visible" : "hidden"}" transform="translate(${wallX} 0)" x1="0" y1="16" x2="0" y2="158" stroke="var(--danger)" stroke-width="2" stroke-dasharray="4 3"/>`;
+        cS += `<line visibility="${rIdx < 7 ? "visible" : "hidden"}" transform="translate(${wallX} 0)" x1="0" y1="16" x2="0" y2="158" stroke="var(--danger)" stroke-width="2" stroke-dasharray="4 3"/>`;
       }
-      container.querySelector("#svg-gae-w").innerHTML = wS;
-      container.querySelector("#svg-gae-c").innerHTML = cS;
-      container.querySelector("#t-gae-sum").textContent = `A₀ = ${sum >= 0 ? "+" : ""}${sum.toFixed(3)}`;
+      updateVizChart(container.querySelector(vizIdSelector("svg-gae-w")), wS);
+      updateVizChart(container.querySelector(vizIdSelector("svg-gae-c")), cS);
+      container.querySelector(vizIdSelector("t-gae-sum")).textContent = `A₀ = ${sum >= 0 ? "+" : ""}${sum.toFixed(3)}`;
+      setVizInsight(container, `${rIdx === 7 ? "No reset blocks the residuals shown." : "Residuals after step " + rIdx + " belong to the next episode."} The remaining weighted residuals sum to ${fmtSigned(sum)}.`);
     };
-    container.querySelectorAll("input").forEach((el) => (el.oninput = draw));
+    bindVizInputs(container, draw);
     draw();
   }
 
@@ -2428,9 +3203,10 @@ function mountVisualizer(vizType, container) {
         </div>
         <div class="viz-legend">
           <span class="viz-legend-item"><svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="var(--accent-solid)" stroke-width="2.8"/></svg>Clipped surrogate</span>
-          <span class="viz-legend-item"><svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="var(--ink-3)" stroke-width="1.8" stroke-dasharray="4 3"/></svg>Unclipped r·A</span>
+          <span class="viz-legend-item"><svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke="var(--ink-3)" stroke-width="1.8" stroke-dasharray="4 3"/></svg>Unclipped r × A</span>
           <span class="viz-legend-item"><svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill="var(--go)"/></svg>Current r(θ)</span>
         </div>
+        <p class="viz-insight" role="status"></p>
       </div>`;
     const drawOne = (svgId, badgeId, A, eps, rMark) => {
       const toX = (r) => 28 + ((r - 0.3) / 1.4) * 284;
@@ -2446,12 +3222,12 @@ function mountVisualizer(vizType, container) {
       const xL = toX(1 - eps), xR = toX(1 + eps), x1 = toX(1.0);
       const yM = surr(rMark);
       const flat = (A > 0 && rMark > 1 + eps) || (A < 0 && rMark < 1 - eps);
-      const b = container.querySelector(`#${badgeId}`);
+      const b = container.querySelector(vizIdSelector(`${badgeId}`));
       b.className = "viz-pill" + (flat ? " clipped" : "");
       b.textContent = `L = ${yM.toFixed(2)} (${flat ? "grad = 0" : "active"})`;
 
       const lblOffset = eps <= 0.12 ? 14 : 0;
-      container.querySelector(`#${svgId}`).innerHTML = `
+      updateVizChart(container.querySelector(vizIdSelector(`${svgId}`)), `
         <rect x="${xL}" y="18" width="${xR - xL}" height="148" fill="var(--accent-tint)"/>
         <line x1="28" y1="166" x2="312" y2="166" stroke="var(--line-strong)"/>
         <line x1="${x1}" y1="18" x2="${x1}" y2="166" stroke="var(--line-strong)" stroke-dasharray="3 3"/>
@@ -2460,18 +3236,19 @@ function mountVisualizer(vizType, container) {
         <circle cx="${toX(rMark)}" cy="${toY(yM)}" r="6" fill="var(--go)" stroke="var(--surface)" stroke-width="2.2"/>
         <text x="${xL - lblOffset}" y="190" font-size="14" font-weight="700" fill="var(--ink-2)" text-anchor="middle">1−ε</text>
         <text x="${x1}" y="190" font-size="14" font-weight="700" fill="var(--ink)" text-anchor="middle">1.0</text>
-        <text x="${xR + lblOffset}" y="190" font-size="14" font-weight="700" fill="var(--ink-2)" text-anchor="middle">1+ε</text>`;
+        <text x="${xR + lblOffset}" y="190" font-size="14" font-weight="700" fill="var(--ink-2)" text-anchor="middle">1+ε</text>`);
     };
     const draw = () => {
-      const se = container.querySelector("#sp-eps"), sr = container.querySelector("#sp-r");
+      const se = container.querySelector(vizIdSelector("sp-eps")), sr = container.querySelector(vizIdSelector("sp-r"));
       setRangeFill(se); setRangeFill(sr);
       const eps = Number(se.value), r = Number(sr.value);
-      container.querySelector("#p-eps").textContent = eps.toFixed(2);
-      container.querySelector("#p-r").textContent = r.toFixed(2);
+      container.querySelector(vizIdSelector("p-eps")).textContent = eps.toFixed(2);
+      container.querySelector(vizIdSelector("p-r")).textContent = r.toFixed(2);
       drawOne("svg-ppo-pos", "b-pos", +1, eps, r);
       drawOne("svg-ppo-neg", "b-neg", -1, eps, r);
+      setVizInsight(container, `At ratio ${r.toFixed(2)}, clipping ${r > 1 + eps ? "caps the gain for the positive advantage" : r < 1 - eps ? "caps the gain for the negative advantage" : "leaves both objectives active"}.`);
     };
-    container.querySelectorAll("input").forEach((el) => (el.oninput = draw));
+    bindVizInputs(container, draw);
     draw();
   }
 }
@@ -2495,10 +3272,10 @@ function rangeHtml(id, label, min, max, step, value, digits) {
 }
 
 function readRange(container, id, digits) {
-  const el = container.querySelector(`#${id}`);
+  const el = container.querySelector(vizIdSelector(`${id}`));
   setRangeFill(el);
   const v = Number(el.value);
-  container.querySelector(`#${id}-val`).textContent = v.toFixed(digits);
+  container.querySelector(vizIdSelector(`${id}-val`)).textContent = v.toFixed(digits);
   return v;
 }
 
@@ -2513,9 +3290,9 @@ function mountBellmanBackup(container) {
         ${rangeHtml("bb-alpha", "TD step size α", 0.05, 1, 0.05, 0.5, 2)}
       </div>
       <div class="viz-actions">
-        <button type="button" id="bb-sweep" class="btn-tactile go">Bellman sweep</button>
-        <button type="button" id="bb-td" class="btn-tactile secondary">Sample TD step</button>
-        <button type="button" id="bb-reset" class="btn-tactile secondary">Reset to 0</button>
+        <button type="button" id="bb-sweep" class="btn-tactile go pill">Bellman sweep</button>
+        <button type="button" id="bb-td" class="btn-ghost pill">Sample TD step</button>
+        <button type="button" id="bb-reset" class="btn-ghost pill">Reset to 0</button>
       </div>
       <div class="viz-grid">
         <div class="viz-cell">
@@ -2532,7 +3309,7 @@ function mountBellmanBackup(container) {
         <span class="viz-legend-item"><svg width="12" height="12"><path d="M6 1 11 6 6 11 1 6Z" fill="var(--accent-solid)"/></svg>Bellman target</span>
         <span class="viz-legend-item"><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="var(--go)"/></svg>V(Safe)</span>
       </div>
-      <p class="viz-insight">A Bellman sweep averages over both outcomes using p. A TD step sees only one outcome, jumps toward it, and lands on the same answer on average.</p>
+      <p class="viz-insight" role="status"></p>
     </div>`;
 
   const rng = mulberry32(20261126);
@@ -2548,8 +3325,8 @@ function mountBellmanBackup(container) {
     readRange(container, "bb-alpha", 2);
     const exact = { hotel: -1, safe: 1 - p - gamma * p };
     exact.go = gamma * exact.safe;
-    container.querySelector("#bb-pill1").textContent = `p* = ${(1 / (1 + gamma)).toFixed(2)}`;
-    container.querySelector("#bb-pill2").textContent = lastAction === "td" && lastTarget !== null
+    container.querySelector(vizIdSelector("bb-pill1")).textContent = `p* = ${(1 / (1 + gamma)).toFixed(2)}`;
+    container.querySelector(vizIdSelector("bb-pill2")).textContent = lastAction === "td" && lastTarget !== null
       ? `last TD target: ${fmtSigned(lastTarget)}`
       : `sweeps: ${sweeps}`;
 
@@ -2576,42 +3353,44 @@ function mountBellmanBackup(container) {
         <text x="${zero}" y="88" font-size="18" font-weight="900" fill="var(--ink)" text-anchor="middle">${fmtSigned(v)}</text>
         <rect x="${x + 8}" y="100" width="60" height="7" rx="3.5" fill="var(--line)"/>
         <rect x="${Math.min(zero, barX(x, v))}" y="100" width="${Math.abs(barX(x, v) - zero)}" height="7" rx="3.5" fill="${v >= 0 ? "var(--go)" : "var(--danger)"}"/>
-        <line x1="${barX(x, exact[key])}" y1="96" x2="${barX(x, exact[key])}" y2="111" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2 2"/>`;
-      if (token === key) board += `<circle cx="${zero}" cy="40" r="6.5" fill="var(--accent-solid)" stroke="var(--surface)" stroke-width="2.5"/>`;
+        <line transform="translate(${barX(x, exact[key])} 0)" x1="0" y1="96" x2="0" y2="111" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2 2"/>`;
+      board += `<circle visibility="${token === key ? "visible" : "hidden"}" cx="${zero}" cy="40" r="6.5" fill="var(--accent-solid)" stroke="var(--surface)" stroke-width="2.5"/>`;
     });
-    container.querySelector("#bb-board").innerHTML = board;
+    updateVizChart(container.querySelector(vizIdSelector("bb-board")), board);
 
     const toX = (v) => 24 + ((Math.max(-1.2, Math.min(1.2, v)) + 1.2) / 2.4) * 292;
     const hotelTarget = gamma * V.hotel;
     const bellman = p * gamma * V.hotel + (1 - p);
-    const diamond = (x, y, r) => `M${x} ${y - r} ${x + r} ${y} ${x} ${y + r} ${x - r} ${y}Z`;
-    container.querySelector("#bb-targets").innerHTML = `
+    setVizInsight(container, lastAction === "td" && lastTarget !== null
+      ? `The sampled outcome gave a TD target of ${fmtSigned(lastTarget)}. The Bellman target averages both outcomes at ${fmtSigned(bellman)}.`
+      : `A sweep averages the two outcomes. With the current estimates, the Bellman target for Safe Street is ${fmtSigned(bellman)}.`);
+    updateVizChart(container.querySelector(vizIdSelector("bb-targets")), `
       <text x="24" y="28" font-size="14" font-weight="700" fill="var(--accent)">Bellman target ${fmtSigned(bellman)}</text>
       <text x="24" y="50" font-size="14" font-weight="700" fill="var(--go-ink)">V(Safe) ${fmtSigned(V.safe)}</text>
       <line x1="24" y1="112" x2="316" y2="112" stroke="var(--line-strong)" stroke-width="1.5"/>
       ${[-1, 0, 1].map((t) => `<line x1="${toX(t)}" y1="106" x2="${toX(t)}" y2="118" stroke="var(--line-strong)"/>
         <text x="${toX(t)}" y="138" font-size="13" fill="var(--ink-2)" text-anchor="middle">${t === 0 ? "0" : fmtSigned(t).replace(".00", "")}</text>`).join("")}
-      ${lastTarget !== null ? `<line x1="${toX(lastTarget)}" y1="76" x2="${toX(lastTarget)}" y2="148" stroke="var(--warn)" stroke-width="2.5" stroke-linecap="round"/>` : ""}
+      <line visibility="${lastTarget !== null ? "visible" : "hidden"}" x1="${toX(lastTarget ?? 0)}" y1="76" x2="${toX(lastTarget ?? 0)}" y2="148" stroke="var(--warn)" stroke-width="2.5" stroke-linecap="round"/>
       <circle cx="${toX(hotelTarget)}" cy="112" r="${3 + 7 * p}" fill="var(--ink-3)" opacity="0.8"/>
       <circle cx="${toX(1)}" cy="112" r="${3 + 7 * (1 - p)}" fill="var(--ink-3)" opacity="0.8"/>
-      <path d="${diamond(toX(bellman), 112, 9)}" fill="var(--accent-solid)" stroke="var(--surface)" stroke-width="1.5"/>
+      <path d="M0 -9 9 0 0 9 -9 0Z" transform="translate(${toX(bellman)} 112)" fill="var(--accent-solid)" stroke="var(--surface)" stroke-width="1.5"/>
       <circle cx="${toX(V.safe)}" cy="112" r="5.5" fill="var(--go)" stroke="var(--surface)" stroke-width="2"/>
-      <text x="170" y="176" font-size="13" fill="var(--ink-2)" text-anchor="middle">Value scale (−1.2 to +1.2)</text>`;
+      <text x="170" y="176" font-size="13" fill="var(--ink-2)" text-anchor="middle">Value scale (−1.2 to +1.2)</text>`);
   };
 
-  container.querySelector("#bb-sweep").onclick = () => {
-    const gamma = Number(container.querySelector("#bb-gamma").value);
-    const p = Number(container.querySelector("#bb-p").value);
+  container.querySelector(vizIdSelector("bb-sweep")).onclick = () => {
+    const gamma = Number(container.querySelector(vizIdSelector("bb-gamma")).value);
+    const p = Number(container.querySelector(vizIdSelector("bb-p")).value);
     const old = { ...V };
     V = { hotel: -1, safe: p * gamma * old.hotel + (1 - p) * 1, go: gamma * old.safe };
     sweeps++;
     lastAction = "sweep";
     draw();
   };
-  container.querySelector("#bb-td").onclick = () => {
-    const gamma = Number(container.querySelector("#bb-gamma").value);
-    const p = Number(container.querySelector("#bb-p").value);
-    const alpha = Number(container.querySelector("#bb-alpha").value);
+  container.querySelector(vizIdSelector("bb-td")).onclick = () => {
+    const gamma = Number(container.querySelector(vizIdSelector("bb-gamma")).value);
+    const p = Number(container.querySelector(vizIdSelector("bb-p")).value);
+    const alpha = Number(container.querySelector(vizIdSelector("bb-alpha")).value);
     const sq = token;
     let target;
     if (sq === "go") {
@@ -2634,7 +3413,7 @@ function mountBellmanBackup(container) {
     lastAction = "td";
     draw();
   };
-  container.querySelector("#bb-reset").onclick = () => {
+  container.querySelector(vizIdSelector("bb-reset")).onclick = () => {
     V = { go: 0, safe: 0, hotel: 0 };
     sweeps = 0;
     token = "go";
@@ -2642,7 +3421,7 @@ function mountBellmanBackup(container) {
     lastAction = "sweep";
     draw();
   };
-  container.querySelectorAll("input").forEach((el) => (el.oninput = draw));
+  bindVizInputs(container, draw);
   draw();
 }
 
@@ -2656,8 +3435,8 @@ function mountPolicyBaseline(container) {
         ${rangeHtml("pb-sig", "Return noise σ", 0, 2, 0.1, 0.5, 1)}
       </div>
       <div class="viz-actions">
-        <button type="button" id="pb-resample" class="btn-tactile secondary">Resample 20 games</button>
-        <button type="button" id="pb-snap" class="btn-tactile go">Snap b to E[R]</button>
+        <button type="button" id="pb-resample" class="btn-ghost pill">Resample 20 games</button>
+        <button type="button" id="pb-snap" class="btn-tactile go pill">Snap b to E[R]</button>
       </div>
       <div class="viz-grid">
         <div class="viz-cell">
@@ -2674,7 +3453,7 @@ function mountPolicyBaseline(container) {
         <span class="viz-legend-item"><svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="var(--danger)" stroke-width="3"/></svg>PASS game</span>
         <span class="viz-legend-item"><svg width="18" height="6"><line x1="0" y1="3" x2="18" y2="3" stroke="var(--accent-solid)" stroke-width="5"/></svg>Sample mean</span>
       </div>
-      <p class="viz-insight">The baseline never changes where the average arrow points. It only decides how much the individual arrows argue about it. The spread bottoms out at b* = (1−π)×3 + π×2, which equals E[R] only when π = 0.5.</p>
+      <p class="viz-insight" role="status"></p>
     </div>`;
 
   let seed = 7;
@@ -2695,6 +3474,7 @@ function mountPolicyBaseline(container) {
     };
     const ER = pi * MU_BUY + (1 - pi) * MU_PASS;
     const bStar = (1 - pi) * MU_BUY + pi * MU_PASS;
+    setVizInsight(container, `The expected gradient stays at ${Eg.toFixed(2)} as you change the baseline. The spread is smallest at b = ${bStar.toFixed(2)}.`);
 
     const games = draws.map(({ ua, u1, u2 }) => {
       const buy = ua < pi;
@@ -2704,8 +3484,8 @@ function mountPolicyBaseline(container) {
     });
     const wrong = games.filter((x) => Math.sign(x.g) === -Math.sign(Eg) && x.g !== 0).length;
     const mean = games.reduce((acc, x) => acc + x.g, 0) / N;
-    container.querySelector("#pb-pill1").textContent = `wrong way: ${wrong} / ${N}`;
-    container.querySelector("#pb-pill2").textContent = `std = ${stdAt(b).toFixed(2)}`;
+    container.querySelector(vizIdSelector("pb-pill1")).textContent = `wrong way: ${wrong} / ${N}`;
+    container.querySelector(vizIdSelector("pb-pill2")).textContent = `std = ${stdAt(b).toFixed(2)}`;
 
     const ZERO = 170, SCALE = 48, MAXLEN = 150;
     const len = (g) => Math.max(-MAXLEN, Math.min(MAXLEN, g * SCALE));
@@ -2718,17 +3498,17 @@ function mountPolicyBaseline(container) {
       const end = ZERO + l, dir = Math.sign(l) || 1;
       arrows += `<g opacity="${isWrong ? 0.4 : 1}">
         <line x1="${ZERO}" y1="${y}" x2="${end - dir * 3}" y2="${y}" stroke="${color}" stroke-width="2.6" stroke-linecap="round"/>
-        ${Math.abs(l) > 4 ? `<path d="M${end} ${y} ${end - dir * 5} ${y - 3} ${end - dir * 5} ${y + 3}Z" fill="${color}"/>` : ""}
-        ${isWrong ? `<path d="M${end + dir * 6 - 2.5} ${y - 2.5}l5 5m0 -5l-5 5" stroke="var(--ink-3)" stroke-width="1.4" stroke-linecap="round"/>` : ""}
+        <path visibility="${Math.abs(l) > 4 ? "visible" : "hidden"}" d="M${end} ${y} ${end - dir * 5} ${y - 3} ${end - dir * 5} ${y + 3}Z" fill="${color}"/>
+        <path visibility="${isWrong ? "visible" : "hidden"}" d="M${end + dir * 6 - 2.5} ${y - 2.5}l5 5m0 -5l-5 5" stroke="var(--ink-3)" stroke-width="1.4" stroke-linecap="round"/>
       </g>`;
     });
     const mEnd = ZERO + len(mean), mDir = Math.sign(len(mean)) || 1;
     arrows += `
       <line x1="${ZERO}" y1="160" x2="${mEnd - mDir * 4}" y2="160" stroke="var(--accent-solid)" stroke-width="5" stroke-linecap="round"/>
-      ${Math.abs(len(mean)) > 6 ? `<path d="M${mEnd + mDir * 2} 160 ${mEnd - mDir * 7} 154 ${mEnd - mDir * 7} 166Z" fill="var(--accent-solid)"/>` : ""}
+      <path visibility="${Math.abs(len(mean)) > 6 ? "visible" : "hidden"}" d="M${mEnd + mDir * 2} 160 ${mEnd - mDir * 7} 154 ${mEnd - mDir * 7} 166Z" fill="var(--accent-solid)"/>
       <line x1="${ZERO + len(Eg)}" y1="151" x2="${ZERO + len(Eg)}" y2="169" stroke="var(--ink)" stroke-width="1.6" stroke-dasharray="3 2"/>
       <text x="170" y="186" font-size="12.5" fill="var(--ink-2)" text-anchor="middle">mean ${fmtSigned(mean)}, E[g] ${fmtSigned(Eg)} (dashed)</text>`;
-    container.querySelector("#pb-arrows").innerHTML = arrows;
+    updateVizChart(container.querySelector(vizIdSelector("pb-arrows")), arrows);
 
     const toX = (base) => 30 + (base / 4) * 290;
     const samples = Array.from({ length: 81 }, (_, i) => (i / 80) * 4);
@@ -2736,7 +3516,7 @@ function mountPolicyBaseline(container) {
     const toY = (v) => 158 - (v / maxStd) * 126;
     const pts = samples.map((base) => `${toX(base).toFixed(1)},${toY(stdAt(base)).toFixed(1)}`);
     const sameLine = Math.abs(toX(ER) - toX(bStar)) < 22;
-    container.querySelector("#pb-curve").innerHTML = `
+    updateVizChart(container.querySelector(vizIdSelector("pb-curve")), `
       <line x1="30" y1="158" x2="320" y2="158" stroke="var(--line-strong)" stroke-width="1.5"/>
       <polygon points="30,158 ${pts.join(" ")} 320,158" fill="var(--accent-tint)"/>
       <polyline points="${pts.join(" ")}" fill="none" stroke="var(--accent-solid)" stroke-width="2.6"/>
@@ -2749,16 +3529,16 @@ function mountPolicyBaseline(container) {
       <circle cx="${toX(b)}" cy="${toY(stdAt(b))}" r="6" fill="var(--go)" stroke="var(--surface)" stroke-width="2"/>
       <text x="30" y="176" font-size="13" fill="var(--ink-2)" text-anchor="middle">0</text>
       <text x="320" y="176" font-size="13" fill="var(--ink-2)" text-anchor="middle">4</text>
-      <text x="175" y="186" font-size="13" fill="var(--ink-2)" text-anchor="middle">Baseline b</text>`;
+      <text x="175" y="186" font-size="13" fill="var(--ink-2)" text-anchor="middle">Baseline b</text>`);
   };
 
-  container.querySelector("#pb-resample").onclick = () => { seed++; resample(); draw(); };
-  container.querySelector("#pb-snap").onclick = () => {
-    const pi = Number(container.querySelector("#pb-pi").value);
-    container.querySelector("#pb-b").value = (Math.round((pi * MU_BUY + (1 - pi) * MU_PASS) * 10) / 10).toFixed(1);
+  container.querySelector(vizIdSelector("pb-resample")).onclick = () => { seed++; resample(); draw(); };
+  container.querySelector(vizIdSelector("pb-snap")).onclick = () => {
+    const pi = Number(container.querySelector(vizIdSelector("pb-pi")).value);
+    container.querySelector(vizIdSelector("pb-b")).value = (Math.round((pi * MU_BUY + (1 - pi) * MU_PASS) * 10) / 10).toFixed(1);
     draw();
   };
-  container.querySelectorAll("input").forEach((el) => (el.oninput = draw));
+  bindVizInputs(container, draw);
   resample();
   draw();
 }
@@ -2770,10 +3550,11 @@ function mountRewardShaping(container) {
   };
   const MODES = [["sparse", "Sparse"], ["naive", "Naive cash bonus"], ["potential", "Potential shaping"]];
   let mode = "naive";
+  let preferred;
   container.innerHTML = `
     <div class="viz-stage">
-      <div class="viz-seg" role="group" aria-label="Reward design">
-        ${MODES.map(([id, label]) => `<button type="button" class="btn-tactile secondary" data-rs-mode="${id}" aria-pressed="${id === mode}">${label}</button>`).join("")}
+      <div class="viz-actions viz-seg" role="group" aria-label="Reward design">
+        ${MODES.map(([id, label]) => `<button type="button" class="btn-ghost pill" data-rs-mode="${id}" aria-pressed="${id === mode}">${label}</button>`).join("")}
       </div>
       <div class="viz-controls">
         ${rangeHtml("rs-c", "Cash bonus c per step", 0, 1, 0.05, 0.6, 2)}
@@ -2796,7 +3577,7 @@ function mountRewardShaping(container) {
         <span class="viz-legend-item"><svg width="12" height="12"><rect width="12" height="12" rx="3" fill="var(--accent-solid)"/></svg>Potential shaping F</span>
         <span class="viz-legend-item">Numbers under bars: cash / net worth</span>
       </div>
-      <p class="viz-insight">A naive bonus is a second goal the bot can chase instead of winning. Potential shaping only moves reward earlier in time, and every plan pays it back by the end.</p>
+      <p class="viz-insight" role="status"></p>
     </div>`;
 
   const rewardsFor = (plan, c, k, gamma) => {
@@ -2815,19 +3596,31 @@ function mountRewardShaping(container) {
     const c = readRange(container, "rs-c", 2);
     const k = readRange(container, "rs-k", 1);
     const gamma = readRange(container, "rs-gamma", 2);
-    container.querySelector("#rs-c-group").hidden = mode !== "naive";
-    container.querySelector("#rs-k-group").hidden = mode !== "potential";
+    container.querySelector(vizIdSelector("rs-c-group")).hidden = mode !== "naive";
+    container.querySelector(vizIdSelector("rs-k-group")).hidden = mode !== "potential";
     container.querySelectorAll("[data-rs-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.rsMode === mode)));
 
     const steps = { A: rewardsFor(PLANS.A, c, k, gamma), B: rewardsFor(PLANS.B, c, k, gamma) };
     const G = { A: discounted(steps.A, gamma), B: discounted(steps.B, gamma) };
     const sparseG = { A: discounted(steps.A, gamma, false), B: discounted(steps.B, gamma, false) };
-    container.querySelector("#rs-ga").textContent = `Plan A G₀ = ${G.A.toFixed(2)}`;
-    container.querySelector("#rs-gb").textContent = `Plan B G₀ = ${G.B.toFixed(2)}`;
-    const prefersB = G.B > G.A;
-    const pill = container.querySelector("#rs-prefer");
-    pill.textContent = prefersB ? "Prefers: Plan B (reward hack)" : "Prefers: Plan A";
-    pill.className = "viz-pill " + (prefersB ? "danger" : "go");
+    container.querySelector(vizIdSelector("rs-ga")).textContent = `Plan A G₀ = ${G.A.toFixed(2)}`;
+    container.querySelector(vizIdSelector("rs-gb")).textContent = `Plan B G₀ = ${G.B.toFixed(2)}`;
+    const winner = Math.abs(G.B - G.A) < 1e-9 ? "tie" : G.B > G.A ? "B" : "A";
+    const explanation = winner === "tie" ? "Both plans earn the same discounted return at these settings."
+      : mode === "potential" ? "Potential shaping shifts both returns by the same amount, so the plan that wins still leads."
+      : winner === "B" ? "The cash bonus makes hoarding score higher even though that plan loses the game."
+      : "The plan that wins also earns the higher discounted return.";
+    setVizInsight(container, explanation);
+    const pill = container.querySelector(vizIdSelector("rs-prefer"));
+    pill.textContent = winner === "tie" ? "Plans tie" : winner === "B" ? "Prefers: Plan B (reward hack)" : "Prefers: Plan A";
+    pill.classList.toggle("danger", winner === "B");
+    pill.classList.toggle("go", winner === "A");
+    if (preferred && winner !== preferred) {
+      pill.classList.remove("check-pop");
+      void pill.offsetWidth;
+      pill.classList.add("check-pop");
+    }
+    preferred = winner;
 
     const extraColor = mode === "potential" ? "var(--accent-solid)" : "var(--warn)";
     const UNIT = 16, CLAMP = 26;
@@ -2841,14 +3634,13 @@ function mountRewardShaping(container) {
         const x = 48 + t * 56;
         let up = base, down = base, bars = "";
         [[r.sparse, "var(--ink-3)"], [r.extra, extraColor]].forEach(([v, color]) => {
-          if (!v) return;
           const hh = h(v);
           if (v > 0) { up -= hh; bars += `<rect x="${x}" y="${up}" width="22" height="${hh}" rx="3" fill="${color}"/>`; }
           else { bars += `<rect x="${x}" y="${down}" width="22" height="${hh}" rx="3" fill="${color}"/>`; down += hh; }
         });
         const tip = mode === "potential" && key === "A" && t === 4
-          ? `<title>The ${fmtSigned(r.extra)} here is the potential being paid back when the game ends. That's the telescoping in action.</title>` : "";
-        svg += `<g>${tip}<rect x="${x - 4}" y="${base - CLAMP - 4}" width="30" height="${2 * CLAMP + 8}" fill="transparent"/>${bars}</g>`;
+          ? `The ${fmtSigned(r.extra)} here is the potential being paid back when the game ends. That's the telescoping in action.` : "";
+        svg += `<g><title>${tip}</title><rect x="${x - 4}" y="${base - CLAMP - 4}" width="30" height="${2 * CLAMP + 8}" fill="transparent"/>${bars}</g>`;
         svg += `<text x="${x + 11}" y="${numY}" font-size="11" fill="var(--ink-2)" text-anchor="middle">${plan.cash[t]} / ${plan.nw[t]}</text>`;
         if (t === 4) {
           const fy = r.sparse > 0 ? up - 4 : base - 6;
@@ -2858,7 +3650,7 @@ function mountRewardShaping(container) {
       });
     });
     [0, 1, 2, 3, 4].forEach((t) => { svg += `<text x="${59 + t * 56}" y="178" font-size="12" fill="var(--ink-2)" text-anchor="middle">t=${t}</text>`; });
-    container.querySelector("#rs-steps").innerHTML = svg;
+    updateVizChart(container.querySelector(vizIdSelector("rs-steps")), svg);
 
     const toX = (v) => 30 + ((Math.max(-2, Math.min(4, v)) + 2) / 6) * 290;
     const zero = toX(0);
@@ -2877,53 +3669,153 @@ function mountRewardShaping(container) {
       : mode === "potential"
         ? `Shaping adds −Φ(s₀) = −${((k * 8) / 10).toFixed(2)} to both plans`
         : "Only the final win or loss counts.";
-    container.querySelector("#rs-compare").innerHTML = `
+    updateVizChart(container.querySelector(vizIdSelector("rs-compare")), `
       ${bar("A", 30, "var(--go)")}
       ${bar("B", 84, "var(--warn)")}
       <line x1="${zero}" y1="18" x2="${zero}" y2="128" stroke="var(--line-strong)" stroke-dasharray="3 3"/>
       <line x1="30" y1="128" x2="320" y2="128" stroke="var(--line-strong)" stroke-width="1.5"/>
       ${[-2, -1, 0, 1, 2, 3, 4].map((v) => `<line x1="${toX(v)}" y1="124" x2="${toX(v)}" y2="132" stroke="var(--line-strong)"/>
         <text x="${toX(v)}" y="146" font-size="13" fill="var(--ink-2)" text-anchor="middle">${v < 0 ? "−" + Math.abs(v) : v}</text>`).join("")}
-      <text x="175" y="176" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">${modeLine}</text>`;
+      <text x="175" y="176" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">${modeLine}</text>`);
   };
 
   container.querySelectorAll("[data-rs-mode]").forEach((b) => { b.onclick = () => { mode = b.dataset.rsMode; draw(); }; });
-  container.querySelectorAll("input").forEach((el) => (el.oninput = draw));
+  bindVizInputs(container, draw);
   draw();
 }
 
 // Live PyTorch Backend Labs
-function sparklineHtml(seriesList, title) {
-  const all = seriesList.flatMap((s) => s.data);
-  const mn = Math.min(...all, 0), mx = Math.max(...all, 0.01), span = Math.max(mx - mn, 1e-4);
-  const lines = seriesList.map((s) => {
-    const pts = s.data.map((v, i) => `${(14 + (i / Math.max(s.data.length - 1, 1)) * 272).toFixed(1)},${(110 - ((v - mn) / span) * 90).toFixed(1)}`).join(" ");
-    return `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.3" stroke-dasharray="${s.dash || ""}"/>`;
+function chartColor(token) {
+  return /^(?:#[0-9a-f]{6}|var\(--[a-z-]+\))$/i.test(token) ? token : "var(--accent-solid)";
+}
+
+let sparklineSequence = 0;
+function sparklineHtml(seriesList, title, axisCaption = "Training progress") {
+  const all = seriesList.flatMap((series) => series.data);
+  const min = Math.min(...all, 0), max = Math.max(...all, .01);
+  const toY = (value) => 110 - (value - min) / (max - min) * 86;
+  const series = seriesList.filter(({ data }) => data.length).map(({ data, color, ...rest }) => ({
+    ...rest, color: chartColor(color),
+    points: data.map((value, i) => `${(data.length === 1 ? 246 : 18 + i / (data.length - 1) * 228).toFixed(1)},${toY(value).toFixed(1)}`).join(" "),
+    end: data.at(-1), y: toY(data.at(-1)),
+  }));
+  const badges = [...series].sort((a, b) => a.y - b.y);
+  badges.forEach((item, i) => {
+    item.badgeY = Math.min(110 - (badges.length - i - 1) * 18,
+      Math.max(item.y, (badges[i - 1]?.badgeY ?? 6) + 18));
+  });
+  const lines = series.map(({ points, color, dash, end, y, badgeY }) => {
+    const maskId = `sparkline-mask-${++sparklineSequence}`;
+    const dashAttr = /^[0-9 ]+$/.test(dash || "") ? `stroke-dasharray="${dash}"` : "";
+    return `<mask id="${maskId}" maskUnits="userSpaceOnUse" x="0" y="0" width="300" height="135">
+        <polyline class="sparkline-draw" points="${points}" pathLength="1" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+      </mask>
+      <polyline points="${points}" mask="url(#${maskId})" fill="none" stroke="${color}" stroke-width="2.3" ${dashAttr}/>
+      <circle cx="246" cy="${y}" r="2.8" fill="${color}"/>
+      <path d="M246 ${y} L254 ${badgeY}" fill="none" stroke="${color}"/>
+      <rect x="254" y="${badgeY - 8}" width="45" height="16" rx="5" fill="var(--surface)" stroke="${color}"/>
+      <text class="sparkline-value" x="276.5" y="${badgeY + 3.5}" text-anchor="middle" fill="var(--ink)">${end.toFixed(2)}</text>`;
   }).join("");
-  const leg = seriesList.map((s) => `<span style="color:${s.color}; font-weight:700; margin-right:10px;">● ${esc(s.label)}</span>`).join("");
-  return `<div class="viz-cell"><div class="viz-cell-header"><span class="viz-cell-name">${title}</span></div>
-    <svg viewBox="0 0 300 128" width="100%">
-      <line x1="14" y1="110" x2="286" y2="110" stroke="var(--line-strong)"/>
+  const legend = series.map(({ label, color, dash }) => `<span class="viz-legend-item">
+    <svg width="16" height="6" aria-hidden="true"><line x1="0" y1="3" x2="16" y2="3" stroke="${color}" stroke-width="2" ${dash ? 'stroke-dasharray="5 3"' : ""}/></svg>${esc(label)}</span>`).join("");
+  return `<div class="viz-cell"><div class="viz-cell-header"><span class="viz-cell-name">${esc(title)}</span></div>
+    <svg class="sparkline" viewBox="0 0 300 134" width="100%" role="img" aria-label="${esc(title)}">
+      <line x1="18" y1="110" x2="246" y2="110" stroke="var(--line-strong)"/>
+      <line x1="18" y1="67" x2="246" y2="67" stroke="var(--line-strong)" stroke-dasharray="3 4" opacity=".6"/>
       ${lines}
-      <text x="14" y="16" font-size="11.5" fill="var(--ink-2)">${mx.toFixed(2)}</text>
-      <text x="14" y="125" font-size="11.5" fill="var(--ink-2)">${mn.toFixed(2)}</text>
-    </svg><div style="font-size:12px;">${leg}</div></div>`;
+      <text x="18" y="16" font-size="11.5" fill="var(--ink-2)">${max.toFixed(2)}</text>
+      <text x="18" y="127" font-size="11.5" fill="var(--ink-2)">${min.toFixed(2)}</text>
+      <text x="132" y="127" text-anchor="middle" font-size="11.5" fill="var(--ink-2)">${esc(axisCaption)}</text>
+    </svg><div class="viz-legend">${legend}</div></div>`;
+}
+
+function labVerdict(data) {
+  const fixed = (value) => Number.isFinite(value) ? value.toFixed(3) : "Unavailable";
+  const percent = (value) => Number.isFinite(value) ? (value * 100).toFixed(1) + "%" : "Unavailable";
+  const final = (series) => series?.at(-1);
+  let headline, stats, takeaway, winner;
+  let tone = "info";
+  switch (data.lab_type) {
+    case "gridworld": {
+      const td = final(data.err_td), mc = final(data.err_mc);
+      const result = td < mc ? "TD(0) ended with less error" : mc < td ? "Monte Carlo ended with less error" : "Both methods ended with the same error";
+      stats = [["TD(0) final RMSE", fixed(td)], ["Monte Carlo final RMSE", fixed(mc)]];
+      headline = Number.isFinite(td) && Number.isFinite(mc) ? result : "Final error comparison";
+      winner = td < mc ? 0 : mc < td ? 1 : undefined;
+      tone = winner === undefined ? "info" : "success";
+      takeaway = "Lower RMSE means the estimate is closer to the true value.";
+      break;
+    }
+    case "probes_4_5":
+      headline = "How close did the probes get to +1?";
+      stats = [["Probe 4 final reward", fixed(final(data.probe4))], ["Probe 5 final reward", fixed(final(data.probe5))]];
+      takeaway = "Compare the two final rewards to the +1 optimum, then check whether Probe 5 favors a different action in each state.";
+      break;
+    case "ppo_epoch_drift": {
+      const peak = (epochs) => Math.max(...epochs.map((epoch) => epoch.max_r));
+      const clipped = peak(data.runs.clipped), unclipped = peak(data.runs.unclipped);
+      stats = [["Clipped peak ratio", fixed(clipped)], ["Unclipped peak ratio", fixed(unclipped)]];
+      headline = clipped < unclipped ? "Clipping reduced the peak ratio" : "Clipping did not reduce the peak ratio";
+      winner = clipped < unclipped ? 0 : undefined;
+      tone = winner === undefined ? "info" : "success";
+      takeaway = clipped < unclipped
+        ? "Clipping kept the largest increase in action probability smaller across these epochs."
+        : "In this run the clipped policy reached a peak ratio at least as high as the unclipped policy.";
+      break;
+    }
+    case "ppo_bug_lab": {
+      tone = "warn";
+      headline = "What the PPO bug changes";
+      stats = [["Healthy final return", fixed(final(data.healthy.mean_return))], ["Bugged final return", fixed(final(data.broken.mean_return))]];
+      const explanations = {
+        bug_same_logp: "Comparing the policy to itself keeps the probability ratio at one and hides how much the policy changed.",
+        bug_no_mask_recompute: "Dropping the legal-action mask changes the action probabilities used for the update.",
+        bug_flipped_entropy: "Reversing the entropy bonus encourages the policy to narrow its choices.",
+        bug_zero_trunc_bootstrap: "Treating a time limit like a terminal state drops the value of rewards the agent could still earn.",
+      };
+      takeaway = explanations[data.bug] || "Compare the healthy and bugged runs to see how the change affects training.";
+      break;
+    }
+    case "rent_race": {
+      const matches = Object.entries(data.evals).filter(([name]) => name.endsWith(" vs Random"));
+      matches.sort(([, a], [, b]) => b.mean - a.mean);
+      if (!matches.length) return "";
+      const [[name, best], runnerUp] = matches;
+      const displayName = (match) => match.split(" vs ")[0].replaceAll("_", " ");
+      stats = [[displayName(name) + " vs Random", percent(best.mean)]];
+      if (runnerUp) stats.push([displayName(runnerUp[0]) + " vs Random", percent(runnerUp[1].mean)]);
+      const tied = runnerUp?.[1].mean === best.mean;
+      headline = tied ? "Strategies tied against Random" : `${displayName(name)} led against Random`;
+      winner = tied ? undefined : 0;
+      tone = tied ? "info" : "success";
+      takeaway = tied ? "The two strategies tied against the same random opponent."
+        : "The leading strategy won the largest share of held-out games against the random opponent.";
+      break;
+    }
+    default:
+      return "";
+  }
+  const icon = { success: "checkCircle", warn: "alert", info: "info" }[tone];
+  return `<section class="lab-verdict tone-${tone}" aria-label="${esc(headline)}">
+    <strong class="verdict-headline"><span aria-hidden="true">${sizedIcon(icon, 20)}</span>${esc(headline)}</strong>
+    <dl class="viz-stats">${stats.map(([label, value], i) => `<div><dt>${esc(label)}</dt><dd${i === winner ? ' class="is-winning"' : ""}>${esc(value)}</dd></div>`).join("")}</dl>
+    <p>${esc(takeaway)}</p>
+  </section>`;
 }
 
 function renderLabResult(data, outEl) {
   if (data.lab_type === "gridworld") {
     const arrows = ["↑", "→", "↓", "←"];
-    const bg = (v) => (v >= 0.7 ? "#16A34A" : v >= 0.25 ? "#86EFAC" : v >= -0.1 ? "var(--stage)" : v >= -0.6 ? "#FDA4AF" : "#E11D48");
+    const heatTone = (v) => v >= .7 ? "pos-2" : v >= .25 ? "pos-1" : v >= -.1 ? "zero" : v >= -.6 ? "neg-1" : "neg-2";
     const grids = ["10", "50", "400"].map((ep) => {
       const snap = data.snapshots[ep];
       const cells = snap.V.map((v, i) => {
         const lbl = i === 15 ? "GOAL" : (i === 5 || i === 11 ? "TRAP" : arrows[snap.arrows[i]]);
-        const fg = Math.abs(v) > 0.6 ? "#ffffff" : (v >= -0.1 && v < 0.25 ? "var(--ink)" : "#18181B");
         return `<div class="gw-tile" style="background:${bg(v)}; color:${fg};"><span>${lbl}</span><small>${v.toFixed(2)}</small></div>`;
       }).join("");
       return `<div class="viz-cell"><div class="viz-cell-header"><span class="viz-cell-name">Episode ${ep}</span></div><div class="gw-grid">${cells}</div></div>`;
     }).join("");
-    outEl.innerHTML = `<div class="gw-row">${grids}</div><div style="margin-top:14px;">${sparklineHtml([
+    outEl.innerHTML = `<div class="gw-row">${grids}</div><div class="lab-chart-followup">${sparklineHtml([
       { label: "Monte Carlo RMSE", data: data.err_mc, color: "var(--warn)" },
       { label: "TD(0) RMSE", data: data.err_td, color: "var(--accent-solid)" },
     ], "Random walk RMSE: MC vs. TD(0)")}</div>`;
@@ -2932,21 +3824,21 @@ function renderLabResult(data, outEl) {
     outEl.innerHTML = `<div class="viz-grid">
       ${sparklineHtml([{ label: "Probe 4", data: data.probe4, color: "var(--accent-solid)" }, { label: "Probe 5", data: data.probe5, color: "var(--go)" }], "REINFORCE + baseline (optimal = +1.0)")}
       <div class="viz-cell"><div class="viz-cell-header"><span class="viz-cell-name">Probe 5 policy by state</span></div>
-        <p style="font-size:14px; margin:12px 0;"><code>obs = -1</code> → <strong>P(a₀) = ${esc(data.p_neg[0])}</strong>, P(a₁) = ${esc(data.p_neg[1])}</p>
-        <p style="font-size:14px; margin:12px 0;"><code>obs = +1</code> → P(a₀) = ${esc(data.p_pos[0])}, <strong>P(a₁) = ${esc(data.p_pos[1])}</strong></p>
+        <p class="lab-probe-policy"><code>obs = -1</code> → <strong>P(a₀) = ${esc(data.p_neg[0])}</strong>, P(a₁) = ${esc(data.p_neg[1])}</p>
+        <p class="lab-probe-policy"><code>obs = +1</code> → P(a₀) = ${esc(data.p_pos[0])}, <strong>P(a₁) = ${esc(data.p_pos[1])}</strong></p>
       </div></div>`;
   }
   if (data.lab_type === "ppo_epoch_drift") {
     const block = (title, epochs, col) => {
       const mx = Math.max(...epochs.flatMap((e) => e.counts), 1);
       const cols = epochs.map((ep, idx) => {
-        const bars = ep.counts.map((c, bi) => { const h = (c / mx) * 68; return `<rect x="${4 + bi * 9}" y="${76 - h}" width="7" height="${h}" rx="2" fill="${col}"/>`; }).join("");
+        const bars = ep.counts.map((c, bi) => { const h = (c / mx) * 68; return `<rect x="${4 + bi * 9}" y="${76 - h}" width="7" height="${h}" rx="2" fill="${chartColor(col)}"/>`; }).join("");
         return `<div class="viz-cell"><div class="viz-cell-header"><span class="viz-cell-name">Epoch ${idx + 1}</span><span class="viz-pill ${ep.clipfrac > 0.25 ? "clipped" : ""}">clip ${esc(ep.clipfrac)}</span></div><svg viewBox="0 0 152 82" width="100%">${bars}<line x1="76" y1="0" x2="76" y2="78" stroke="var(--ink)" stroke-dasharray="3 2"/></svg></div>`;
       }).join("");
-      return `<p style="font-size:13.5px; font-weight:700; margin:14px 0 8px;">${title}</p><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">${cols}</div>`;
+      return `<p class="lab-epoch-heading">${esc(title)}</p><div class="lab-epoch-grid">${cols}</div>`;
     };
     outEl.innerHTML = block("Unclipped policy gradient (ratios drift off-policy)", data.runs.unclipped, "var(--danger)") +
-                      block(`PPO clipped (ε = ${esc(data.eps)}, anchored near r = 1)`, data.runs.clipped, "var(--accent-solid)");
+                      block(`PPO clipped (ε = ${data.eps}, anchored near r = 1)`, data.runs.clipped, "var(--accent-solid)");
   }
   if (data.lab_type === "ppo_bug_lab") {
     const keys = [
@@ -2978,7 +3870,7 @@ function renderLabResult(data, outEl) {
           { label: "potential_nw", data: data.curves.potential_nw.win_rate, color: "var(--go)" },
         ], "True win rate vs. random")}
       </div>
-      <div class="viz-cell" style="margin-top:14px;">
+      <div class="viz-cell lab-chart-followup">
         <div class="viz-cell-header"><span class="viz-cell-name">Held-out tournament (160 games, swapped seats)</span></div>
         <table class="eval-table">
           <thead><tr><th>Matchup</th><th>Win rate (95% CI)</th><th>Seat 0</th><th>Seat 1</th></tr></thead>
@@ -2986,29 +3878,9 @@ function renderLabResult(data, outEl) {
         </table>
       </div>`;
   }
+  outEl.insertAdjacentHTML("afterbegin", labVerdict(data));
 }
 
-function animateKuboSpeech(rawMd, bubbleEl, kuboEl) {
-  if (!bubbleEl) return;
-  if (state.speechTimer) { clearTimeout(state.speechTimer); state.speechTimer = null; }
-  kuboEl?.classList.remove("speaking");
-
-  // Render complete semantic HTML immediately so screen readers and fast readers never wait.
-  bubbleEl.innerHTML = mdToHtml(rawMd, true);
-  renderMath(bubbleEl);
-  if (prefersReducedMotion()) return;
-
-  bubbleEl.classList.remove("enter");
-  void bubbleEl.offsetWidth;
-  bubbleEl.classList.add("enter");
-  kuboEl?.classList.add("speaking");
-  state.speechTimer = setTimeout(() => {
-    state.speechTimer = null;
-    kuboEl?.classList.remove("speaking");
-  }, 320);
-}
-
-// Shared Honest 4-Button Flashcard Renderer
 function ratingButtonsHtml(card, withPrompt = true) {
   const p = card.interval_previews || { "0": "<10m", "3": "1d", "4": "1d", "5": "4d" };
   const items = [
@@ -3092,13 +3964,14 @@ function bindUnitSprint(districtId) {
   const sp = state.unitSprint[districtId];
   const rev = document.getElementById("btn-unit-sprint-reveal");
   if (rev) {
-    rev.onclick = () => guarded(rev, () => {
+    rev.onclick = () => {
+      if (state.inFlight) return;
       primeAudio();
       playSound("tap");
       sp.revealed = true;
       const host = document.getElementById("unit-sprint-host");
       if (host) { host.innerHTML = renderUnitSprintHtml(districtId); renderMath(host); bindUnitSprint(districtId); }
-    });
+    };
   }
   box.querySelectorAll(".rate-btn").forEach((b) => {
     b.onclick = (event) => guarded(b, async () => {
@@ -3110,7 +3983,7 @@ function bindUnitSprint(districtId) {
       const res = await api("/api/srs/rate", { card_id: card.card_id, quality: q });
       state.data = res.state;
       countCardReview();
-      if (q >= 4) handleXp(res.xp, b, "correct");
+      if (q >= 4) { playSound("correct"); recordLessonXp(res.xp); }
       else playSound(q === 0 ? "wrong" : "tap");
       sp.idx += 1;
       sp.revealed = false;
@@ -3184,206 +4057,514 @@ function sourcesHtml(sources) {
   </details>`;
 }
 
-function renderMissionFooter() {
-  const footerHost = document.getElementById("lesson-footer-host");
-  const d = state.data.districts[state.districtIdx];
-  const s = d.steps[state.stepIdx];
-  const fb = state.stepFeedback[s.id];
-  const isLast = state.stepIdx === d.steps.length - 1;
+function leaveLesson() {
+  if (state.inFlight) return;
+  playSound("tap");
+  state.view = "map";
+  state.lesson = null;
+  render();
+  document.getElementById(`unit-${state.districtIdx}`)?.scrollIntoView({
+    behavior: prefersReducedMotion() ? "instant" : "smooth", block: "start",
+  });
+}
 
-  let drawerHtml = "";
-  if (fb) {
-    const isGood = Boolean(fb.correct || fb.passed);
-    const cls = isGood ? (s.kind === "poe" ? "info" : "ok") : "err";
-    const headline = s.kind === "poe" ? "Takeaway:" : (isGood ? "Correct:" : "Not quite:");
-    const mood = isGood ? (state.combo >= 3 ? "proud" : "happy") : "oops";
-    let text = s.kind === "poe" ? (fb.reveal_md || fb.explanation) : (fb.win_title || fb.explanation || "Check the test output above.");
-    if (headline === "Correct:" && typeof text === "string") text = text.replace(/^Correct\.\s*/i, "");
-    const badge = cls === "ok" ? `<span class="feedback-check" aria-hidden="true">${ICONS.check}</span>` : "";
-    drawerHtml = `<div class="feedback-drawer ${cls}" role="status"><div class="feedback-inner">${mascotHtml(mood, 44)}${badge}<div class="feedback-copy"><strong>${headline}</strong><span>${mdToHtml(text, true)}</span></div></div></div>`;
+function applyLessonProgress(path, body, step) {
+  if (cloudCourse()) return updateCloudProgress(path, body);
+
+  // FastAPI remains authoritative. Project the result until the queued responses arrive.
+  const result = path === "/api/quiz" ? quizFeedback(step, body) : {};
+  const points = path === "/api/quiz" ? ({ mcq: 20, numeric: 25, poe: 15 })[step.kind]
+    : step.kind === "debrief" ? 30 : 10;
+  const gained = result.correct === false || isStepDone(step.id) ? 0 : points;
+  if (gained) {
+    const g = state.data.gamification;
+    state.data = { ...state.data, gamification: {
+      ...g, xp: g.xp + gained, completed_events: [...g.completed_events, "step-" + step.id],
+    } };
   }
 
-  const needsCheck = (s.kind === "mcq" || s.kind === "numeric" || s.kind === "poe") && !(fb && fb.correct);
-  const needsBet = s.kind === "bet" && !isStepDone(s.id);
+  const user = userScope();
+  const lesson = state.lesson;
+  localLessonWrites++;
+  api(path, body).then((res) => {
+    if (localLessonWrites !== 1 || cloudCourse() || userScope() !== user || !res.state) return;
+    state.data = res.state;
+    if (state.view === "mission") {
+      renderTopbar();
+      const tile = document.querySelector(".lesson-complete .lesson-review-tile");
+      if (tile && state.lesson === lesson) tile.innerHTML = lessonReviewSummaryHtml();
+    } else if (state.view === "map") { renderTopbar(); renderMap(); }
+    syncProgressToSupabase();
+  }).catch(() => {
+    if (!cloudCourse() && userScope() === user) toast("Progress could not be saved. Try this step again after reconnecting.");
+  }).finally(() => { localLessonWrites--; });
+  return { ...result, xp: { gained }, state: state.data };
+}
+
+function activeLessonBeat() {
+  return state.lesson.beats[state.beatIdx];
+}
+
+function recordLessonXp(xp) {
+  state.lesson.gained += xp?.gained || 0;
+  checkProgressAchievements();
+}
+
+function pulseLessonFooter() {
+  const primary = document.getElementById("btn-primary-footer");
+  primary.classList.remove("sheen-once");
+  void primary.offsetWidth;
+  primary.classList.add("sheen-once");
+}
+
+function renderMissionFooter({ focus = false } = {}) {
+  const host = document.getElementById("lesson-footer-host");
+  if (state.lesson.complete) { host.replaceChildren(); return; }
+  const beat = activeLessonBeat();
+  const s = beat.step;
+  const fb = state.stepFeedback[s.id];
+  const hasQuiz = ["mcq", "numeric", "poe"].includes(beat.kind);
+  const needsCheck = hasQuiz && !fb?.correct;
+  const needsBet = beat.kind === "bet" && !isStepDone(s.id);
   const betOptions = document.getElementById("bet-options");
   const checkedBet = () => betOptions?.querySelector('input[type="radio"]:checked');
-  const checkDisabled = (s.kind === "mcq" && state.selectedMcq[s.id] === undefined) || (needsBet && !checkedBet());
-  const primaryLabel = needsBet ? "Lock in bet" : needsCheck ? (s.kind === "poe" ? "Lock Prediction" : "Check") : (isLast ? "Finish Unit" : "Continue");
-  const footerBtnVariant = (s.kind === "code" && !fb?.passed) ||
-    (s.kind === "live_lab" && !state.labCache[s.id]) ? "secondary" : "go";
-  const sheen = state.footerSheen && !needsCheck && footerBtnVariant === "go" ? "sheen-once" : "";
-  state.footerSheen = false;
+  const disabled = (needsCheck && s.kind === "mcq" && state.selectedMcq[s.id] === undefined)
+    || (needsBet && !checkedBet())
+    || (beat.kind === "beat_check" && microCheckOptions(beat.check).length > 0 && !state.lesson.checks.has(state.beatIdx));
+  const isLast = state.beatIdx === state.lesson.beats.length - 1;
+  const label = needsCheck ? "Check" : isLast ? "Finish lesson" : "Continue";
+  const variant = (beat.kind === "code" && !fb?.passed)
+    || (beat.kind === "live_lab" && !state.labCache[s.id]) ? "secondary" : "go";
 
-  footerHost.innerHTML = `
-    <div class="lesson-footer-bar">
-      ${drawerHtml}
-      <div class="footer-actions">
-        <button id="btn-prev" class="btn-ghost flush" ${state.stepIdx === 0 ? "disabled" : ""}>← Previous</button>
-        <button id="btn-primary-footer" class="btn-tactile pill ${footerBtnVariant} ${sheen}" ${checkDisabled ? "disabled" : ""}>${primaryLabel}</button>
-      </div>
-    </div>`;
-
-  renderMath(footerHost);
-
-  document.getElementById("btn-prev").onclick = () => {
-    if (!state.inFlight && state.stepIdx > 0) {
-      primeAudio();
-      playSound("tap");
-      state.navDir = "prev";
-      state.stepIdx--;
-      renderTopbar();
-      renderMission();
-      document.getElementById("app-root").scrollTo({ top: 0 });
-    }
-  };
-
+  if (!host.firstElementChild) {
+    host.innerHTML = `<div class="lesson-footer-bar"><div class="footer-actions">
+      <button type="button" id="btn-prev" class="btn-ghost flush">← Back to course</button>
+      <button type="button" id="btn-primary-footer"></button>
+    </div></div>`;
+    document.getElementById("btn-prev").onclick = leaveLesson;
+  }
   const primary = document.getElementById("btn-primary-footer");
-  if (needsBet) betOptions.onchange = () => {
-    primary.disabled = !checkedBet() || state.inFlight;
-  };
-  primary.onclick = (event) => {
-    if (event.detail > 1 || performance.now() < state.footerCooldown) return;
-    state.footerCooldown = performance.now() + 320;
-    return guarded(event.currentTarget, async () => {
-      const btnEl = document.getElementById("btn-primary-footer");
-      if (needsCheck) {
-        if (s.kind === "mcq") {
-          const choice = state.selectedMcq[s.id];
-          if (choice === undefined) return;
-          const res = await api("/api/quiz", { step_id: s.id, choice });
-          state.stepFeedback[s.id] = { choice, correct: res.correct, explanation: res.explanation };
-          state.data = res.state;
-          if (res.correct) { state.combo++; state.footerSheen = true; handleXp(res.xp, btnEl, "correct"); }
-          else { state.combo = 0; playSound("miss"); }
-          updateMcqTileStates(s);
-          renderTopbar();
-          renderMissionFooter();
-        } else if (s.kind === "numeric") {
-          const raw = document.getElementById("num-ans").value.trim().replace(",", ".");
-          if (raw === "" || !Number.isFinite(Number(raw))) { playSound("miss"); return; }
-          const res = await api("/api/quiz", { step_id: s.id, answer: Number(raw) });
-          state.stepFeedback[s.id] = { val: raw, correct: res.correct, explanation: res.explanation };
-          state.data = res.state;
-          if (res.correct) { state.combo++; state.footerSheen = true; handleXp(res.xp, btnEl, "correct"); }
-          else { state.combo = 0; playSound("miss"); }
-          renderTopbar();
-          renderMissionFooter();
-        } else if (s.kind === "poe") {
-          const pred = document.getElementById("poe-input").value;
-          const res = await api("/api/quiz", { step_id: s.id, prediction: pred });
-          state.stepFeedback[s.id] = { pred, correct: res.correct, reveal_md: res.reveal_md, explanation: res.explanation };
-          if (res.state) state.data = res.state;
-          if (res.correct) {
-            state.combo++;
-            state.footerSheen = true;
-            handleXp(res.xp, btnEl, "correct");
-            const inp = document.getElementById("poe-input");
-            if (inp) inp.disabled = true;
-          } else {
-            playSound("miss");
-          }
-          renderTopbar();
-          renderMissionFooter();
-        }
-        return;
-      }
+  primary.className = "btn-tactile pill sheen-once " + variant;
+  primary.textContent = label;
+  primary.disabled = disabled;
+  if (needsBet) betOptions.onchange = () => { primary.disabled = !checkedBet(); };
+  if (focus && !disabled) primary.focus({ preventScroll: true });
 
-      // Keep the sound within the click gesture.
-      playSound(s.kind === "debrief" ? "achievement" : "continue");
-      if (needsBet) {
-        const selected = checkedBet();
-        if (!selected) return;
-        const choice = s.options[Number(selected.value)];
-        const reason = document.getElementById("bet-reason").value.trim().slice(0, 200);
-        if (!prefSet(betKey(s.id), JSON.stringify({ choice, reason }))) {
-          toast("Your browser couldn't save this bet. Enable local storage and try again.");
+  primary.onclick = (event) => {
+    if (primary.disabled || state.inFlight || event.detail > 1 || activeLessonBeat() !== beat) return;
+    if (needsCheck) {
+      const body = { step_id: s.id };
+      const answer = {};
+      if (s.kind === "mcq") body.choice = answer.choice = state.selectedMcq[s.id];
+      if (s.kind === "numeric") {
+        answer.val = document.getElementById("num-ans").value.trim().replace(",", ".");
+        body.answer = Number(answer.val);
+        if (!answer.val || !Number.isFinite(body.answer)) {
+          document.getElementById("num-ans").focus();
           return;
         }
-        betOptions.disabled = true;
       }
-      if (needsBet || ["story_concept", "viz", "live_lab", "debrief"].includes(s.kind)) {
-        try {
-          const res = await api("/api/complete_step", { step_id: s.id });
-          state.data = res.state;
-          handleXp(res.xp, btnEl, null);
-        } finally {
-          if (needsBet) betOptions.disabled = isStepDone(s.id);
-        }
-        if (needsBet) toast("Bet locked. We'll revisit it at the end of the unit!");
-        if (s.kind === "viz" || s.kind === "live_lab") unlockAchievement("lab_explorer");
-      } else {
-        spawnSparkles(btnEl, 10);
-      }
+      if (s.kind === "poe") body.prediction = answer.pred = document.getElementById("poe-input").value;
+      const res = applyLessonProgress("/api/quiz", body, s);
+      state.stepFeedback[s.id] = { ...answer, correct: res.correct, explanation: res.explanation, reveal_md: res.reveal_md };
+      state.combo = res.correct ? state.combo + 1 : 0;
+      playSound(res.correct ? "correct" : "miss", state.combo);
+      recordLessonXp(res.xp);
+      if (s.kind === "mcq") updateMcqTileStates(s);
+      if (res.correct && s.kind === "poe") document.getElementById("poe-input").disabled = true;
+      if (res.correct && s.kind === "numeric") document.getElementById("num-ans").readOnly = true;
+      patchQuizFeedback(s);
+      if (["mcq", "numeric"].includes(s.kind)) {
+        animateLessonCheck(res.correct, document.querySelector("#active-beat .beat-feedback"));
+      } else recordLessonCheck(res.correct);
+      renderTopbar();
+      renderMissionFooter({ focus: document.activeElement === primary });
+      if (res.correct) pulseLessonFooter();
+      document.getElementById("active-beat").querySelector(".beat-feedback")
+        ?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "nearest" });
+      return;
+    }
 
-      if (isLast) {
-        state.view = "map";
-        state.lastRenderedStepId = null;
-        render();
-        window.scrollTo({ top: 0 });
-      } else {
-        state.navDir = "next";
-        state.stepIdx++;
-        renderTopbar();
-        renderMission();
-        document.getElementById("app-root").scrollTo({ top: 0 });
+    if (needsBet) {
+      const selected = checkedBet();
+      if (!selected) return;
+      const choice = s.options[Number(selected.value)];
+      const reason = document.getElementById("bet-reason").value.trim().slice(0, 200);
+      if (!prefSet(betKey(s.id), JSON.stringify({ choice, reason }))) {
+        toast("Your browser couldn't save this bet. Enable local storage and try again.");
+        return;
       }
-    });
+      betOptions.disabled = true;
+      const ack = document.getElementById("bet-ack");
+      ack.innerHTML = mdToHtml(s.ack || "Interesting guess. Let's find out.", true);
+      ack.hidden = false;
+      renderMath(ack);
+    }
+
+    if (beat.isLastOfStep && ["bet", "story_concept", "viz", "live_lab", "debrief"].includes(s.kind) && !isStepDone(s.id)) {
+      const res = applyLessonProgress("/api/complete_step", { step_id: s.id }, s);
+      prefRemove(beatCheckpointKey(beat));
+      recordLessonXp(res.xp);
+      if (LAB_KINDS.has(s.kind)) unlockAchievement("lab_explorer");
+    } else if (!beat.isLastOfStep && !isStepDone(s.id)) {
+      prefSet(beatCheckpointKey(beat), beat.beatIndex + 1);
+    }
+    if (!isLast) playSound("continue");
+    advanceLesson(isLast);
   };
 }
 
 function updateMcqTileStates(s) {
   const fb = state.stepFeedback[s.id];
   const picked = state.selectedMcq[s.id];
-  document.querySelectorAll(".choice-tile").forEach((tile) => {
+  document.querySelectorAll("#active-beat .choice-tile").forEach((tile) => {
     const i = Number(tile.dataset.opt);
     tile.classList.remove("selected", "correct", "wrong");
+    tile.setAttribute("aria-pressed", String(picked === i));
+    tile.disabled = Boolean(fb?.correct);
     if (fb && fb.choice === i) tile.classList.add(fb.correct ? "correct" : "wrong");
     else if (picked === i) tile.classList.add("selected");
   });
+}
+
+function quizFeedbackHtml(s) {
+  const fb = state.stepFeedback[s.id];
+  if (!fb) return "";
+  const label = s.kind === "poe" && fb.correct ? "Takeaway" : fb.correct ? "Correct" : "Try again";
+  const detail = fb.reveal_md || fb.explanation || "";
+  return `<strong>${label}</strong>${detail ? `<div>${mdToHtml(detail)}</div>` : ""}`;
+}
+
+function patchQuizFeedback(step) {
+  const feedback = document.querySelector("#active-beat .beat-feedback");
+  const fb = state.stepFeedback[step.id];
+  feedback.innerHTML = quizFeedbackHtml(step);
+  feedback.hidden = !fb;
+  feedback.classList.toggle("ok", Boolean(fb?.correct));
+  feedback.classList.toggle("err", Boolean(fb && !fb.correct));
+  renderMath(feedback);
+}
+
+function calloutHtml(c) {
+  const labels = { bridge: "ML / NLP Bridge", warning: "Watch Out", misconception: "Common Myth", obsidian: "Obsidian Notes" };
+  return `<div class="note-surface ${esc(c.kind)}">
+    <div class="note-surface-head">
+      <span class="note-badge">${Object.hasOwn(labels, c.kind) ? labels[c.kind] : "Note"}</span>
+      <span class="note-surface-title">${esc(c.title)}</span>
+    </div>
+    <div class="prose">${mdToHtml(c.body || c.md)}</div>
+  </div>`;
+}
+
+function microCheckOptions(check) {
+  const options = check?.options ?? check?.choices;
+  return Array.isArray(options) ? options : [];
+}
+
+function microCheckHtml(check, idx) {
+  const options = microCheckOptions(check);
+  return `<div class="micro-check" role="group" aria-labelledby="micro-prompt-${idx}">
+    <div class="kubo-speech-row micro-prompt-row">
+      <span class="micro-kubo">${mascotHtml("thinking", 42)}</span>
+      <div id="micro-prompt-${idx}" class="kubo-speech-bubble">${mdToHtml(check.question || check.prompt, true)}</div>
+    </div>
+    <div class="micro-options">${options.map((opt, i) => `<button type="button" class="choice-tile"
+      data-check-option="${i}" aria-pressed="false" ${i < 3 ? `aria-keyshortcuts="${i + 1}"` : ""}>
+      <span class="choice-key" aria-hidden="true">${i + 1}</span>
+      <span class="micro-option-text">${mdToHtml(opt, true)}</span></button>`).join("")}</div>
+    <div class="micro-feedback-row" hidden><div class="beat-feedback" role="status"></div></div>
+  </div>`;
+}
+
+function bindMicroCheck(node, beat, idx) {
+  const options = [...node.querySelectorAll("[data-check-option]")];
+  const promptRow = node.querySelector(".micro-prompt-row");
+  const kubo = node.querySelector(".micro-kubo");
+  const feedbackRow = node.querySelector(".micro-feedback-row");
+  const feedback = feedbackRow.querySelector(".beat-feedback");
+  const answer = beat.check.correct_index ?? beat.check.correctIndex ?? beat.check.correct;
+  const rightOption = typeof answer === "string" && !/^\d+$/.test(answer)
+    ? options.findIndex((item) => item.querySelector(".micro-option-text").textContent.trim() === answer)
+    : Number(answer);
+  options.forEach((option, i) => {
+    option.onclick = () => {
+      if (state.beatIdx !== idx || state.lesson.complete || state.lesson.checks.get(idx) === rightOption) return;
+      const correct = i === rightOption;
+      state.lesson.checks.set(idx, i);
+      recordLessonCheck(correct);
+      primeAudio();
+      playSound(correct ? "correct" : "miss", state.lesson.correctChecks);
+      options.forEach((item) => {
+        item.disabled = correct;
+        item.classList.toggle("correct", item === option && correct);
+        item.classList.toggle("wrong", item === option && !correct);
+        item.setAttribute("aria-pressed", String(item === option));
+      });
+      feedback.classList.toggle("ok", correct);
+      feedback.classList.toggle("err", !correct);
+      feedback.innerHTML = mdToHtml(beat.check.feedback?.[i] || (correct ? "That's right." : "Try another answer, or keep going."), true);
+      feedbackRow.hidden = false;
+      if (correct) {
+        promptRow.prepend(kubo);
+        kubo.innerHTML = mascotHtml("happy", 42);
+        option.classList.add("check-pop");
+        spawnSparkles(option, 14);
+      } else {
+        feedbackRow.prepend(kubo);
+        kubo.innerHTML = `<span class="nudge-shake">${mascotHtml("oops", 42)}</span>`;
+      }
+      renderMath(feedback);
+      renderTopbar();
+      const primary = document.getElementById("btn-primary-footer");
+      const wasDisabled = primary.disabled;
+      primary.disabled = false;
+      if (correct || wasDisabled) pulseLessonFooter();
+    };
+  });
+}
+
+document.addEventListener("keydown", (event) => {
+  if (state.view !== "mission" || state.modalOpen || state.timer.popoverOpen || event.defaultPrevented
+      || event.repeat || event.isComposing || event.altKey || event.ctrlKey || event.metaKey
+      || event.target?.closest?.("input, textarea, select, [contenteditable]")) return;
+  const optionIndex = ["1", "2", "3"].indexOf(event.key);
+  if (optionIndex < 0) return;
+  const option = document.querySelector(`#active-beat .micro-options [data-check-option="${optionIndex}"]:enabled`);
+  if (option) {
+    event.preventDefault();
+    option.click();
+  }
+});
+
+function priorBeatHtml(beat) {
+  const s = beat.step;
+  if (beat.kind === "bet") {
+    const saved = readBet(s.id);
+    return `<p>${mdToHtml(s.prompt, true)}</p>${saved ? `<p><strong>${esc(saved.choice)}</strong>${saved.reason ? `, ${esc(saved.reason)}` : ""}</p>
+      <p class="bet-ack">${mdToHtml(s.ack || "Interesting guess. Let's find out.", true)}</p>` : ""}`;
+  }
+  const question = s.question || s.prompt || s.prompt_md;
+  const feedback = quizFeedbackHtml(s);
+  return `${question ? `<div class="prose">${mdToHtml(question)}</div>` : ""}
+    ${feedback ? `<div class="beat-feedback">${feedback}</div>` : ""}`;
+}
+
+function checkAnswerKey(beat) {
+  return beatCheckpointKey(beat) + "_check_" + beat.beatIndex;
+}
+
+function priorCheckHtml(beat) {
+  const saved = (prefGet(checkAnswerKey(beat)) || "").match(/^(\d+):([01])$/);
+  return checkSummaryHtml(beat.check, saved ? Number(saved[1]) : undefined, saved?.[2] === "1");
+}
+
+function checkSummaryHtml(check, picked, correct) {
+  const answer = microCheckOptions(check)[picked];
+  return `<div class="check-summary ${correct ? "is-correct" : ""}">
+    <span class="check-summary-icon" aria-hidden="true">${correct ? ICONS.check : ICONS.book}</span>
+    <div><strong>${mdToHtml(check?.question || check?.prompt, true)}</strong>
+      <div>${answer === undefined ? "Previously visited" : `Your answer: ${mdToHtml(answer, true)}`}</div>
+    </div>
+  </div>`;
+}
+
+function mountBeat(thread, beat, i, active) {
+  const node = document.createElement("article");
+  node.className = active ? "lesson-beat beat-enter" : "lesson-beat";
+  node.tabIndex = -1;
+  if (active) {
+    node.id = "active-beat";
+    node.setAttribute("aria-current", "step");
+  }
+  const { step: s, kind } = beat;
+  const hasHeading = !beat.followsIntro && (i > 0 || s.title !== state.lesson.lesson.title)
+    && (!kind.startsWith("beat_") || beat.beatIndex === 0);
+  const heading = hasHeading ? `<h2 id="lesson-beat-title-${i}">${mdToHtml(s.title, true)}</h2>` : "";
+  if (hasHeading) node.setAttribute("aria-labelledby", "lesson-beat-title-" + i);
+  const interactive = ["bet", "mcq", "numeric", "poe", "code", "live_lab", "debrief"].includes(kind);
+  const beatBody = {
+    beat_md: () => `<div class="prose">${mdToHtml(beat.md)}</div>`,
+    beat_callout: () => calloutHtml(beat.callout || {}),
+    beat_check: () => active ? microCheckHtml(beat.check || {}, i)
+      : priorCheckHtml(beat),
+  };
+  node.innerHTML = heading + (Object.hasOwn(beatBody, kind) ? beatBody[kind]()
+    : !active && interactive ? priorBeatHtml(beat) : missionBeatHtml(s, beat.followsIntro));
+  if (kind.startsWith("beat_") && beat.isLastOfStep && s.sources) {
+    node.insertAdjacentHTML("beforeend", sourcesHtml(s.sources));
+  }
+  thread.append(node);
+  if (kind === "viz") {
+    mountViz(s.viz_type, node.querySelector("#viz-mount"));
+    if (!active) namespaceBeatIds(node, i);
+  } else if (active && kind === "beat_check") bindMicroCheck(node, { ...beat, check: beat.check || {} }, i);
+  else if (active && !kind.startsWith("beat_")) bindMissionBeat(node, s);
+  renderMath(node);
+  return node;
+}
+
+function showLessonBeat(node, block = "start") {
+  const root = document.getElementById("app-root");
+  const beat = node.getBoundingClientRect();
+  const inset = parseFloat(getComputedStyle(root).scrollPaddingTop) || 0;
+  const offset = block === "center" ? Math.max(inset, (root.clientHeight - beat.height) / 2) : inset;
+  node.focus({ preventScroll: true });
+  root.scrollTo({
+    top: root.scrollTop + beat.top - root.getBoundingClientRect().top - offset,
+    behavior: prefersReducedMotion() ? "auto" : "smooth",
+  });
+}
+
+function namespaceBeatIds(node, index) {
+  const ids = new Map();
+  node.querySelectorAll("[id]").forEach((element) => {
+    if (element.parentElement?.closest("svg") || element.id.startsWith("lesson-beat-title-")) return;
+    if (element.closest(".viz-stage")) element.dataset.vizId = element.id;
+    ids.set(element.id, `beat-${index}-${element.id}`);
+    element.id = ids.get(element.id);
+  });
+  const refAttrs = ["for", "aria-describedby", "aria-controls", "aria-labelledby"];
+  node.querySelectorAll(refAttrs.map((attr) => `[${attr}]`).join(",")).forEach((reference) => {
+    for (const attr of refAttrs) {
+      const id = reference.getAttribute(attr);
+      if (ids.has(id)) reference.setAttribute(attr, ids.get(id));
+    }
+  });
+}
+
+function lessonCardsEarned() {
+  return Math.max(0, state.data.srs.unlocked_count - state.lesson.startingCards);
+}
+
+function lessonReviewSummaryHtml() {
+  const cards = lessonCardsEarned();
+  const count = cards || state.lesson.lesson.step_ids.length;
+  return `<dt>${cards ? "Cards unlocked" : "Steps reviewed"}</dt><dd>${numberFormat.format(count)}</dd>`;
+}
+
+function celebrateLesson(card, xp) {
+  const xpDisplay = card.querySelector(".lesson-xp");
+  const reducedMotion = prefersReducedMotion();
+  if (!reducedMotion) xpDisplay.textContent = "+0 XP";
+  const celebrate = () => {
+    playSound("achievement");
+    card.classList.add("is-celebrating");
+    if (reducedMotion) return;
+    spawnConfetti(card, 32);
+    setTimeout(() => {
+      if (xpDisplay.isConnected) countLessonXp(xpDisplay, xp);
+    }, 120);
+  };
+  const rect = card.getBoundingClientRect();
+  const viewport = document.getElementById("app-root").getBoundingClientRect();
+  if ((rect.top < viewport.bottom && rect.bottom > viewport.top) || typeof IntersectionObserver === "undefined") {
+    celebrate();
+    return;
+  }
+  const observer = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting && card.isConnected) celebrate();
+    if (entry.isIntersecting || !card.isConnected) observer.disconnect();
+  });
+  observer.observe(card);
+}
+
+function advanceLesson(isLast) {
+  const current = document.getElementById("active-beat");
+  const beat = activeLessonBeat();
+  current.removeAttribute("aria-current");
+  current.removeAttribute("id");
+  disposeEditor();
+  namespaceBeatIds(current, state.beatIdx);
+  current.querySelectorAll("button, input, textarea, select").forEach((control) => {
+    if (!control.closest(".viz-stage")) control.disabled = true;
+  });
+  const check = current.querySelector(".micro-check");
+  if (beat.kind === "beat_check" && check) {
+    const picked = state.lesson.checks.get(state.beatIdx);
+    const correct = Boolean(check.querySelector(".correct"));
+    if (picked !== undefined) prefSet(checkAnswerKey(beat), picked + ":" + Number(correct));
+    check.outerHTML = checkSummaryHtml(beat.check, picked, correct);
+    renderMath(current.querySelector(".check-summary"));
+  }
+  if (beat.kind === "code") current.querySelector(".code-frame").hidden = true;
+
+  const thread = current.parentElement;
+  if (isLast) {
+    state.lesson.complete = true;
+    const next = findNextLesson();
+    const end = document.createElement("article");
+    end.className = "lesson-beat lesson-complete beat-enter";
+    end.tabIndex = -1;
+    end.setAttribute("aria-labelledby", "lesson-complete-title");
+    end.innerHTML = `<div class="completion-kubo">${mascotHtml("proud", 72)}</div>
+      <h2 id="lesson-complete-title">Lesson complete</h2>
+      <dl class="lesson-summary">
+        <div class="lesson-summary-tile"><dt>XP earned</dt><dd><span class="sr-only">${numberFormat.format(state.lesson.gained)} XP</span><span class="lesson-xp${state.lesson.gained === 0 ? " is-zero" : ""}" aria-hidden="true">+${numberFormat.format(state.lesson.gained)} XP</span></dd></div>
+        <div class="lesson-summary-tile"><dt>Best combo</dt><dd>${numberFormat.format(state.lesson.bestCombo)}</dd></div>
+        <div class="lesson-summary-tile lesson-review-tile">${lessonReviewSummaryHtml()}</div>
+      </dl>
+      <div class="form-row wrap">
+        ${next ? `<button id="next-lesson" class="btn-tactile go pill">${next.lesson.id === state.lesson.lesson.id && next.di === state.districtIdx ? "Resume lesson" : "Next lesson"}</button>` : ""}
+        <button id="course-from-lesson" class="btn-tactile secondary pill">Back to course</button>
+      </div>`;
+    thread.append(end);
+    if (next) end.querySelector("#next-lesson").onclick = () => openLesson(next.di, next.li);
+    end.querySelector("#course-from-lesson").onclick = leaveLesson;
+    renderTopbar();
+    renderMissionFooter();
+    showLessonBeat(end, "center");
+    if (state.lesson.gained > 0) celebrateLesson(end, state.lesson.gained);
+    return;
+  }
+  state.beatIdx++;
+  const node = mountBeat(thread, activeLessonBeat(), state.beatIdx, true);
+  renderTopbar();
+  renderMissionFooter();
+  showLessonBeat(node);
 }
 
 function renderMission() {
   disposeEditor();
   document.body.classList.add("mode-mission");
   const root = document.getElementById("app-root");
-  const d = state.data.districts[state.districtIdx];
-  const s = d.steps[state.stepIdx];
-  const fb = state.stepFeedback[s.id];
-  const isNewStep = state.lastRenderedStepId !== s.id;
-  state.lastRenderedStepId = s.id;
+  const { lesson, beats } = state.lesson;
+  root.innerHTML = `<section class="lesson-stage lesson-thread" aria-labelledby="lesson-title"><h1 id="lesson-title">${mdToHtml(lesson.title, true)}</h1></section>`;
+  const thread = root.firstElementChild;
+  renderMath(thread.firstElementChild);
+  for (let i = 0; i < state.beatIdx; i++) mountBeat(thread, beats[i], i, false);
+  const node = mountBeat(thread, activeLessonBeat(), state.beatIdx, true);
+  renderMissionFooter();
+  root.scrollTop = 0;
+  if (state.beatIdx) showLessonBeat(node);
+  else {
+    thread.firstElementChild.tabIndex = -1;
+    thread.firstElementChild.focus({ preventScroll: true });
+  }
+}
 
+function missionBeatHtml(s, followsIntro = false) {
+  const d = state.data.districts[state.districtIdx];
+  const fb = state.stepFeedback[s.id];
   const cueMood = s.kind === "debrief" ? "proud" : (["code", "mcq", "poe", "numeric"].includes(s.kind) ? "thinking" : "idle");
-  const badgeMap = { bridge: "ML / NLP Bridge", warning: "Watch Out", misconception: "Common Myth", obsidian: "Obsidian Notes" };
 
   const prompts = {
     mcq: "Choose the answer you can explain.",
     numeric: "Work through the numbers before checking.",
     poe: "Write down what you expect to happen.",
   };
-  const story = s.story || (Object.hasOwn(prompts, s.kind) ? prompts[s.kind] : "");
+  const story = followsIntro ? "" : s.story || (Object.hasOwn(prompts, s.kind) ? prompts[s.kind] : "");
   let body = "";
   if (story) {
     body += `
       <div class="kubo-speech-row">
-        ${mascotHtml(cueMood, 50, null, false, "lesson-kubo")}
-        <div id="kubo-speech-bubble" class="kubo-speech-bubble">${mdToHtml(story, true)}</div>
+        ${mascotHtml(cueMood, 50)}
+        <div class="kubo-speech-bubble">${mdToHtml(story, true)}</div>
       </div>`;
   }
-  if (s.body_md) body += `<div class="prose">${mdToHtml(s.body_md)}</div>`;
-  if (s.callouts) {
-    s.callouts.forEach((c) => {
-      body += `
-        <div class="note-surface ${esc(c.kind)}">
-          <div class="note-surface-head">
-            <span class="note-badge">${Object.hasOwn(badgeMap, c.kind) ? badgeMap[c.kind] : "Note"}</span>
-            <span class="note-surface-title">${esc(c.title)}</span>
-          </div>
-          <p>${mdToHtml(c.body, true)}</p>
-        </div>`;
-    });
-  }
+  if (!followsIntro && s.body_md) body += `<div class="prose">${mdToHtml(s.body_md)}</div>`;
+  if (!followsIntro && s.callouts) body += s.callouts.map(calloutHtml).join("");
 
-  if (s.kind === "bet") body += betHtml(s);
+  if (s.kind === "bet") body += betHtml(s) + `<div id="bet-ack" class="bet-ack" role="status" ${isStepDone(s.id) ? "" : "hidden"}>${isStepDone(s.id) ? mdToHtml(s.ack || "Interesting guess. Let's find out.", true) : ""}</div>`;
 
   if (s.kind === "viz") body += `<div id="viz-mount"></div>`;
 
@@ -3445,7 +4626,7 @@ function renderMission() {
       sel = `<select id="lab-bug-select" aria-label="Bug scenario" class="select-field">
         <option value="bug_same_logp">Scenario 1: old_log_probs == live new_log_probs (r ≡ 1)</option>
         <option value="bug_no_mask_recompute">Scenario 2: Missing legal_mask on PPO recompute</option>
-        <option value="bug_flipped_entropy">Scenario 3: Flipped entropy sign (+c₂·H)</option>
+        <option value="bug_flipped_entropy">Scenario 3: Flipped entropy sign (+c₂ × H)</option>
         <option value="bug_zero_trunc_bootstrap">Scenario 4: Zeroed bootstrap at timeout</option>
       </select>`;
     }
@@ -3472,17 +4653,14 @@ function renderMission() {
       <div id="unit-sprint-host">${renderUnitSprintHtml(d.id)}</div>`;
   }
 
-  body += sourcesHtml(s.sources);
-
-  const enterCls = isNewStep ? (state.navDir === "next" ? "enter-next" : state.navDir === "prev" ? "enter-prev" : "enter-fade") : "";
-  root.innerHTML = `<article class="lesson-stage ${enterCls}"><h1>${mdToHtml(s.title, true)}</h1>${body}</article>`;
-  renderMath(root);
-  renderMissionFooter();
-
-  if (story && isNewStep) {
-    animateKuboSpeech(story, document.getElementById("kubo-speech-bubble"), document.getElementById("lesson-kubo"));
+  if (["mcq", "numeric", "poe"].includes(s.kind)) {
+    body += `<div class="beat-feedback ${fb?.correct ? "ok" : "err"}" role="status" ${fb ? "" : "hidden"}>${quizFeedbackHtml(s)}</div>`;
   }
-  if (s.kind === "viz") mountVisualizer(s.viz_type, document.getElementById("viz-mount"));
+  return body + sourcesHtml(s.sources);
+}
+
+function bindMissionBeat(root, s) {
+  const d = state.data.districts[state.districtIdx];
   if (s.kind === "debrief") {
     bindUnitSprint(d.id);
     document.getElementById("obsidian-written").onchange = (e) => prefSet(draftKey(s) + "_notes", e.target.checked ? "1" : "0");
@@ -3496,17 +4674,19 @@ function renderMission() {
   if (s.kind === "mcq") {
     root.querySelectorAll(".choice-tile").forEach((btn) => {
       btn.onclick = () => {
-        if (state.inFlight) return;
+        if (state.stepFeedback[s.id]?.correct) return;
         primeAudio();
         playSound("tap");
         state.selectedMcq[s.id] = Number(btn.dataset.opt);
         if (state.stepFeedback[s.id] && !state.stepFeedback[s.id].correct) delete state.stepFeedback[s.id];
         updateMcqTileStates(s);
-        renderMissionFooter();
+        patchQuizFeedback(s);
+        document.getElementById("btn-primary-footer").disabled = false;
       };
     });
   }
 
+  if (s.kind === "mcq") updateMcqTileStates(s);
   if (s.kind === "code") mountCodeEditor(s);
   if (s.kind === "live_lab") mountLab(s);
 
@@ -3540,10 +4720,16 @@ function startDrillSession() {
   state.drillCombo = 0;
   state.drillMood = "thinking";
   render();
+  if (cloudCourse() && canUseAnkiCompanion()) {
+    const course = state.course, user = userScope();
+    readAnkiCompanionStatus().then((status) => {
+      if (state.course === course && userScope() === user) adoptAnkiStatus(status);
+    });
+  }
 }
 
 function drillRevealButtonHtml() {
-  return `<button id="d-reveal" class="btn-tactile secondary full">Show answer</button>`;
+  return `<button id="d-reveal" class="btn-tactile accent full pill" aria-keyshortcuts="Space">Show answer <kbd class="keycap" aria-hidden="true">Space</kbd></button>`;
 }
 
 function masteryPanelHtml() {
@@ -3574,8 +4760,8 @@ function masteryPanelHtml() {
 
 function ankiStatusHtml() {
   return state.data.anki_connected
-    ? `<span class="status-badge ok"><span class="status-dot online"></span>Auto-synced with Anki</span>`
-    : `<button type="button" id="btn-anki-setup" class="btn-ghost small anki-setup">Set up Anki sync</button>`;
+    ? `<span class="status-badge ok anki-auto-status"><span class="status-dot online"></span>Auto-synced with Anki</span>`
+    : `<button type="button" id="btn-anki-setup" class="btn-ghost small anki-setup">Export to Anki</button>`;
 }
 
 function bindDrillChrome(root) {
@@ -3594,6 +4780,19 @@ function renderDrill() {
   document.getElementById("lesson-footer-host").innerHTML = "";
   const root = document.getElementById("app-root");
   const cards = state.drillCards;
+  if (!cards.length && state.data.srs.unlocked_count === 0) {
+    root.innerHTML = `<section class="drill-stage">
+      <h1 class="drill-title">Anki Cards</h1>
+      <div class="flashcard drill-done">
+        ${mascotHtml("happy", 68)}
+        <h2>Your first cards are waiting</h2>
+        <p>Finish your first lesson to unlock spaced-repetition cards.</p>
+        <button id="drill-first-lesson" class="btn-tactile go pill">Start Lesson 1</button>
+      </div>
+    </section>`;
+    root.querySelector("#drill-first-lesson").onclick = () => openLesson(0, 0);
+    return;
+  }
 
   if (!cards.length || state.drillIdx >= cards.length) {
     const reviewed = cards.length;
@@ -3624,7 +4823,6 @@ function renderDrill() {
   }
 
   const c = cards[state.drillIdx];
-  const ratio = state.drillIdx / Math.max(cards.length, 1);
 
   renderPreserving(root, `
     <div class="drill-stage">
@@ -3632,7 +4830,7 @@ function renderDrill() {
       <div class="drill-hud">
         <div class="drill-hud-left">
           ${mascotHtml(state.drillMood, 44)}
-          <div class="progress-track"><div class="progress-fill" style="--progress: ${ratio.toFixed(4)}"></div></div>
+          ${progressBarHtml(state.drillIdx, cards.length, "Cards reviewed")}
         </div>
         <div class="drill-hud-stats">
           <span class="drill-stat-pill" title="Correct answers in a row this session"><span class="rank-stat-icon go">${ICONS.target}</span> ${state.drillCombo} in a row</span>
@@ -3640,7 +4838,7 @@ function renderDrill() {
         </div>
       </div>
 
-      <div class="flashcard drill-card">
+      <div class="drill-deck"><div class="flashcard drill-card${cards.length - state.drillIdx > 1 ? " has-stack" : ""}">
         <div class="flashcard-top">
           <span class="card-counter">Card ${state.drillIdx + 1} of ${cards.length}</span>
           ${state.data.srs.due_count === 0 ? `<span class="practice-pill">Practice review (0 due)</span>` : ""}
@@ -3648,7 +4846,7 @@ function renderDrill() {
         <div class="flashcard-front">${cardHtml(c.front)}</div>
         <div id="d-answer-slot" class="flashcard-answer-slot">${state.drillRevealed ? `<div class="flashcard-back">${cardHtml(c.back)}</div>` : ""}</div>
         <div id="d-actions" class="flashcard-actions">${state.drillRevealed ? ratingButtonsHtml(c, false) : drillRevealButtonHtml()}</div>
-      </div>
+      </div></div>
 
       ${masteryPanelHtml()}
     </div>`, ".drill-hud .progress-fill");
@@ -3679,11 +4877,19 @@ function renderDrill() {
         state.drillMood = "oops";
         playSound("wrong");
       }
+      const deck = b.closest(".drill-deck");
+      if (!prefersReducedMotion() && deck.animate) {
+        await deck.animate([
+          { transform: "translateX(0)", opacity: 1 },
+          { transform: "translateX(-20px)", opacity: 0 },
+        ], { duration: 180, easing: "ease-out", fill: "forwards" }).finished.catch(() => {});
+      }
       state.drillIdx++;
       state.drillRevealed = false;
       if (state.drillIdx >= state.drillCards.length) playSound("achievement");
       renderTopbar();
       renderDrill();
+      if (event.detail === 0) root.querySelector("#d-reveal, #d-home")?.focus({ preventScroll: true });
       syncProgressToSupabase();
     });
   });
@@ -3692,17 +4898,21 @@ function renderDrill() {
   // same action area, so the card never re-mounts or jumps.
   const rev = document.getElementById("d-reveal");
   if (rev) {
-    rev.onclick = () => guarded(rev, () => {
+    rev.onclick = () => {
+      if (state.inFlight) return;
       primeAudio();
       playSound("tap");
       state.drillRevealed = true;
       const slot = document.getElementById("d-answer-slot");
       const actions = document.getElementById("d-actions");
-      slot.innerHTML = `<div class="flashcard-back">${cardHtml(c.back)}</div>`;
+      slot.closest(".drill-card")?.classList.add("is-revealing");
+      slot.innerHTML = `<div class="flashcard-back answer-enter">${cardHtml(c.back)}</div>`;
       actions.innerHTML = ratingButtonsHtml(c, false);
       renderMath(slot);
       bindRatings();
-    });
+      slot.tabIndex = -1;
+      slot.focus({ preventScroll: true });
+    };
   } else {
     bindRatings();
   }
@@ -3767,8 +4977,9 @@ async function rpc(name, args) {
 }
 
 async function listCourses() {
+  const user = state.sbUser?.id;
   const courses = await rpc("list_my_courses");
-  state.courses = Array.isArray(courses) ? courses : [];
+  if (state.sbUser?.id === user) state.courses = Array.isArray(courses) ? courses : [];
 }
 
 function validateCourse(content) {
@@ -3817,19 +5028,101 @@ function validateCourse(content) {
   }
 }
 
-async function openCourse(course) {
+function renderCourseLoader(title, subtitle = "Preparing your lessons...") {
+  document.body.classList.remove("mode-mission");
+  document.getElementById("lesson-footer-host").replaceChildren();
+  document.getElementById("app-root").innerHTML = `<section class="course-loader">
+    <div class="course-loader-card" role="status">
+      <div class="loader-scene" aria-hidden="true">
+        ${Array.from({ length: 4 }, () => '<span class="loader-star"></span>').join("")}
+        <span class="loader-kubo">${mascotHtml("happy", 76)}</span>
+      </div>
+      <h1>${esc(title)}</h1><p>${esc(subtitle)}</p>
+      <div class="loader-track" aria-hidden="true"><span class="loader-bar"></span></div>
+    </div>
+  </section>`;
+}
+
+function beginCourseLoad(title) {
+  const user = state.sbUser?.id;
+  let shownAt = null;
+  let settled;
+  let element;
+  const timer = setTimeout(() => {
+    if (state.sbUser?.id !== user) return;
+    renderCourseLoader(title);
+    shownAt = performance.now();
+    element = document.querySelector(".course-loader");
+  }, 120);
+  return {
+    retitle(nextTitle) {
+      const heading = element?.querySelector("h1");
+      if (heading && state.sbUser?.id === user) heading.textContent = nextTitle;
+      title = nextTitle;
+    },
+    beforePrewarm() {
+      clearTimeout(timer);
+      return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    },
+    finish() {
+      clearTimeout(timer);
+      if (!element?.isConnected || prefersReducedMotion()) return;
+      settled ??= (async () => {
+        const remaining = 240 - (performance.now() - shownAt);
+        if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+        if (!element.isConnected || state.sbUser?.id !== user) return;
+        element.classList.add("loader-leaving");
+        await new Promise((resolve) => setTimeout(resolve, 160));
+      })();
+      return settled;
+    },
+  };
+}
+
+function prewarmCourse(course) {
+  primeAudio();
+  void loadEditorModules();
+  for (const district of course.content.districts) {
+    const lessons = lessonsForDistrict(district);
+    districtLessons.set(district, lessons);
+    for (const lesson of lessons) lessonBeats.set(lesson, flattenLessonBeats(district, lesson));
+  }
+  // Lab snapshots come in the same course payload and are already ready for synchronous display.
+}
+
+async function openCourse(course, pendingLoader = null) {
   if (!course) throw new Error("Course is unavailable. Reload your course list and try again.");
   validateCourse(course.content);
   const user = state.sbUser.id;
-  const { data, error } = await state.sbClient.from("course_progress").select("*")
-    .eq("course_id", course.id).eq("user_id", user).maybeSingle();
-  if (error) throw error;
+  const loader = pendingLoader || beginCourseLoad(course.title);
+  if (pendingLoader) loader.retitle(course.title);
+  let data;
+  try {
+    await Promise.all([progressQueue, localProgressQueue]);
+    if (state.sbUser?.id !== user) return;
+    const progress = await state.sbClient.from("course_progress").select("*")
+      .eq("course_id", course.id).eq("user_id", user).maybeSingle();
+    if (progress.error) throw progress.error;
+    data = progress.data;
+    await loader.beforePrewarm();
+    if (state.sbUser?.id === user) prewarmCourse(course);
+  } catch (error) {
+    if (!pendingLoader && state.sbUser?.id === user) {
+      await loader.finish();
+      if (state.sbUser?.id === user) render();
+    }
+    throw error;
+  } finally {
+    await loader.finish();
+  }
   if (state.sbUser?.id !== user) return;
   clearInterval(state.timer.interval);
   state.timer.running = false;
   state.timer.left = state.timer.total;
   state.course = course;
   state.progressVersion = data?.updated_at ?? null;
+  savedCloudProgress = null;
+  progressSaveError = false;
   state.progress = {
     xp: data?.xp ?? 0,
     streak_days: data?.streak_days ?? 0,
@@ -3849,7 +5142,7 @@ async function openCourse(course) {
 
 function resetCourseView() {
   state.view = "map";
-  state.lastRenderedStepId = null;
+  state.lesson = null;
   for (const key of ["selectedMcq", "hintState", "stepFeedback", "labCache", "unitSprint"]) {
     state[key] = Object.create(null);
   }
@@ -3857,6 +5150,7 @@ function resetCourseView() {
 }
 
 async function openLocalStudio() {
+  await Promise.all([progressQueue, localProgressQueue]);
   state.data = await request("/api/state");
   state.course = null;
   state.progress = null;
@@ -3943,21 +5237,55 @@ function cloudState(progress) {
       unit_packs: unitPacks,
       by_module: byModule,
     },
-    anki_connected: false,
+    anki_connected: canUseAnkiCompanion() && Boolean(state.data?.anki_connected),
   };
 }
 
-// Cloud writes use an optimistic version check, so they run one at a time.
+// The UI applies mutations immediately. The queues only serialize persistence.
 let progressQueue = Promise.resolve();
+let localProgressQueue = Promise.resolve();
+let localLessonWrites = 0;
+let savedCloudProgress = null;
+let progressSaveError = false;
+
 function updateCloudProgress(path, body) {
-  const run = progressQueue.then(() => writeCloudProgress(path, body));
-  progressQueue = run.catch(() => {});
-  return run;
+  const result = applyLocalProgressMutation(path, body);
+  queueCloudProgress();
+  return result;
 }
 
-async function writeCloudProgress(path, body) {
+function queueCloudProgress() {
   const course = state.course;
   const user = state.sbUser.id;
+  progressQueue = progressQueue.then(() => flushCloudProgress(course, user)).catch((err) => {
+    if (state.course === course && state.sbUser?.id === user && !progressSaveError) {
+      progressSaveError = true;
+      toast(err.message || "Progress could not be synced. Your progress is still available in this tab.");
+    }
+  });
+}
+
+window.addEventListener("online", () => {
+  if (state.course && state.sbUser && progressSaveError) queueCloudProgress();
+});
+
+function quizFeedback(step, body) {
+  if (step.kind === "mcq") {
+    return { correct: body.choice === step.correct_index, explanation: step.explanations?.[body.choice] };
+  }
+  if (step.kind === "numeric") {
+    const tol = step.tol ?? 0.01;
+    const correct = Math.abs(body.answer - step.expected) <= tol;
+    return { correct, explanation: correct ? step.explanation : `Check your calculation. The tolerance is ±${tol}.` };
+  }
+  if ((body.prediction || "").trim().length < 8) {
+    return { correct: false, explanation: "Write a brief prediction before revealing the outcome." };
+  }
+  return { correct: true, reveal_md: step.reveal_md };
+}
+
+function applyLocalProgressMutation(path, body) {
+  const course = state.course;
   const progress = structuredClone(state.progress);
   progress.srs_state = Object.assign(Object.create(null), progress.srs_state);
   const today = day();
@@ -3997,26 +5325,16 @@ async function writeCloudProgress(path, body) {
     const district = course.content.districts.find((d) => d.steps.some((s) => s.id === body.step_id));
     const step = district?.steps.find((s) => s.id === body.step_id);
     if (!step) throw new Error("That lesson step is unavailable.");
-    unlock(district.id);
     let points = ({ bet: 10, story_concept: 10, viz: 15, live_lab: 20, debrief: 30 })[step.kind] ?? 10;
     if (path === "/api/quiz") {
-      if (step.kind === "mcq") {
-        points = 20;
-        result = { correct: body.choice === step.correct_index, explanation: step.explanations?.[body.choice] };
-      } else if (step.kind === "numeric") {
-        points = 25;
-        const tol = step.tol ?? 0.01;
-        const correct = Math.abs(body.answer - step.expected) <= tol;
-        result = { correct, explanation: correct ? step.explanation : `Check your calculation. The tolerance is ±${tol}.` };
-      } else {
-        if ((body.prediction || "").trim().length < 8) return { correct: false, explanation: "Write a brief prediction before revealing the outcome." };
-        points = 15;
-        result = { correct: true, reveal_md: step.reveal_md };
-      }
+      result = quizFeedback(step, body);
+      if (step.kind === "poe" && !result.correct) return { ...result, state: state.data };
+      points = ({ mcq: 20, numeric: 25, poe: 15 })[step.kind];
     } else if (path === "/api/run_code") {
       points = step.xp ?? 35;
       result = { passed: body.passed };
     }
+    unlock(district.id);
     if (result.correct === false || result.passed === false) {
       progress.combo = 0;
     } else {
@@ -4024,6 +5342,15 @@ async function writeCloudProgress(path, body) {
       result.xp = award("step-" + step.id, points);
     }
   }
+  state.progress = progress;
+  state.data = cloudState(progress);
+  return { ...result, state: state.data };
+}
+
+async function flushCloudProgress(course = state.course, user = state.sbUser?.id) {
+  if (!course || state.course !== course || state.sbUser?.id !== user) return;
+  const progress = state.progress;
+  if (progress === savedCloudProgress) return;
   const table = state.sbClient.from("course_progress");
   const save = state.progressVersion
     ? table.update(progress).eq("course_id", course.id).eq("user_id", user).eq("updated_at", state.progressVersion)
@@ -4031,11 +5358,11 @@ async function writeCloudProgress(path, body) {
   const { data, error } = await save.select("updated_at").maybeSingle();
   if (error) throw error;
   if (!data) throw new Error("Progress changed in another session. Reopen this course to load your latest progress.");
-  if (state.course !== course || state.sbUser?.id !== user) throw new Error("The course session ended.");
+  if (state.course !== course || state.sbUser?.id !== user) return;
   state.progressVersion = data.updated_at;
-  state.progress = progress;
-  result.state = cloudState(progress);
-  return result;
+  savedCloudProgress = progress;
+  progressSaveError = false;
+  await syncProgressToSupabase();
 }
 
 async function guarded(button, action) {
@@ -4052,7 +5379,7 @@ async function guarded(button, action) {
   }
 }
 
-// ==================== Auth: sign in · sign up · reset · check email · recovery ====================
+// ==================== Auth: sign in, sign up, reset, check email, recovery ====================
 const AUTH_COOLDOWN_SECONDS = 60;
 const RECOVERY_FLAG_KEY = "course_studio_pw_recovery";
 const authEmailSentAt = new Map();
@@ -4211,7 +5538,7 @@ function authViewHtml(ctx, mode) {
   const badge = mode === "check-email" ? `<span class="auth-badge${ctx.modal ? " solo" : ""}" aria-hidden="true">${ICONS.mail}</span>` : "";
   const hero = `<div class="auth-hero">
       ${ctx.modal ? badge : `<div class="auth-kubo">${mascotHtml(view.mood, 68)}${badge}</div>`}
-      <${heading} class="auth-title" tabindex="-1">${view.title}</${heading}>
+      <${heading} class="auth-title" tabindex="-1">${esc(view.title)}</${heading}>
       <p class="auth-sub">${sub}</p>
     </div>
     <div class="auth-alert-slot"></div>`;
@@ -4595,59 +5922,113 @@ function renderAuth(mode) {
 
 async function enterCloud() {
   state.view = "courses";
+  const user = state.sbUser.id;
+  const loader = beginCourseLoad("Delightful Learn");
   try {
     await listCourses();
-    const saved = prefGet("active_course_" + state.sbUser.id);
+    if (state.sbUser?.id !== user) return;
+    const saved = prefGet("active_course_" + user);
     const course = state.courses.find((c) => c.id === saved) || (STATIC_MODE ? state.courses[0] : null);
-    if (course) return await openCourse(course);
+    if (course) return await openCourse(course, loader);
     if (!STATIC_MODE && state.data) {
       state.view = "map";
       syncProgressToSupabase();
     }
   } catch (err) {
     toast(err.message);
+  } finally {
+    await loader.finish();
   }
-  render();
+  if (state.sbUser?.id === user) render();
+  if (state.sbUser?.id === user && state.view === "courses") {
+    loadCourseHubProgress(user).catch((err) => toast(err.message));
+  }
 }
+
+let courseHubProgress = new Map();
 
 function showCourses() {
   if (state.inFlight) return;
   if (!state.sbUser) return;
   state.view = "courses";
   render();
-  listCourses().then(() => { if (state.view === "courses" && state.sbUser) renderCourses(); })
-    .catch((err) => toast(err.message));
+  const user = state.sbUser.id;
+  listCourses().then(() => {
+    if (state.view !== "courses" || state.sbUser?.id !== user) return;
+    renderCourses();
+    return loadCourseHubProgress(user);
+  }).catch((err) => toast(err.message));
+}
+
+async function loadCourseHubProgress(user) {
+  const { data, error } = await state.sbClient.from("course_progress")
+    .select("course_id, completed_events").eq("user_id", user);
+  if (error) throw error;
+  if (state.sbUser?.id !== user || state.view !== "courses") return;
+  courseHubProgress = new Map((data || []).map((row) => [row.course_id, new Set(row.completed_events)]));
+  document.querySelectorAll("[data-course-progress]").forEach((slot) => {
+    slot.innerHTML = courseHubProgressHtml(state.courses[Number(slot.dataset.courseProgress)]);
+  });
+}
+
+function courseHubProgressHtml(course) {
+  const lessons = (course.content?.districts || []).flatMap(lessonsForDistrict);
+  if (!lessons.length) return "";
+  const events = state.course?.id === course.id
+    ? new Set(state.data?.gamification?.completed_events) : courseHubProgress.get(course.id);
+  const done = lessons.filter((lesson) => lesson.step_ids.every((id) => events?.has(`step-${id}`))).length;
+  return `<span class="tabular">${done} / ${lessons.length} lessons</span>${progressBarHtml(done, lessons.length, "Lessons completed")}`;
 }
 
 function renderCourses() {
   document.body.classList.remove("mode-mission");
   document.getElementById("lesson-footer-host").replaceChildren();
   const bar = document.getElementById("topbar");
+  const canReturn = Boolean(state.course || !STATIC_MODE || state.data);
   bar.innerHTML = `<div class="topbar-inner courses-topbar">
-    <span class="wordmark">${mascotHtml("idle", 28)}<span>Delightful Learn</span></span>
+    <button type="button" id="btn-brand" class="wordmark" ${canReturn ? "" : "disabled"}>${mascotHtml("idle", 28)}<span>Delightful Learn</span></button>
     <button id="btn-theme" class="icon-ghost" aria-label="Toggle color theme">${state.theme === "dark" ? ICONS.sun : ICONS.moon}</button>
+    ${state.sbProfile ? `<button type="button" id="hub-account" class="avatar-btn">${mascotHtml("idle", 22)}<span>@${esc(state.sbProfile.username)}</span></button>` : ""}
     <button id="hub-signout" class="btn-ghost">Sign out</button>
   </div>`;
   bar.querySelector("#btn-theme").onclick = toggleTheme;
+  const account = bar.querySelector("#hub-account");
+  if (account) account.onclick = () => openSettingsModal("account", account);
   bar.querySelector("#hub-signout").onclick = (e) => guarded(e.currentTarget, signOut);
   const root = document.getElementById("app-root");
   root.innerHTML = `<section class="courses-hub">
-    <div class="courses-heading"><h1>Your courses</h1><button id="create-course" class="btn-tactile secondary">Create Course</button></div>
+    ${canReturn ? '<button type="button" id="btn-courses-back" class="btn-ghost flush">← Back to course</button>' : ""}
+    <div class="courses-heading"><h1>Your courses</h1><button id="create-course" class="btn-tactile secondary" type="button" aria-disabled="true">${ICONS.lock} Create Course <span class="soon-pill">Coming soon</span></button></div>
     ${!STATIC_MODE ? '<button id="open-local" class="btn-ghost">Open Local Studio</button>' : ""}
     <ul class="course-list">
       ${state.courses.map((course, index) => `<li class="course-row">
-        <div><h2>${esc(course.title)}</h2><p>${esc(course.description)}</p></div>
-        <div class="form-row"><button class="btn-tactile secondary" data-course="${index}">Open</button>
-          <button class="btn-ghost" id="course-settings-${index}" data-settings="${index}" aria-label="Settings for ${esc(course.title)}">Settings</button></div>
+        <div class="course-row-main"><span class="course-icon" style="--course-accent:${bannerColor(course.content?.districts?.[0]?.color)}" aria-hidden="true">${ICONS.book}</span>
+          <div><h2>${esc(course.title)}</h2><p>${esc(course.description)}</p>
+            <div class="course-progress" data-course-progress="${index}">${courseHubProgressHtml(course)}</div>
+          </div>
+        </div>
+        <div class="form-row"><button class="btn-tactile go pill" data-course="${index}">${state.course?.id === course.id ? "Continue" : "Open"}</button>
+          <button class="btn-tactile secondary small pill" id="course-settings-${index}" data-settings="${index}" aria-label="Settings for ${esc(course.title)}">Settings</button></div>
       </li>`).join("")}
     </ul>
     ${state.courses.length ? "" : "<p>Enter an invite code to join your first course.</p>"}
-    <form id="join-course" class="join-course">
-      <label>Invite code<input name="code" class="text-field invite-input" pattern="[A-Z0-9]{6}" maxlength="6" autocapitalize="characters" autocomplete="off" placeholder="K7M9P2" required></label>
-      <button type="submit" class="btn-tactile go">Join Course</button>
+    <div class="course-join">
+    <form id="join-course" class="join-course" aria-describedby="invite-help">
+      <label>Invite code<input name="code" class="text-field invite-input" pattern="[A-Z0-9]{6}" maxlength="6" autocapitalize="characters" autocomplete="off" placeholder="e.g. K7M9P2" required></label>
+      <button type="submit" class="btn-tactile secondary pill">Join Course</button>
     </form>
+    <p id="invite-help" class="invite-help">${mascotHtml("idle", 34)}<span>Have a teammate's invite code? Join their course anytime.</span></p>
+    </div>
   </section>`;
-  root.querySelector("#create-course").onclick = (event) => { if (!state.inFlight) createCourseDialog(event); };
+  root.querySelector("#create-course").onclick = () => toast("Custom course authoring is coming soon!");
+  const backToCourse = () => {
+    if (state.inFlight || !state.data) return;
+    state.view = "map";
+    render();
+  };
+  bar.querySelector("#btn-brand").onclick = backToCourse;
+  const back = root.querySelector("#btn-courses-back");
+  if (back) back.onclick = backToCourse;
   const local = root.querySelector("#open-local");
   if (local) local.onclick = () => guarded(local, openLocalStudio);
   root.querySelectorAll("[data-course]").forEach((button) => {
@@ -4657,64 +6038,19 @@ function renderCourses() {
     button.onclick = () => courseSettings(state.courses[Number(button.dataset.settings)], button);
   });
   const form = root.querySelector("#join-course");
-  form.elements.code.oninput = (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+  form.elements.code.oninput = (e) => {
+    const code = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    e.target.value = code;
+    const button = form.querySelector("button");
+    button.classList.toggle("go", code.length === 6);
+    button.classList.toggle("secondary", code.length !== 6);
+  };
   form.onsubmit = (event) => {
     event.preventDefault();
     guarded(form.querySelector("button"), async () => {
       const joined = await rpc("join_course_by_code", { p_code: form.elements.code.value });
       await listCourses();
       await openCourse(state.courses.find((c) => c.id === joined.id));
-    });
-  };
-}
-
-function createCourseDialog(event) {
-  showDialog("Create Course", `<form id="new-course" class="form-stack">
-    <label>Title<input name="title" class="text-field" minlength="2" maxlength="120" required></label>
-    <label>Description<textarea name="description" class="text-field" maxlength="500" rows="2"></textarea></label>
-    <label>Course JSON<textarea name="content" class="text-field" rows="6" required></textarea></label>
-    <div class="form-row"><label>Upload JSON<input name="file" type="file" accept=".json,application/json"></label>
-    <button id="use-template" class="btn-ghost" type="button">Use Starter Template</button></div>
-    <div class="modal-msg" role="status"></div>
-    <button class="btn-tactile go" type="submit">Create Course</button>
-  </form>`, event.currentTarget);
-  const form = document.getElementById("new-course");
-  form.elements.file.onchange = async () => {
-    const file = form.elements.file.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return toast("Choose a JSON file under 5 MB.");
-    try {
-      form.elements.content.value = await file.text();
-    } catch (_) {
-      toast("The JSON file could not be read.");
-    }
-  };
-  form.querySelector("#use-template").onclick = () => {
-    if (form.elements.content.value.trim()) return toast("Clear the JSON field to insert the starter template.");
-    form.elements.content.value = JSON.stringify({
-      schema_version: 1,
-      districts: [{ id: "unit-1", chapter: "First unit", steps: [{ id: "first-step", kind: "story_concept", title: "First lesson" }] }],
-      cards: [],
-      lab_snapshots: {},
-    }, null, 2);
-  };
-  form.onsubmit = (event) => {
-    event.preventDefault();
-    guarded(form.querySelector('[type="submit"]'), async () => {
-      try {
-        const content = JSON.parse(form.elements.content.value);
-        validateCourse(content);
-        const created = await rpc("create_course", {
-          p_title: form.elements.title.value,
-          p_description: form.elements.description.value,
-          p_content: content,
-        });
-        await listCourses();
-        renderCourses();
-        courseSettings(state.courses.find((c) => c.id === created.id));
-      } catch (err) {
-        form.querySelector(".modal-msg").textContent = err.message;
-      }
     });
   };
 }
@@ -4761,12 +6097,13 @@ function courseSettings(course, trigger) {
     state.courses = state.courses.filter((entry) => entry.id !== course.id);
     closeModal();
     render();
-    document.getElementById("create-course")?.focus();
+    document.querySelector("#btn-courses-back, #join-course input")?.focus();
     await listCourses();
   });
 }
 
 async function signOut() {
+  await Promise.all([progressQueue, localProgressQueue]);
   const { error } = await state.sbClient.auth.signOut();
   if (error) throw error;
   await clearSession();
@@ -4782,6 +6119,7 @@ async function clearSession() {
   state.sbProfile = null;
   state.friends = [];
   state.courses = [];
+  courseHubProgress.clear();
   state.course = null;
   state.progress = null;
   state.data = null;
@@ -4799,7 +6137,9 @@ async function clearSession() {
 
 const RUN_LABEL = `${ICONS.play} Run &amp; Verify (${/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘Enter" : "Ctrl+Enter"})`;
 const NUMPY_CHALLENGES = new Set(["m0_returns", "m3_gae"]);
-const RUNNER_URL = CONFIG.localRunnerUrl || "http://127.0.0.1:8787";
+const RUNNER_URL = /^https?:\/\//i.test(CONFIG.localRunnerUrl || "")
+  ? CONFIG.localRunnerUrl.replace(/\/+$/, "")
+  : "http://127.0.0.1:8787";
 const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
 const CM_DEPS = "?deps=@codemirror/state@6.7.6,@codemirror/view@6.44.0";
 
@@ -4832,12 +6172,19 @@ function codeResultsHtml(res) {
   if (!res) return "";
   const line = String(res.stderr ?? "").match(/File "[^"\n]*solution\.py", line (\d+)/)?.[1];
   const checks = res.checks?.length ? res.checks : [{ name: "Verification", passed: res.passed }];
-  return `<ul class="checks-list" aria-label="Verification results">${checks.map((check) => `
-    <li><span class="check-icon ${check.passed ? "pass" : "fail"}" aria-hidden="true">${check.passed ? sizedIcon("check", 16, 2.8) : sizedIcon("close", 16, 2.4)}</span>
+  const passed = checks.filter((check) => check.passed).length;
+  const firstFailure = checks.findIndex((check) => !check.passed);
+  const all = firstFailure < 0;
+  const summary = all ? `All ${checks.length} ${checks.length === 1 ? "check" : "checks"} passed!` : `${passed} of ${checks.length} checks passed`;
+  return `<div class="code-summary-bar ${all ? "all-passed" : "has-fail"}">
+    <strong>${summary}</strong>
+    ${progressBarHtml(passed, checks.length, "Passing checks")}
+  </div><ul class="checks-list" aria-label="Verification results">${checks.map((check, index) => `
+    <li${index === firstFailure ? ' class="first-failure"' : ""}><span class="check-icon ${check.passed ? "pass" : "fail"}" aria-hidden="true">${check.passed ? sizedIcon("check", 16, 2.8) : sizedIcon("close", 16, 2.4)}</span>
       <div><strong>${esc(check.name)}</strong><span class="sr-only">${check.passed ? " passed" : " failed"}</span>
-      ${check.detail ? `<p>${esc(check.detail)}</p>` : ""}</div></li>`).join("")}</ul>
+      ${check.detail ? `<p>${esc(check.detail)}</p>` : ""}
+      ${index === firstFailure && line ? `<button type="button" class="btn-ghost pill code-line-jump" data-code-line="${line}">Go to line <kbd>${line}</kbd></button>` : ""}</div></li>`).join("")}</ul>
     ${res.stdout ? `<details><summary>Program output</summary><pre class="terminal-log">${esc(res.stdout)}</pre></details>` : ""}
-    ${line ? `<button class="btn-ghost flush" data-code-line="${line}">Go to line ${line}</button>` : ""}
     ${res.stderr ? `<details><summary>Traceback</summary><pre class="terminal-log err">${esc(res.stderr)}</pre></details>` : ""}`;
 }
 
@@ -4932,7 +6279,7 @@ async function verifyCode(step, code) {
     if (!Array.isArray(checks) || !checks.length) throw new Error("Browser verification tests are missing for this course.");
     result = await runInBrowser(code, checks);
   }
-  const progress = await updateCloudProgress("/api/run_code", { step_id: step.id, passed: result.passed });
+  const progress = updateCloudProgress("/api/run_code", { step_id: step.id, passed: result.passed });
   return { ...result, ...progress };
 }
 
@@ -4943,6 +6290,18 @@ function patchRunnerCard(step) {
   const requiresRunner = cloudCourse() && !NUMPY_CHALLENGES.has(step.challenge_id) && !runnerAvailable;
   panel.hidden = !requiresRunner;
   button.disabled = requiresRunner;
+}
+
+function loadEditorModules() {
+  editorModules ??= Promise.all([
+    import("https://esm.sh/codemirror@6.0.1" + CM_DEPS),
+    import("https://esm.sh/@codemirror/lang-python@6.1.6" + CM_DEPS),
+    import("https://esm.sh/@codemirror/theme-one-dark@6.1.2" + CM_DEPS),
+    import("https://esm.sh/@codemirror/view@6.44.0?deps=@codemirror/state@6.7.6"),
+    import("https://esm.sh/@codemirror/commands@6.11.2" + CM_DEPS),
+    import("https://esm.sh/@codemirror/state@6.7.6"),
+  ]).catch(() => null);
+  return editorModules;
 }
 
 function mountCodeEditor(step) {
@@ -5052,7 +6411,7 @@ function mountCodeEditor(step) {
   });
   if (cloudCourse()) {
     patchRunnerCard(step);
-    probeRunner().then(() => { if (shell.isConnected && !state.inFlight) patchRunnerCard(step); });
+    probeRunner().then(() => { if (shell.isConnected && currentStepId() === step.id && !state.inFlight) patchRunnerCard(step); });
   }
   run.onclick = () => guarded(run, async () => {
     const expectedStepId = step.id;
@@ -5061,20 +6420,23 @@ function mountCodeEditor(step) {
     try {
       const res = await verifyCode(step, cm ? cm.state.doc.toString() : ed.value);
       if (!shell.isConnected || currentStepId() !== expectedStepId) return;
+      const alreadyPassed = state.stepFeedback[step.id]?.passed === true;
       state.stepFeedback[step.id] = res;
       state.data = res.state;
       if (res.passed) {
         state.combo++;
-        state.footerSheen = true;
-        handleXp(res.xp, run, "code_pass");
+        playSound("code_pass", state.combo);
+        recordLessonXp(res.xp);
         unlockAchievement("code_cracker");
       } else {
         state.combo = 0;
         playSound("miss");
       }
       logs.innerHTML = codeResultsHtml(res);
+      animateLessonCheck(res.passed, logs.querySelector(".code-summary-bar"), !alreadyPassed || !res.passed, 10);
       renderTopbar();
       renderMissionFooter();
+      if (res.passed && !alreadyPassed) pulseLessonFooter();
     } catch (err) {
       if (!shell.isConnected || currentStepId() !== expectedStepId) return;
       logs.innerHTML = codeResultsHtml({ passed: false, checks: [{ name: "Run could not finish", passed: false, detail: err.message }] });
@@ -5084,16 +6446,8 @@ function mountCodeEditor(step) {
     }
   }).finally(() => { if (cloudCourse() && shell.isConnected && !state.inFlight) patchRunnerCard(step); });
 
-  editorModules ??= Promise.all([
-    import("https://esm.sh/codemirror@6.0.1" + CM_DEPS),
-    import("https://esm.sh/@codemirror/lang-python@6.1.6" + CM_DEPS),
-    import("https://esm.sh/@codemirror/theme-one-dark@6.1.2" + CM_DEPS),
-    import("https://esm.sh/@codemirror/view@6.44.0?deps=@codemirror/state@6.7.6"),
-    import("https://esm.sh/@codemirror/commands@6.11.2" + CM_DEPS),
-    import("https://esm.sh/@codemirror/state@6.7.6"),
-  ]).catch(() => null);
-  editorModules.then((modules) => {
-    if (!modules || !shell.isConnected || edited || document.activeElement === ed) return;
+  loadEditorModules().then((modules) => {
+    if (!modules || !shell.isConnected || currentStepId() !== step.id || edited || document.activeElement === ed) return;
     const [{ basicSetup }, { python }, { oneDark }, { EditorView, keymap },
       { indentMore, indentLess }, { Compartment }] = modules;
     const theme = new Compartment();
@@ -5212,7 +6566,6 @@ function mountLab(step) {
       state.labCache[step.id] = res;
       status.textContent = "";
       playSound("correct");
-      state.footerSheen = true;
       renderMissionFooter();
     } catch (err) {
       if (out.isConnected && currentStepId() === expectedStepId) status.textContent = err.message;
