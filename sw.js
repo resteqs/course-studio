@@ -1,8 +1,8 @@
 const scope = new URL(self.registration.scope);
 const CACHE_PREFIX = "delightful-learn-shell-" + scope.pathname + "-";
-const CACHE = CACHE_PREFIX + "v3";
+const CACHE = CACHE_PREFIX + "v4";
 const shell = new URL("./", scope);
-const assets = new Set([
+const appShellAssets = new Set([
   "index.html", "theme-init.js", "app-config.js", "style.css", "delight.js", "illustrations.js", "app.js", "favicon.svg",
   "vendor/codemirror.bundle.mjs", "python-runner.html", "python-runner.js",
 ].map((path) => new URL(path, scope).href));
@@ -11,8 +11,12 @@ const localStudio = new URL(self.location.href).searchParams.has("studio");
 self.addEventListener("install", (event) => {
   // Local Studio serves its own shell and has no generated app-config.js.
   const studioOnly = new Set(["index.html", "app-config.js"].map((path) => new URL(path, scope).href));
-  const precache = [...assets].filter((url) => !localStudio || !studioOnly.has(url));
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(precache)));
+  const precache = [...appShellAssets].filter((url) => !localStudio || !studioOnly.has(url));
+  event.waitUntil(
+    caches.open(CACHE)
+      .then((cache) => cache.addAll(precache))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -21,14 +25,14 @@ self.addEventListener("activate", (event) => {
   )).then(() => self.clients.claim()));
 });
 
-function isStaticAsset(url) {
-  if (assets.has(url.href)) return true;
+function isImmutableAsset(url) {
   if (url.origin === scope.origin && url.pathname.startsWith(scope.pathname)) {
     return /^sfx\/[\w-]+\.wav$/.test(url.pathname.slice(scope.pathname.length));
   }
   if (url.origin === "https://cdn.jsdelivr.net") {
     return url.pathname.startsWith("/npm/katex@0.16.11/dist/")
-      || url.pathname === "/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js";
+      || url.pathname === "/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"
+      || url.pathname.startsWith("/pyodide/v0.26.4/full/");
   }
   return url.origin === "https://fonts.googleapis.com" || url.origin === "https://fonts.gstatic.com";
 }
@@ -53,7 +57,23 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetch(request).catch(() => caches.match(new URL("index.html", shell))));
     return;
   }
-  if (!isStaticAsset(url)) return;
+
+  // Same-origin app shell assets use network-first so fresh deployments appear
+  // on the very first reload in Safari/Chrome while still working offline.
+  if (appShellAssets.has(url.href)) {
+    event.respondWith(
+      fetch(request).then(async (response) => {
+        if (response.ok) {
+          const store = await caches.open(CACHE);
+          await store.put(request, response.clone()).catch(() => {});
+        }
+        return response;
+      }).catch(() => caches.open(CACHE).then((store) => store.match(request))),
+    );
+    return;
+  }
+
+  if (!isImmutableAsset(url)) return;
 
   const cache = caches.open(CACHE);
   const refresh = fetch(request).then(async (response) => {

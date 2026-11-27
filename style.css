@@ -513,26 +513,27 @@ button, input, textarea, select { font-family: inherit; }
   flex-direction: column;
   gap: 14px;
 }
-/* A tall sidebar scrolls inside the viewport so #btn-rank-reward is never clipped below the fold.
-   The 4px inset keeps focus rings and card shadows clear of the scroll edge. */
-.path-sidebar {
-  max-height: calc(100dvh - 104px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  margin: -4px;
-  padding: 4px;
+/* Only scroll sticky rails on ultra-short windows so jump popovers never clip on standard laptops. */
+@media (min-width: 761px) and (max-height: 620px) {
+  .path-sidebar, .path-right-rail {
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
 }
 
 .sidebar-panel,
 .ach-card,
-.squad-card {
+.squad-card,
+.daily-card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 18px;
 }
-.ach-card, .squad-card { padding: 20px 22px; }
-.sidebar-section { padding: 20px 22px; }
+.ach-card, .squad-card, .daily-card { padding: 18px 20px; }
+.daily-card .daily-goal { margin: 0; padding: 0; background: transparent; border-radius: 0; }
+.sidebar-section { padding: 18px 20px; }
 .sidebar-section + .sidebar-section { border-top: 1px solid var(--line); }
 
 .course-title {
@@ -2602,6 +2603,50 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
   .bandit-arm:hover, .algorithm-card:hover { border-color: var(--accent); }
   .path-node-row:hover .node-kubo-side > span, #btn-rank-reward:hover > .kubo-wrap { animation: kubo-hop 480ms var(--spring-bouncy); } /* impeccable-disable-line bounce-easing: required spring timing */
 }
+@media (max-width: 1360px) and (min-width: 1181px) {
+  .path-layout { grid-template-columns: 292px minmax(420px, 1fr) 264px; gap: 24px; padding: 24px 20px 80px; }
+}
+@media (min-width: 761px) and (max-height: 860px) {
+  .path-layout { padding-top: 18px; }
+  .path-sidebar, .path-right-rail { top: 76px; gap: 10px; }
+  .sidebar-section { padding: 13px 16px; }
+  .course-title { font-size: 19.5px; margin-bottom: 6px; }
+  .overview-tagline {
+    font-size: 13px; line-height: 1.42; margin-bottom: 10px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .sidebar-panel .stat-pills { gap: 6px; }
+  .sidebar-panel .stat-pill { min-height: 34px; font-size: 12.5px; }
+  .next-card-kicker { margin-bottom: 2px; }
+  .next-card-title { font-size: 14.5px; margin-bottom: 10px; }
+  #btn-sidebar-start { min-height: 42px; height: 42px; }
+  .rank-stats-row { margin-bottom: 10px; }
+  .rank-stats-row.three .rank-stat-box { min-height: 48px; padding: 6px 4px; gap: 2px; }
+  .rank-header { margin-bottom: 6px; }
+  .rank-meta { margin-top: 6px; font-size: 12px; }
+  .next-unlock { margin-top: 10px; padding: 8px 10px; }
+  .ach-card, .squad-card, .daily-card { padding: 13px 15px; }
+  .daily-card .daily-goal { gap: 6px; }
+  .daily-card .goal-chip { min-height: 34px; font-size: 12px; }
+  .daily-card .boost-ready, .daily-card .boost-pill.wide { min-height: 38px; font-size: 13px; }
+  .ach-card .ach-row { padding: 8px 10px; }
+  .ach-card .ach-row:nth-child(n+4) { display: none; }
+}
+@media (min-width: 761px) and (max-height: 740px) {
+  .path-layout { padding-top: 12px; }
+  .path-sidebar, .path-right-rail { top: 72px; gap: 8px; }
+  .sidebar-section { padding: 10px 14px; }
+  .course-title { font-size: 18px; margin-bottom: 4px; }
+  .overview-tagline { -webkit-line-clamp: 2; font-size: 12.5px; margin-bottom: 8px; }
+  .sidebar-panel .stat-pill { min-height: 30px; font-size: 12px; }
+  .next-card-title { font-size: 14px; margin-bottom: 8px; }
+  #btn-sidebar-start { min-height: 40px; height: 40px; }
+  .rank-stats-row { margin-bottom: 8px; }
+  .rank-stats-row.three .rank-stat-box { min-height: 44px; padding: 5px 4px; }
+  .next-unlock { margin-top: 8px; padding: 7px 10px; font-size: 12.5px; }
+  .ach-card .ach-row:nth-child(n+3) { display: none; }
+}
+
 @media (max-width: 1180px) {
   .path-quick-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 }

@@ -3660,6 +3660,7 @@ function renderMap({ sheen = false } = {}) {
         <div class="path-quick-actions" aria-label="Squad and achievements">
           <button type="button" class="stat-pill" id="quick-achievements" aria-haspopup="dialog">${ICONS.star} Achievements <span class="tabular">${state.achievements.length} / ${ACHIEVEMENT_DEFS.length}</span></button>
           <button type="button" class="stat-pill" id="quick-squad" data-open-squad aria-haspopup="dialog">${ICONS.trophy} Leaderboard <span class="tabular">#${myRank}</span></button>
+          <button type="button" class="stat-pill" id="quick-daily" aria-haspopup="dialog">${ICONS.bolt} <span class="tabular">${numberFormat.format(dailyXp)} / ${numberFormat.format(dailyGoal)} XP</span></button>
         </div>
         <div class="sidebar-panel">
           <section class="sidebar-section">
@@ -3700,15 +3701,6 @@ function renderMap({ sheen = false } = {}) {
                 <div><div class="rank-stat-val">${numberFormat.format(g.xp)}</div><div class="rank-stat-lbl">Total XP</div></div>
               </div>
             </div>
-            <div class="daily-goal">
-              <div class="daily-goal-head">
-                <span class="daily-goal-label">Today: <span class="tabular">${numberFormat.format(dailyXp)} / ${numberFormat.format(dailyGoal)} XP</span></span>
-                ${dailyXp >= dailyGoal ? `<span class="daily-goal-done">${ICONS.check} Goal met</span>` : ""}
-              </div>
-              ${progressBarHtml(Math.min(dailyXp, dailyGoal), dailyGoal, "Daily XP goal")}
-              ${goalPickerHtml("side-goal")}
-              ${boostHtml}
-            </div>
             <div class="rank-header">
               <span class="rank-name">${esc(g.level)}</span>
               <span class="rank-xp">${g.xp >= g.next_threshold && !nextUnlock() ? `${numberFormat.format(g.xp)} XP (Max rank)` : `${numberFormat.format(g.xp)} / ${numberFormat.format(g.next_threshold)} XP`}</span>
@@ -3725,7 +3717,19 @@ function renderMap({ sheen = false } = {}) {
 
       <div class="path-column">${pathHtml}</div>
 
-      <aside class="path-right-rail" aria-label="Squad and achievements">
+      <aside class="path-right-rail" aria-label="Daily goal, leaderboard, and achievements">
+        <div class="daily-card">
+          <div class="daily-goal">
+            <div class="daily-goal-head">
+              <span class="daily-goal-label">Today: <span class="tabular">${numberFormat.format(dailyXp)} / ${numberFormat.format(dailyGoal)} XP</span></span>
+              ${dailyXp >= dailyGoal ? `<span class="daily-goal-done">${ICONS.check} Goal met</span>` : ""}
+            </div>
+            ${progressBarHtml(Math.min(dailyXp, dailyGoal), dailyGoal, "Daily XP goal")}
+            ${goalPickerHtml("side-goal")}
+            ${boostHtml}
+          </div>
+        </div>
+
         <div class="squad-card">
           <div class="rail-head">
             <h2>Leaderboard <span class="rail-count tabular">#${myRank}</span></h2>
@@ -3767,6 +3771,8 @@ function renderMap({ sheen = false } = {}) {
   });
   bindStreakButtons(root);
   document.getElementById("btn-gems").onclick = (event) => { playSound("tap"); openRewardsModal(event.currentTarget, "boosts"); };
+  const quickDaily = document.getElementById("quick-daily");
+  if (quickDaily) quickDaily.onclick = (event) => { playSound("tap"); openRewardsModal(event.currentTarget, "boosts"); };
   bindGoalPicker(root, () => renderMap());
   const boostReady = document.getElementById("btn-boost-ready");
   if (boostReady) boostReady.onclick = () => guarded(boostReady, async () => { await activateBoost(); renderMap(); });
