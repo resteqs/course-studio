@@ -1,362 +1,365 @@
 <!doctype html>
-<html lang="en" data-palette="midnight">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Style proposal: palettes, objects, UI kit</title>
+<title>Style proposal, round 2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* ---------- Palettes: only chrome colours change. Game objects keep fixed colours (like Duolingo's red hearts and yellow XP). ---------- */
-:root { --font: "Plus Jakarta Sans", system-ui, sans-serif; }
-:root[data-font="nunito"] { --font: "Nunito", system-ui, sans-serif; }
-[data-palette="midnight"] { --bg:#11161f; --surface:#18202c; --stage:#222c3b; --line:#2b3749; --lip:#0b0f16; --ink:#f3f6fa; --ink-2:#c3cdda; --ink-3:#8796ab; --accent:#8b95ff; --accent-solid:#5d63f0; --accent-lip:#3f43c4; --go:#3ccf4e; --go-lip:#26a336; }
-[data-palette="felt"]     { --bg:#0e1814; --surface:#15231d; --stage:#1d2f27; --line:#284035; --lip:#08110d; --ink:#f1f6f2; --ink-2:#c2d3c8; --ink-3:#84a091; --accent:#ffcf4a; --accent-solid:#f2b417; --accent-lip:#b9850b; --go:#3ccf4e; --go-lip:#26a336; }
-[data-palette="ocean"]    { --bg:#0a1520; --surface:#10202e; --stage:#172b3c; --line:#21384c; --lip:#050c13; --ink:#eef6fb; --ink-2:#bcd2e0; --ink-3:#7f9bb0; --accent:#38d6e8; --accent-solid:#10b6cc; --accent-lip:#0b8697; --go:#3ccf4e; --go-lip:#26a336; }
-[data-palette="plum"]     { --bg:#140f1f; --surface:#1c1529; --stage:#271e37; --line:#342946; --lip:#0b0712; --ink:#f6f2fb; --ink-2:#d2c6e2; --ink-3:#9a8cb3; --accent:#c79bff; --accent-solid:#9d5cf5; --accent-lip:#7238c7; --go:#8bd43c; --go-lip:#66a524; }
-[data-palette="ember"]    { --bg:#16120e; --surface:#201a14; --stage:#2c241b; --line:#3a2f24; --lip:#0c0906; --ink:#fbf5ee; --ink-2:#e0d1bf; --ink-3:#a8957f; --accent:#ff8a5c; --accent-solid:#f2672f; --accent-lip:#bb4818; --go:#3ccf4e; --go-lip:#26a336; }
-/* Fixed object colours */
-:root { --xp:#ffc800; --xp-lip:#e3a300; --gem:#ff5ca8; --flame:#ff9600; --ice:#4cc3ff; --danger:#ff5a5f; --danger-lip:#d63a40; }
-
+:root { --font: "Plus Jakarta Sans", system-ui, sans-serif; --xp:#f9cc21; --xp-lip:#d9a800; --gem:#f85da5; --streak:#fd9320; --freeze:#60ccfc; }
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); -webkit-font-smoothing: antialiased; transition: background-color .25s; }
-button { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .wrap { width: min(100% - 48px, 1120px); margin: 0 auto; padding: 40px 0 96px; }
-h1 { font-size: 36px; letter-spacing: -.03em; margin: 0 0 8px; font-weight: 800; }
-.lede { color: var(--ink-2); max-width: 70ch; line-height: 1.6; margin: 0 0 28px; }
-section.block { margin-top: 48px; }
-section.block > h2 { font-size: 22px; margin: 0 0 6px; font-weight: 800; }
-section.block > p.note { color: var(--ink-3); margin: 0 0 20px; line-height: 1.55; max-width: 75ch; }
-
-/* Controls */
-.controls { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 12px 0; background: var(--bg); border-bottom: 2px solid var(--line); }
-.palettes { display: flex; gap: 10px; flex-wrap: wrap; }
-.pal { display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 14px; border: 2px solid var(--line); border-bottom-width: 4px; background: var(--surface); cursor: pointer; font-weight: 700; }
-.pal[aria-pressed="true"] { border-color: var(--accent-solid); background: var(--stage); }
-.pal .sw { display: grid; grid-template-columns: repeat(3, 12px); gap: 2px; }
-.pal .sw i { height: 24px; border-radius: 4px; }
-.seg { display: flex; gap: 4px; padding: 4px; background: var(--surface); border-radius: 12px; border: 2px solid var(--line); }
-.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; color: var(--ink-2); min-height: 36px; }
-.seg button[aria-pressed="true"] { background: var(--accent-solid); color: #fff; }
-.a { color: var(--accent); text-decoration: none; font-weight: 700; }
-
-/* ---------- Tactile UI grammar: 2px border + 4px bottom lip, press sinks ---------- */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; padding: 0 26px; border-radius: 16px; border: 0; font-weight: 800; font-size: 16px; cursor: pointer; transition: transform .12s, box-shadow .12s, filter .12s; }
-.btn:hover { filter: brightness(1.06); }
-.btn:active { transform: translateY(4px); box-shadow: none !important; }
-.btn.go { background: var(--go); color: #062b0c; box-shadow: 0 4px 0 var(--go-lip); }
-.btn.accent { background: var(--accent-solid); color: #fff; box-shadow: 0 4px 0 var(--accent-lip); }
-.btn.secondary { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 2px var(--line) inset, 0 4px 0 var(--line); }
-.btn.ghost { background: none; color: var(--accent); min-height: 44px; }
-.btn.danger { background: var(--danger); color: #2b0507; box-shadow: 0 4px 0 var(--danger-lip); }
-.btn.xp { background: var(--xp); color: #3d2a00; box-shadow: 0 4px 0 var(--xp-lip); }
-.btn:disabled { background: var(--stage); color: var(--ink-3); box-shadow: 0 4px 0 var(--line); cursor: not-allowed; filter: none; transform: none; }
-.row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+a { color: var(--accent-text); font-weight: 700; text-decoration: none; }
+h1 { font-size: 36px; letter-spacing: -.03em; margin: 14px 0 8px; }
+.lede { color: var(--ink-2); max-width: 72ch; line-height: 1.6; margin: 0; }
+section { margin-top: 56px; }
+section > h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: -.01em; }
+section > p.note { color: var(--ink-3); margin: 0 0 20px; line-height: 1.55; max-width: 76ch; }
 .card { background: var(--surface); border: 2px solid var(--line); border-bottom-width: 5px; border-radius: 20px; padding: 18px; }
-.choice { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 14px 16px; border-radius: 16px; background: var(--surface); border: 2px solid var(--line); border-bottom-width: 5px; font-weight: 700; cursor: pointer; }
-.choice .k { width: 30px; height: 30px; border-radius: 9px; border: 2px solid var(--line); display: grid; place-items: center; font-size: 13px; font-weight: 800; color: var(--ink-3); flex: none; }
-.choice.sel { border-color: var(--accent-solid); background: color-mix(in oklab, var(--accent-solid) 14%, var(--surface)); }
-.choice.sel .k { border-color: var(--accent-solid); color: var(--accent); }
-.choice.right { border-color: var(--go); background: color-mix(in oklab, var(--go) 14%, var(--surface)); }
-.choice.right .k { background: var(--go); border-color: var(--go); color: #062b0c; }
-.choice.wrong { border-color: var(--danger); background: color-mix(in oklab, var(--danger) 13%, var(--surface)); }
-.choice.wrong .k { background: var(--danger); border-color: var(--danger); color: #2b0507; }
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 2px solid var(--line); font-weight: 800; font-size: 14px; }
-.stat { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; padding: 6px 8px; border-radius: 12px; }
-.stat svg { width: 26px; height: 26px; }
-.stat:hover { background: var(--stage); }
-.track { height: 16px; border-radius: 99px; background: var(--stage); overflow: hidden; }
-.track > i { display: block; height: 100%; border-radius: inherit; background: var(--go); box-shadow: inset 0 -4px 0 rgb(0 0 0 / .12), inset 0 4px 0 rgb(255 255 255 / .25); }
-.track.xp > i { background: var(--xp); }
-.toggle { width: 52px; height: 30px; border-radius: 99px; background: var(--stage); border: 2px solid var(--line); position: relative; cursor: pointer; padding: 0; }
-.toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%; background: var(--ink-3); transition: transform .15s; }
-.toggle[aria-checked="true"] { background: var(--go); border-color: var(--go-lip); }
-.toggle[aria-checked="true"]::after { transform: translateX(22px); background: #fff; }
-.field { font: inherit; font-weight: 700; padding: 12px 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); min-width: 220px; }
-.field:focus { outline: none; border-color: var(--accent-solid); }
-.sheet { border-radius: 20px; padding: 18px 20px; display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; }
-.sheet.good { background: color-mix(in oklab, var(--go) 18%, var(--surface)); }
-.sheet.bad { background: color-mix(in oklab, var(--danger) 16%, var(--surface)); }
-.sheet h4 { margin: 0 0 4px; font-size: 20px; font-weight: 800; }
-.sheet.good h4 { color: var(--go); } .sheet.bad h4 { color: var(--danger); }
-.sheet p { margin: 0; color: var(--ink-2); }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(var(--min, 240px), 1fr)); }
+.changes li { margin: 6px 0; color: var(--ink-2); }
+.changes b { color: var(--ink); }
 
-/* Objects grid */
-.objects { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-.obj { display: grid; justify-items: center; gap: 8px; padding: 18px 10px 14px; text-align: center; }
-.obj svg { width: 84px; height: 84px; overflow: visible; }
-.obj b { font-size: 14px; } .obj small { color: var(--ink-3); font-size: 12.5px; line-height: 1.35; }
-.obj svg.bob { animation: bob 3s ease-in-out infinite; }
-@keyframes bob { 50% { transform: translateY(-4px); } }
-.rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-.rules .card h3 { margin: 0 0 6px; font-size: 16px; } .rules .card p { margin: 0; color: var(--ink-2); line-height: 1.5; font-size: 14.5px; }
+/* Influences */
+.inf h3 { margin: 0 0 4px; font-size: 16px; }
+.inf .take { color: var(--ink-2); font-size: 14.5px; line-height: 1.5; margin: 0 0 6px; }
+.inf .leave { color: var(--ink-3); font-size: 13.5px; line-height: 1.5; margin: 0; }
 
-/* Lesson nodes */
-.nodes { display: flex; gap: 22px; flex-wrap: wrap; align-items: end; }
-.node { display: grid; justify-items: center; gap: 10px; font-size: 13px; color: var(--ink-3); font-weight: 700; }
-.node svg { width: 72px; height: 66px; }
+/* Generator */
+.gen { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+.presets { display: grid; gap: 10px; }
+.preset { text-align: left; border: 2px solid var(--line); border-bottom-width: 4px; background: var(--surface); border-radius: 16px; padding: 12px 14px; cursor: pointer; }
+.preset[aria-pressed="true"] { border-color: var(--accent); background: var(--raised); }
+.preset b { display: flex; align-items: center; gap: 10px; }
+.preset small { display: block; color: var(--ink-3); margin-top: 6px; line-height: 1.45; }
+.sw { display: inline-grid; grid-template-columns: repeat(4, 10px); gap: 2px; }
+.sw i { height: 18px; border-radius: 3px; }
+.sliders { display: grid; gap: 12px; margin-top: 16px; }
+.sliders label { display: grid; gap: 6px; font-weight: 700; font-size: 14px; }
+.sliders label span { display: flex; justify-content: space-between; color: var(--ink-2); }
+.sliders input[type=range] { width: 100%; accent-color: var(--accent); }
+.preview { display: grid; gap: 14px; }
+.ph { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 18px; background: var(--surface); border: 2px solid var(--line); }
+.ph .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; margin-right: auto; }
+.ph svg { width: 30px; height: 30px; }
+.stat { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-variant-numeric: tabular-nums; padding: 4px 8px; border-radius: 10px; }
+.stat svg { width: 24px; height: 24px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 16px; border: 0; font-weight: 800; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+.btn:active { transform: translateY(4px); box-shadow: none !important; }
+.btn.go { background: var(--go); color: var(--bg); box-shadow: 0 4px 0 var(--go-lip); }
+.btn.accent { background: var(--accent); color: #fff; box-shadow: 0 4px 0 var(--accent-lip); }
+.btn.secondary { background: var(--surface); box-shadow: 0 0 0 2px var(--line) inset, 0 4px 0 var(--line); }
+.choice { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 2px solid var(--line); border-bottom-width: 5px; font-weight: 700; }
+.choice .k { width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--line); display: grid; place-items: center; font-size: 13px; color: var(--ink-3); font-weight: 800; }
+.choice.right { border-color: var(--go); } .choice.right .k { background: var(--go); border-color: var(--go); color: var(--bg); }
+.choice.wrong { border-color: var(--danger); } .choice.wrong .k { background: var(--danger); border-color: var(--danger); color: var(--bg); }
+.prose h4 { margin: 0 0 6px; font-size: 18px; } .prose p { margin: 0 0 8px; color: var(--ink-2); line-height: 1.6; } .prose .muted { color: var(--ink-3); font-size: 14px; }
+.tokens { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.tok { border-radius: 12px; overflow: hidden; border: 2px solid var(--line); font-size: 12px; }
+.tok i { display: block; height: 34px; }
+.tok span { display: block; padding: 6px 8px; font-family: "JetBrains Mono", monospace; color: var(--ink-2); }
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; font-size: 13.5px; }
+.checks div { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 10px; background: var(--surface); }
+.checks b.ok { color: var(--go-text); } .checks b.bad { color: var(--danger-text); }
 
-/* Mockups */
-.mock { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; align-items: start; }
-.rail { display: grid; gap: 14px; }
-.rail .card h3 { margin: 0 0 12px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
-.rail .card h3 a { font-size: 14px; }
-.qrow { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; }
-.qrow + .qrow { margin-top: 14px; }
-.qrow svg { width: 44px; height: 44px; }
-.qrow .t { display: flex; justify-content: space-between; font-weight: 800; font-size: 14.5px; margin-bottom: 8px; }
-.qrow .t span { color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.medal-row { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; }
-.medal-row + .medal-row { border-top: 2px solid var(--line); }
-.medal-row svg { width: 48px; height: 48px; }
-.medal-row .n { font-weight: 800; } .medal-row .d { color: var(--ink-3); font-size: 13.5px; }
-.medal-row .r { display: inline-flex; gap: 4px; align-items: center; font-weight: 800; font-variant-numeric: tabular-nums; }
-.medal-row .r svg { width: 18px; height: 18px; }
-.medal-row.locked svg.medal { filter: grayscale(1) brightness(.55); opacity: .7; }
-.finish { text-align: center; display: grid; justify-items: center; gap: 14px; padding: 28px; }
-.finish h3 { font-size: 30px; margin: 0; letter-spacing: -.02em; font-weight: 800; }
-.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
-.tile { border-radius: 16px; padding: 3px; background: var(--c); }
-.tile b { display: block; font-size: 12px; font-weight: 900; color: #10140f; padding: 4px 0 6px; letter-spacing: .02em; }
-.tile span { display: flex; justify-content: center; align-items: center; gap: 6px; background: var(--surface); border-radius: 13px; padding: 12px 4px; font-size: 22px; font-weight: 900; color: var(--c); font-variant-numeric: tabular-nums; }
-.tile span svg { width: 22px; height: 22px; }
-.header-mock { display: flex; align-items: center; gap: 4px; padding: 10px 14px; border-radius: 18px; background: var(--surface); border: 2px solid var(--line); }
-.header-mock .brand { display: flex; gap: 10px; align-items: center; font-weight: 800; margin-right: auto; }
-.header-mock .brand svg { width: 34px; height: 34px; }
-.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.compare figure { margin: 0; } .compare figcaption { color: var(--ink-3); font-size: 13.5px; margin-top: 8px; }
-.compare img { width: 100%; border-radius: 14px; border: 2px solid var(--line); display: block; }
-@media (prefers-reduced-motion: reduce) { .obj svg.bob { animation: none; } }
+/* Objects */
+.objs { --min: 150px; }
+.obj { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 16px 10px 14px; }
+.obj svg { width: 92px; height: 92px; }
+.obj b { font-size: 14px; } .obj small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
+.rules { --min: 230px; }
+.rules h3 { margin: 0 0 6px; font-size: 15.5px; } .rules p { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 1.5; }
+.nodes { display: flex; gap: 28px; flex-wrap: wrap; align-items: end; }
+.node { display: grid; justify-items: center; gap: 8px; color: var(--ink-3); font-weight: 700; font-size: 13px; }
+.node svg { width: 84px; height: 72px; }
+.sources li { margin: 4px 0; color: var(--ink-2); font-size: 14px; }
+@media (max-width: 900px) { .gen { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <!-- Every object: flat fills, a lit facet, a shaded facet, one soft highlight, a ground shadow. No gradients, no outlines. -->
-    <symbol id="o-shadow" viewBox="0 0 64 64"><ellipse cx="32" cy="59" rx="18" ry="3.5" fill="#000" opacity=".22"/></symbol>
-    <symbol id="o-gem" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <polygon points="14,22 22,10 42,10 50,22" fill="#ff8cc4"/><polygon points="22,10 32,22 42,10" fill="#ffb3d8"/><polygon points="14,22 22,10 32,22" fill="#ff74b6"/>
-      <polygon points="14,22 32,54 32,22" fill="#e24592"/><polygon points="32,22 32,54 50,22" fill="#c32f7b"/><polygon points="32,22 50,22 42,10" fill="#f0579f"/>
-      <polygon points="20,18 23,13 27,13" fill="#fff" opacity=".75"/></symbol>
-    <symbol id="o-bolt" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <polygon points="36,6 14,36 30,36 26,58 50,26 33,26" fill="#ffc800"/><polygon points="36,6 30,36 14,36" fill="#ffd94a"/><polygon points="26,58 33,26 50,26" fill="#e8a600"/>
-      <polygon points="32,12 22,28 27,28" fill="#fff" opacity=".6"/></symbol>
-    <symbol id="o-flame" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <path d="M32 5 C 40 16 50 22 50 38 C 50 50 42 57 32 57 C 22 57 14 50 14 38 C 14 29 19 24 23 19 C 24 26 27 29 30 30 C 29 21 30 12 32 5 Z" fill="#ff9600"/>
-      <path d="M32 57 C 22 57 14 50 14 38 C 14 29 19 24 23 19 C 24 26 27 29 30 30 Z" fill="#ffad33"/>
-      <path d="M32 57 C 26 57 22 52 22 46 C 22 39 28 36 31 31 C 34 37 42 40 42 47 C 42 53 38 57 32 57 Z" fill="#ffd23f"/>
-      <path d="M32 57 C 26 57 22 52 22 46 C 22 41 25 38 28 35 Z" fill="#ffe27a"/>
-      <path d="M38 14 C 42 19 45 23 46 29" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".45"/></symbol>
-    <symbol id="o-ice" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <polygon points="32,8 54,20 32,32 10,20" fill="#a5e4ff"/><polygon points="10,20 32,32 32,56 10,44" fill="#4cc3ff"/><polygon points="32,32 54,20 54,44 32,56" fill="#1f9fe0"/>
-      <polygon points="18,20 32,13 40,17 26,24" fill="#fff" opacity=".6"/><path d="M16 30 l4 12 M48 30 l-4 10" stroke="#e8f7ff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/></symbol>
-    <symbol id="o-chest" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <polygon points="8,30 56,30 56,54 8,54" fill="#b7651d"/><polygon points="44,30 56,30 56,54 44,54" fill="#8f4b12"/>
-      <polygon points="10,30 14,14 50,14 54,30" fill="#d17e2c"/><polygon points="42,14 50,14 54,30 44,30" fill="#a75d1b"/><polygon points="14,14 50,14 48,18 16,18" fill="#e89a4a"/>
-      <rect x="8" y="29" width="48" height="6" fill="#ffc800"/><rect x="44" y="29" width="12" height="6" fill="#e3a300"/>
-      <polygon points="27,26 37,26 37,40 32,44 27,40" fill="#ffd94a"/><polygon points="32,26 37,26 37,40 32,44" fill="#e3a300"/><rect x="30.5" y="31" width="3" height="5" rx="1.5" fill="#7a3f0c"/>
-      <polygon points="17,17 22,16 20,24 16,25" fill="#fff" opacity=".35"/></symbol>
-    <symbol id="o-chest-open" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <polygon points="12,4 50,4 56,20 8,20" fill="#d17e2c" transform="rotate(-14 8 22)"/><polygon points="8,26 56,26 56,30 8,30" fill="#2a1704"/>
-      <circle cx="24" cy="24" r="6" fill="#ffc800"/><circle cx="36" cy="22" r="6" fill="#ffd94a"/><circle cx="31" cy="27" r="5" fill="#e3a300"/>
-      <polygon points="8,30 56,30 56,54 8,54" fill="#b7651d"/><polygon points="44,30 56,30 56,54 44,54" fill="#8f4b12"/><rect x="8" y="29" width="48" height="6" fill="#ffc800"/>
-      <polygon points="27,30 37,30 37,40 32,44 27,40" fill="#ffd94a"/></symbol>
-    <symbol id="o-potion" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <rect x="26" y="6" width="12" height="8" rx="2" fill="#b98a55"/><rect x="24" y="12" width="16" height="8" rx="3" fill="#e9dcf7"/>
-      <polygon points="24,18 40,18 52,34 48,52 16,52 12,34" fill="#e3d3f7"/><polygon points="14,34 50,34 47,51 17,51" fill="#b453f5"/><polygon points="32,34 50,34 47,51 32,51" fill="#8e2fd6"/>
-      <polygon points="18,24 24,20 19,32 15,33" fill="#fff" opacity=".6"/><text x="32" y="47" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="12" fill="#fff">2×</text></symbol>
-    <symbol id="o-medal-face" viewBox="0 0 64 64">
-      <polygon points="32,10 47,16 53,31 47,46 32,52 17,46 11,31 17,16" fill="var(--m1)"/>
-      <polygon points="32,10 47,16 53,31 32,31" fill="var(--m0)"/><polygon points="32,31 53,31 47,46 32,52" fill="var(--m2)"/>
-      <polygon points="32,17 34.7,26 44,26 36.6,31.6 39.4,41 32,35.4 24.6,41 27.4,31.6 20,26 29.3,26" fill="var(--m3)"/>
-      <polygon points="20,18 27,14 22,24" fill="#fff" opacity=".5"/></symbol>
-    <symbol id="o-medal" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <polygon points="20,40 28,44 22,60 18,54 12,56" fill="var(--accent-solid)"/><polygon points="44,40 36,44 42,60 46,54 52,56" fill="var(--accent-lip)"/>
-      <use href="#o-medal-face" x="0" y="-4"/></symbol>
-    <symbol id="o-trophy" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <path d="M18 12 h28 v12 c0 10 -6 17 -14 17 s-14 -7 -14 -17 Z" fill="#ffc800"/><path d="M32 12 h14 v12 c0 10 -6 17 -14 17 Z" fill="#e3a300"/>
-      <path d="M18 16 h-7 c0 9 4 14 10 14 M46 16 h7 c0 9 -4 14 -10 14" stroke="#ffc800" stroke-width="4" fill="none" stroke-linejoin="round"/>
-      <rect x="28" y="40" width="8" height="8" fill="#e3a300"/><polygon points="20,48 44,48 46,56 18,56" fill="#8f4b12"/><polygon points="32,48 44,48 46,56 32,56" fill="#6d3809"/>
-      <polygon points="22,15 27,15 24,28" fill="#fff" opacity=".55"/></symbol>
-    <symbol id="o-heart" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <path d="M32 54 L10 32 C3 25 6 12 17 11 C24 10 29 15 32 20 C35 15 40 10 47 11 C58 12 61 25 54 32 Z" fill="#ff4b4b"/>
-      <path d="M32 54 L32 20 C35 15 40 10 47 11 C58 12 61 25 54 32 Z" fill="#e23535"/><ellipse cx="18" cy="21" rx="5" ry="3.5" fill="#fff" opacity=".6" transform="rotate(-30 18 21)"/></symbol>
-    <symbol id="o-kubo" viewBox="0 0 64 64"><use href="#o-shadow"/>
-      <polygon points="12,18 32,8 52,18 32,28" fill="#8b8ff8"/><polygon points="12,18 32,28 32,56 12,46" fill="#5d63f0"/><polygon points="32,28 52,18 52,46 32,56" fill="#4146c9"/>
-      <ellipse cx="21" cy="35" rx="3.6" ry="4.4" fill="#fff"/><ellipse cx="43" cy="35" rx="3.6" ry="4.4" fill="#fff"/><circle cx="21.6" cy="35.8" r="1.8" fill="#1a1d4d"/><circle cx="43.6" cy="35.8" r="1.8" fill="#1a1d4d"/>
-      <path d="M28 44 q4 4 8 0" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/><ellipse cx="16" cy="42" rx="2.6" ry="1.6" fill="#ff8fc0" opacity=".9"/><ellipse cx="48" cy="42" rx="2.6" ry="1.6" fill="#ff8fc0" opacity=".9"/>
-      <polygon points="20,17 32,11 38,14 26,20" fill="#fff" opacity=".45"/></symbol>
-    <!-- Lesson node puck: face, lip, glyph -->
-    <symbol id="n-book" viewBox="0 0 24 24"><path d="M5 4h9a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z" fill="#fff"/><path d="M5 16a4 4 0 0 1 4-4h9v8H9a4 4 0 0 1-4-4z" fill="#fff" opacity=".6"/></symbol>
-    <symbol id="n-play" viewBox="0 0 24 24"><rect x="4" y="11" width="3.5" height="9" rx="1.5" fill="#fff"/><rect x="10.25" y="6" width="3.5" height="14" rx="1.5" fill="#fff"/><rect x="16.5" y="3" width="3.5" height="17" rx="1.5" fill="#fff" opacity=".7"/></symbol>
-    <symbol id="n-code" viewBox="0 0 24 24"><path d="m9 6-6 6 6 6M15 6l6 6-6 6" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="n-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="n-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="3" fill="#fff" opacity=".55"/><path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="#fff" stroke-width="2.6" fill="none" opacity=".55"/></symbol>
-    <symbol id="n-star" viewBox="0 0 24 24"><polygon points="12,2.5 14.9,8.8 21.8,9.5 16.6,14.1 18.1,20.9 12,17.4 5.9,20.9 7.4,14.1 2.2,9.5 9.1,8.8" fill="#fff"/></symbol>
-  </defs>
-</svg>
-
+<svg id="defs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="symbols"></defs></svg>
 <div class="wrap">
-  <p><a class="a" href="../">← All prototypes</a></p>
-  <h1>One look for the whole app</h1>
-  <p class="lede">A proposal to unify everything you see: one palette system, one illustration grammar for game objects, and one tactile UI grammar for controls. Pick a palette and a font at the top; every element on this page follows. Game objects keep fixed colours in every palette, the way Duolingo's hearts are always red and XP is always yellow, so they read as collectibles.</p>
+  <a href="../">← All prototypes</a>&nbsp;&nbsp;<a href="../style-v1/">Round 1</a>
+  <h1>One look, round 2</h1>
+  <p class="lede">Built from your feedback on round 1. Palettes are now generated from one method instead of invented, the objects are redrawn with one light source and real geometry, and the lesson nodes are proper cylinders.</p>
+  <ul class="changes">
+    <li><b>Palettes:</b> one recipe (OKLCH scales, tinted neutrals, contrast-checked), three presets, and a Linear-style generator to tune them.</li>
+    <li><b>Objects:</b> front-facing objects use a single diagonal "paper fold" for light and shade; boxes (chest, ice) are true isometric. Fewer facets, cleaner silhouettes.</li>
+    <li><b>Nodes:</b> a top face, a visible side wall, a glyph that lies flat on the top, and a ground shadow under the base.</li>
+    <li><b>Font:</b> Plus Jakarta Sans stays.</li>
+  </ul>
 
-  <div class="controls">
-    <div class="palettes" role="group" aria-label="Palette">
-      <button class="pal" data-p="midnight" aria-pressed="true"><span class="sw"><i style="background:#11161f"></i><i style="background:#5d63f0"></i><i style="background:#3ccf4e"></i></span>Midnight</button>
-      <button class="pal" data-p="felt" aria-pressed="false"><span class="sw"><i style="background:#0e1814"></i><i style="background:#f2b417"></i><i style="background:#3ccf4e"></i></span>Board felt</button>
-      <button class="pal" data-p="ocean" aria-pressed="false"><span class="sw"><i style="background:#0a1520"></i><i style="background:#10b6cc"></i><i style="background:#3ccf4e"></i></span>Deep ocean</button>
-      <button class="pal" data-p="plum" aria-pressed="false"><span class="sw"><i style="background:#140f1f"></i><i style="background:#9d5cf5"></i><i style="background:#8bd43c"></i></span>Plum night</button>
-      <button class="pal" data-p="ember" aria-pressed="false"><span class="sw"><i style="background:#16120e"></i><i style="background:#f2672f"></i><i style="background:#3ccf4e"></i></span>Ember</button>
-    </div>
-    <div class="seg" role="group" aria-label="Font">
-      <button data-f="jakarta" aria-pressed="true">Plus Jakarta (today)</button>
-      <button data-f="nunito" aria-pressed="false">Nunito (rounder)</button>
-    </div>
-  </div>
-
-  <section class="block">
-    <h2>Style rules</h2>
-    <p class="note">Five rules every new icon, object and control follows, so the medal, the chest and the streak flame finally look like they come from the same game.</p>
-    <div class="rules">
-      <div class="card"><h3>Flat, faceted fills</h3><p>Each shape uses three tones: base, a lit facet on the top or left, and a shaded facet on the right or bottom. No gradients, no outlines.</p></div>
-      <div class="card"><h3>One highlight, one shadow</h3><p>A single soft white highlight at the top left, and a flat ellipse shadow under objects that sit on the ground.</p></div>
-      <div class="card"><h3>Fixed object colours</h3><p>XP is yellow, gems are pink, the streak is orange, freezes are ice blue, mistakes are red. Palettes only change chrome and accent.</p></div>
-      <div class="card"><h3>Tactile controls</h3><p>Cards and tiles have a 2px border with a 4–5px bottom lip. Buttons sink 4px when pressed and never lift on hover.</p></div>
-      <div class="card"><h3>Chunky geometry</h3><p>Rounded corners on a 4px scale (12, 16, 20). Icons on a 24px grid, objects on a 64px grid, glyphs filled rather than stroked.</p></div>
+  <section>
+    <h2>What we take from whom</h2>
+    <p class="note">Steal like an artist: take a specific idea from several sources and combine them, so the result is ours and not a copy of any one.</p>
+    <div class="grid" style="--min:250px">
+      <div class="card inf"><h3>Duolingo</h3><p class="take">Fixed colours for game objects, chunky tactile controls with a bottom lip, one highlight per object.</p><p class="leave">Leave: the white canvas, the green brand, cartoon characters.</p></div>
+      <div class="card inf"><h3>Brilliant</h3><p class="take">Restraint: one idea per screen, generous space, precise geometry, colour only where it means something.</p><p class="leave">Leave: the monochrome line art (too quiet for our reward moments).</p></div>
+      <div class="card inf"><h3>Linear</h3><p class="take">Themes generated from three inputs (base, accent, contrast) in a perceptual colour space, and surfaces that step in small, even increments.</p><p class="leave">Leave: the productivity-tool density.</p></div>
+      <div class="card inf"><h3>Vercel (Geist)</h3><p class="take">A strict neutral scale with very high text contrast, and typography doing most of the work.</p><p class="leave">Leave: pure black and white starkness; we keep warmth.</p></div>
+      <div class="card inf"><h3>Carrot Weather</h3><p class="take">A mascot with a voice that reacts to you, and selectable looks as a reward people enjoy collecting.</p><p class="leave">Leave: the snark; Kubo stays encouraging.</p></div>
+      <div class="card inf"><h3>Monument Valley</h3><p class="take">One light direction everywhere and honest isometric boxes, so objects feel like they sit on the same table.</p><p class="leave">Leave: the pastel dreaminess.</p></div>
     </div>
   </section>
 
-  <section class="block">
-    <h2>Game objects</h2>
-    <p class="note">The full set in one grammar. Today the chest is a flat brown box, the medal is a radial-gradient coin and the flame is a single-colour icon; here they share facets, highlight and shadow.</p>
-    <div class="objects">
-      <div class="card obj"><svg class="bob"><use href="#o-bolt"/></svg><b>XP</b><small>Earned by learning. Flies to the header.</small></div>
-      <div class="card obj"><svg class="bob" style="animation-delay:-.4s"><use href="#o-gem"/></svg><b>Gem</b><small>The currency. Spent in the shop.</small></div>
-      <div class="card obj"><svg class="bob" style="animation-delay:-.8s"><use href="#o-flame"/></svg><b>Streak</b><small>Days in a row.</small></div>
-      <div class="card obj"><svg class="bob" style="animation-delay:-1.2s"><use href="#o-ice"/></svg><b>Streak Freeze</b><small>Protects a missed day.</small></div>
-      <div class="card obj"><svg class="bob" style="animation-delay:-1.6s"><use href="#o-chest"/></svg><b>Chest</b><small>Lesson and quest rewards.</small></div>
-      <div class="card obj"><svg><use href="#o-chest-open"/></svg><b>Chest, open</b><small>The reward moment.</small></div>
-      <div class="card obj"><svg class="bob" style="animation-delay:-2s"><use href="#o-potion"/></svg><b>2× Boost</b><small>Double XP for 15 minutes.</small></div>
-      <div class="card obj"><svg class="bob" style="animation-delay:-2.4s"><use href="#o-trophy"/></svg><b>Leaderboard</b><small>Weekly race with friends.</small></div>
-      <div class="card obj"><svg style="--m0:#f3c08a;--m1:#d88a45;--m2:#a95f22;--m3:#ffe0b8"><use href="#o-medal"/></svg><b>Bronze medal</b><small>Small achievements.</small></div>
-      <div class="card obj"><svg style="--m0:#ffffff;--m1:#cdd6e2;--m2:#8e9db1;--m3:#f6f9fc"><use href="#o-medal"/></svg><b>Silver medal</b><small>Bigger achievements.</small></div>
-      <div class="card obj"><svg style="--m0:#ffe680;--m1:#ffc800;--m2:#d99a00;--m3:#fff4bf"><use href="#o-medal"/></svg><b>Gold medal</b><small>Course milestones.</small></div>
-      <div class="card obj"><svg class="bob" style="animation-delay:-2.8s"><use href="#o-kubo"/></svg><b>Kubo, faceted</b><small>Same cube, now with lit and shaded sides.</small></div>
+  <section>
+    <h2>Palettes from one recipe</h2>
+    <p class="note">Every preset is computed, not picked: a 12-step neutral scale in OKLCH (tighter steps in the middle, wider at the ends), Kubo's indigo as the accent, shared state colours, and four surface levels. The checks below recompute live; every pair must pass 4.5:1. Game-object colours never change.</p>
+    <div class="gen">
+      <div>
+        <div class="presets" id="presets"></div>
+        <div class="sliders">
+          <label><span>Neutral hue <em id="v-nh"></em></span><input type="range" id="nh" min="0" max="360" step="1"></label>
+          <label><span>Neutral tint <em id="v-nc"></em></span><input type="range" id="nc" min="0" max="0.035" step="0.001"></label>
+          <label><span>Accent hue <em id="v-ah"></em></span><input type="range" id="ah" min="0" max="360" step="1"></label>
+          <label><span>Contrast <em id="v-ct"></em></span><input type="range" id="ct" min="0.85" max="1.15" step="0.01"></label>
+        </div>
+      </div>
+      <div class="preview">
+        <div class="ph"><span class="brand"><svg><use href="#o-kubo"/></svg>Delightful Learn</span>
+          <span class="stat"><svg><use href="#o-flame"/></svg>12</span><span class="stat"><svg><use href="#o-gem"/></svg>245</span><span class="stat"><svg><use href="#o-bolt"/></svg>1,840</span></div>
+        <div class="card prose"><h4>Discounting the future</h4><p>Each step of delay multiplies a reward by γ. A win two steps away is worth γ² of a win right now.</p><p class="muted">Secondary text sits at ink-3 and still passes contrast.</p></div>
+        <div class="choice right"><span class="k">A</span>It is halved for each step</div>
+        <div class="choice wrong"><span class="k">B</span>Rewards keep their value</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap"><button class="btn go">Continue</button><button class="btn accent">Start lesson</button><button class="btn secondary">Skip for now</button></div>
+        <div class="tokens" id="tokens"></div>
+        <div class="checks" id="checks"></div>
+      </div>
     </div>
   </section>
 
-  <section class="block">
-    <h2>Lesson path nodes</h2>
-    <p class="note">One puck shape, five states. Done turns gold like a coin you earned; the current lesson takes the palette accent; locked stays quiet.</p>
+  <section>
+    <h2>Object rules</h2>
+    <div class="grid rules">
+      <div class="card"><h3>One light, top left</h3><p>Lit faces point up or left, shaded faces down or right. Ground shadows fall slightly down and to the right, flat under the contact point.</p></div>
+      <div class="card"><h3>Front objects fold once</h3><p>Gem, bolt, flame, heart, medal and trophy split along one diagonal into a lit and a shaded half. One highlight, no gradients, no outlines.</p></div>
+      <div class="card"><h3>Boxes are isometric</h3><p>The chest and the ice cube use true 30° isometry with three visible faces: top lightest, left middle, right darkest.</p></div>
+      <div class="card"><h3>Fixed colours</h3><p>XP yellow, gems pink, streak orange, freezes ice blue, mistakes red, in every palette.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Game objects, redrawn</h2>
+    <p class="note">Compare with <a href="../style-v1/">round 1</a>: simpler silhouettes, one fold instead of scattered facets, and boxes you can read as boxes.</p>
+    <div class="grid objs">
+      <div class="card obj"><svg><use href="#o-bolt"/></svg><b>XP</b><small>Earned by learning</small></div>
+      <div class="card obj"><svg><use href="#o-gem"/></svg><b>Gem</b><small>The currency</small></div>
+      <div class="card obj"><svg><use href="#o-flame"/></svg><b>Streak</b><small>Days in a row</small></div>
+      <div class="card obj"><svg><use href="#o-ice"/></svg><b>Streak Freeze</b><small>A block of ice that protects a day</small></div>
+      <div class="card obj"><svg><use href="#o-chest"/></svg><b>Chest</b><small>Lesson and quest rewards</small></div>
+      <div class="card obj"><svg><use href="#o-chest-open"/></svg><b>Chest, open</b><small>Lid back, gems inside</small></div>
+      <div class="card obj"><svg><use href="#o-flask"/></svg><b>2× Boost</b><small>A flask of double XP</small></div>
+      <div class="card obj"><svg><use href="#o-trophy"/></svg><b>Leaderboard</b><small>Weekly race with friends</small></div>
+      <div class="card obj"><svg><use href="#o-medal-bronze"/></svg><b>Bronze</b><small>Small achievements</small></div>
+      <div class="card obj"><svg><use href="#o-medal-silver"/></svg><b>Silver</b><small>Bigger achievements</small></div>
+      <div class="card obj"><svg><use href="#o-medal-gold"/></svg><b>Gold</b><small>Course milestones</small></div>
+      <div class="card obj"><svg><use href="#o-heart"/></svg><b>Mistake</b><small>Used in wrong-answer feedback</small></div>
+      <div class="card obj"><svg><use href="#o-kubo"/></svg><b>Kubo</b><small>Same mascot, cleaner depth</small></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Lesson nodes, physically correct</h2>
+    <p class="note">A cylinder seen from slightly above: the top face, a darker side wall, the glyph squashed to lie flat on the top, and a soft shadow on the ground under the base. Pressed, the top sinks into the wall.</p>
     <div class="nodes" id="nodes"></div>
   </section>
 
-  <section class="block">
-    <h2>Controls</h2>
-    <p class="note">Buttons, answer tiles, chips, inputs and feedback all use the same border, lip and radius. Try pressing the buttons.</p>
-    <div class="row">
-      <button class="btn go">Continue</button><button class="btn accent">Start lesson</button><button class="btn secondary">Skip for now</button>
-      <button class="btn xp">Claim reward</button><button class="btn danger">Try again</button><button class="btn ghost">Back to course</button><button class="btn go" disabled>Continue</button>
-    </div>
-    <div class="row" style="margin-top:22px;align-items:stretch">
-      <div style="flex:1 1 380px;display:grid;gap:10px">
-        <button class="choice"><span class="k">A</span>The games came from a different policy</button>
-        <button class="choice sel"><span class="k">B</span>Selected option</button>
-        <button class="choice right"><span class="k">C</span>Right answer</button>
-        <button class="choice wrong"><span class="k">D</span>Wrong answer, locked</button>
-      </div>
-      <div style="flex:1 1 320px;display:grid;gap:14px;align-content:start">
-        <div class="row"><span class="chip"><svg width="18" height="18"><use href="#n-book" style="color:var(--ink)"/></svg>36 lessons</span><span class="chip">9 units</span><span class="chip">26 labs</span></div>
-        <div class="row"><input class="field" placeholder="Your answer"><button class="toggle" role="switch" aria-checked="true" aria-label="Sound"></button><button class="toggle" role="switch" aria-checked="false" aria-label="Reminders"></button></div>
-        <div class="track"><i style="width:62%"></i></div>
-        <div class="track xp"><i style="width:38%"></i></div>
-      </div>
-    </div>
-    <div style="display:grid;gap:12px;margin-top:22px;max-width:760px">
-      <div class="sheet good"><svg width="52" height="52"><use href="#o-kubo"/></svg><div><h4>Nice!</h4><p>Credit travels back in time: the smile arrives two steps after the cinnamon.</p></div><button class="btn go">Continue</button></div>
-      <div class="sheet bad"><svg width="52" height="52"><use href="#o-heart"/></svg><div><h4>Not this one</h4><p>Only true when γ = 1. Two steps of delay mean two factors of γ.</p></div><button class="btn danger">Got it</button></div>
-    </div>
-  </section>
-
-  <section class="block">
-    <h2>Put together</h2>
-    <p class="note">The header, the home rail and the lesson finish built only from the pieces above.</p>
-    <div class="header-mock">
-      <span class="brand"><svg><use href="#o-kubo"/></svg>Delightful Learn</span>
-      <span class="stat" title="Streak"><svg><use href="#o-flame"/></svg>12</span>
-      <span class="stat" title="Gems"><svg><use href="#o-gem"/></svg>245</span>
-      <span class="stat" title="XP"><svg><use href="#o-bolt"/></svg>1,840</span>
-      <span class="stat" title="Freezes"><svg><use href="#o-ice"/></svg>2</span>
-    </div>
-    <div class="mock" style="margin-top:18px">
-      <div class="rail">
-        <div class="card"><h3>Daily quests</h3>
-          <div class="qrow"><svg><use href="#o-chest"/></svg><div><div class="t">Earn 50 XP <span>30 / 50</span></div><div class="track xp"><i style="width:60%"></i></div></div></div>
-          <div class="qrow"><svg><use href="#o-chest"/></svg><div><div class="t">Finish 2 lessons <span>1 / 2</span></div><div class="track"><i style="width:50%"></i></div></div></div>
-        </div>
-        <div class="card"><h3>Achievements <a class="a" href="#">View all</a></h3>
-          <div class="medal-row"><svg class="medal" style="--m0:#ffe680;--m1:#ffc800;--m2:#d99a00;--m3:#fff4bf"><use href="#o-medal"/></svg><div><div class="n">PPO Master</div><div class="d">Finish the PPO unit</div></div><span class="r">+75 <svg><use href="#o-gem"/></svg></span></div>
-          <div class="medal-row"><svg class="medal" style="--m0:#ffffff;--m1:#cdd6e2;--m2:#8e9db1;--m3:#f6f9fc"><use href="#o-medal"/></svg><div><div class="n">Unstoppable</div><div class="d">5 right in a row</div></div><span class="r">+35 <svg><use href="#o-gem"/></svg></span></div>
-          <div class="medal-row locked"><svg class="medal" style="--m0:#f3c08a;--m1:#d88a45;--m2:#a95f22;--m3:#ffe0b8"><use href="#o-medal"/></svg><div><div class="n">Card Shark</div><div class="d">Review 10 Anki cards, 4 / 10</div></div><span class="r">+20 <svg><use href="#o-gem"/></svg></span></div>
-        </div>
-      </div>
-      <div class="card finish">
-        <svg width="96" height="96" class="bob"><use href="#o-kubo"/></svg>
-        <h3>Lesson complete!</h3>
-        <div class="tiles">
-          <div class="tile" style="--c:var(--xp)"><b>TOTAL XP</b><span><svg><use href="#o-bolt"/></svg>45</span></div>
-          <div class="tile" style="--c:var(--go)"><b>ACCURACY</b><span>80%</span></div>
-          <div class="tile" style="--c:var(--ice)"><b>TIME</b><span>3:42</span></div>
-        </div>
-        <button class="btn go" style="width:100%;max-width:300px">Continue</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="block">
-    <h2>Reference: how Duolingo does it</h2>
-    <p class="note">Captured from a guest session today. Note the 2px borders with a thicker bottom lip on every tile, the colour-coded feedback sheet, the flat characters with a single highlight, and how the heart keeps its red no matter the screen.</p>
-    <ul class="note" style="line-height:1.7">
-      <li>Every tile and button: a 2px border with a thicker bottom lip, rounded about 16px, sinking on press.</li>
-      <li>Answer feedback: a full-width sheet tinted green or red, a round icon, the correct solution, and one big button.</li>
-      <li>Characters and objects: flat shapes, a lit and a shaded side, one white highlight, a soft ground shadow, no outlines.</li>
-      <li>Fixed object colours on every screen: red hearts, yellow XP, orange streak, blue gems, purple premium.</li>
-      <li>Chrome stays neutral (white or light grey there), so colour always means a state or a reward.</li>
+  <section>
+    <h2>Sources</h2>
+    <ul class="sources">
+      <li><a href="https://evilmartians.com/chronicles/exploring-the-oklch-ecosystem-and-its-tools">Evil Martians: the OKLCH ecosystem and Harmonizer</a></li>
+      <li><a href="https://www.designsystemscollective.com/oklch-from-a-ui-designers-perspective-moving-beyond-intuition-in-color-design-9874a536257d">OKLCH from a UI designer's perspective</a></li>
+      <li><a href="https://blog.logrocket.com/oklch-css-consistent-accessible-color-palettes">LogRocket: OKLCH for consistent, accessible palettes</a></li>
+      <li><a href="https://muz.li/blog/whats-changing-in-mobile-app-design-ui-patterns-that-matter-in-2026/">Muzli: UI patterns that matter in 2026 (surface levels in dark mode)</a></li>
+      <li><a href="https://muz.li/blog/best-color-palette-tools-and-generators-for-designers-2026/">Muzli: colour palette tools in 2026 (Radix, Leonardo, Realtime Colors, Huetone)</a></li>
+      <li><a href="https://medium.com/@NateBaldwin/accessible-color-for-design-systems-just-got-easier-40e8420a8371">Nate Baldwin: Adobe Leonardo, contrast-based generation</a></li>
+      <li><a href="https://www.adobe.com/uk/creativecloud/design/discover/color-trends">Adobe: colour trends</a></li>
     </ul>
   </section>
 </div>
 
 <script>
+/* ---------------- OKLCH palette generator (same maths as gen/palettes.py) ---------------- */
+function oklch(L, C, h) {
+  const a = C * Math.cos(h * Math.PI / 180), b = C * Math.sin(h * Math.PI / 180);
+  const l_ = L + .3963377774 * a + .2158037573 * b, m_ = L - .1055613458 * a - .0638541728 * b, s_ = L - .0894841775 * a - 1.291485548 * b;
+  const l = l_ ** 3, m = m_ ** 3, s = s_ ** 3;
+  const rgb = [4.0767416621 * l - 3.3077115913 * m + .2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - .3413193965 * s, -.0041960863 * l - .7034186147 * m + 1.707614701 * s];
+  return "#" + rgb.map((x) => { x = Math.min(1, Math.max(0, x)); x = x <= .0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - .055; return Math.round(x * 255).toString(16).padStart(2, "0"); }).join("");
+}
+function lum(hx) { return [1, 3, 5].map((i) => parseInt(hx.slice(i, i + 2), 16) / 255).map((c) => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4).reduce((t, c, i) => t + c * [.2126, .7152, .0722][i], 0); }
+function contrast(a, b) { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); }
+const N_L = [.165, .2, .235, .275, .32, .385, .47, .64, .72, .81, .89, .965];
+const PRESETS = {
+  "brand-tinted": { name: "Brand-tinted neutrals", why: "A hint of Kubo's indigo in every grey, so the app feels like one product. Closest to today, but derived instead of picked.", nh: 277, nc: .022, ah: 277, ct: 1 },
+  "quiet": { name: "Quiet graphite", why: "Near-colourless greys in the spirit of Vercel and Brilliant: colour appears only for brand, state and rewards.", nh: 277, nc: .007, ah: 277, ct: 1.04 },
+  "warm-ink": { name: "Warm ink", why: "Greys lean warm like paper and ink against the cool indigo. Softer for long reading and unlike the usual blue-grey dark mode.", nh: 60, nc: .012, ah: 277, ct: 1 },
+};
 const root = document.documentElement;
-document.querySelectorAll(".pal").forEach((b) => b.onclick = () => {
-  root.dataset.palette = b.dataset.p;
-  document.querySelectorAll(".pal").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-});
-document.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => {
-  root.dataset.font = b.dataset.f;
-  document.querySelectorAll("[data-f]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-});
-document.querySelectorAll(".toggle").forEach((t) => t.onclick = () => t.setAttribute("aria-checked", String(t.getAttribute("aria-checked") !== "true")));
-document.querySelectorAll(".choice").forEach((c) => c.onclick = () => { if (c.classList.contains("right") || c.classList.contains("wrong")) return; document.querySelectorAll(".choice").forEach((x) => x.classList.remove("sel")); c.classList.add("sel"); });
-// Lesson nodes: one puck, five states
-const states = [
-  ["Done", "#ffc800", "#d99a00", "#ffe066", "n-check"],
-  ["Current", "var(--accent-solid)", "var(--accent-lip)", "var(--accent)", "n-play"],
-  ["Concept", "var(--stage)", "var(--lip)", "var(--line)", "n-book"],
-  ["Code", "var(--stage)", "var(--lip)", "var(--line)", "n-code"],
-  ["Unit test", "var(--stage)", "var(--lip)", "var(--line)", "n-star"],
-  ["Locked", "var(--surface)", "var(--lip)", "var(--stage)", "n-lock"],
-];
-document.getElementById("nodes").innerHTML = states.map(([label, face, lip, lit, glyph]) => `
-  <div class="node"><svg viewBox="0 0 72 66" aria-hidden="true">
-    <ellipse cx="36" cy="40" rx="34" ry="24" fill="${lip}"/>
-    <ellipse cx="36" cy="32" rx="34" ry="24" fill="${face}"/>
-    <path d="M6 28 A34 24 0 0 1 66 28 A34 18 0 0 0 6 28 Z" fill="${lit}" opacity=".55"/>
-    <ellipse cx="22" cy="20" rx="7" ry="3" fill="#fff" opacity=".35"/>
-    <use href="#${glyph}" x="23" y="18" width="26" height="26"/>
+let cur = { ...PRESETS["brand-tinted"] };
+function build(p) {
+  const L = (x) => Math.min(.99, Math.max(.05, .5 + (x - .5) * p.ct));
+  const scale = N_L.map((l, i) => oklch(L(l), p.nc * (i > 8 ? .7 : 1), p.nh));
+  return {
+    bg: scale[0], surface: scale[1], raised: scale[2], overlay: scale[3], line: scale[4], "line-strong": scale[5], "ink-3": scale[7], "ink-2": scale[9], ink: scale[11],
+    accent: oklch(.545, .21, p.ah), "accent-lip": oklch(.44, .19, p.ah), "accent-text": oklch(.78, .12, p.ah),
+    go: oklch(.74, .19, 145), "go-lip": oklch(.6, .16, 145), "go-text": oklch(.84, .14, 145),
+    danger: oklch(.68, .19, 22), "danger-lip": oklch(.55, .18, 22), "danger-text": oklch(.8, .11, 22),
+  };
+}
+function apply() {
+  const t = build(cur);
+  for (const [k, v] of Object.entries(t)) root.style.setProperty(`--${k}`, v);
+  document.getElementById("tokens").innerHTML = Object.entries(t).map(([k, v]) => `<div class="tok"><i style="background:${v}"></i><span>${k}<br>${v}</span></div>`).join("");
+  const pairs = [["ink on bg", t.ink, t.bg], ["ink-2 on surface", t["ink-2"], t.surface], ["ink-3 on surface", t["ink-3"], t.surface], ["accent text on surface", t["accent-text"], t.surface], ["white on accent", "#ffffff", t.accent], ["bg on go button", t.bg, t.go], ["danger text on surface", t["danger-text"], t.surface]];
+  document.getElementById("checks").innerHTML = pairs.map(([n, a, b]) => { const c = contrast(a, b); return `<div>${n}<b class="${c >= 4.5 ? "ok" : "bad"}">${c.toFixed(1)}:1</b></div>`; }).join("");
+  for (const [id, fmt] of [["nh", (v) => `${v}°`], ["nc", (v) => v.toFixed(3)], ["ah", (v) => `${v}°`], ["ct", (v) => `${Math.round(v * 100)}%`]]) {
+    document.getElementById(id).value = cur[id]; document.getElementById("v-" + id).textContent = fmt(cur[id]);
+  }
+}
+document.getElementById("presets").innerHTML = Object.entries(PRESETS).map(([k, p]) => {
+  const t = build(p);
+  return `<button class="preset" data-k="${k}" aria-pressed="${k === "brand-tinted"}"><b><span class="sw">${[t.bg, t.surface, t["ink-3"], t.accent].map((c) => `<i style="background:${c}"></i>`).join("")}</span>${p.name}</b><small>${p.why}</small></button>`;
+}).join("");
+document.querySelectorAll(".preset").forEach((b) => b.onclick = () => { cur = { ...PRESETS[b.dataset.k] }; document.querySelectorAll(".preset").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); apply(); });
+for (const id of ["nh", "nc", "ah", "ct"]) document.getElementById(id).oninput = (e) => { cur[id] = Number(e.target.value); document.querySelectorAll(".preset").forEach((x) => x.setAttribute("aria-pressed", "false")); apply(); };
+apply();
+
+/* ---------------- Objects ---------------- */
+const SHADOW = '<ellipse cx="34" cy="58.5" rx="17" ry="3.4" fill="#000" opacity=".28"/>';
+// The paper fold: the lower-right half of a shape, cut along the diagonal from top-right to bottom-left.
+let clipId = 0;
+// Meng To rules: no gradients or see-through shading; a hairline in the fill's own colour hides seams;
+// a thin ink edge in the object's darkest tone (never black) closes the silhouette.
+function folded(shapes, base, shade, extra = "", ink = null) {
+  const id = `fold${++clipId}`;
+  return `<clipPath id="${id}">${shapes}</clipPath>
+    <g fill="${base}" stroke="${base}" stroke-width=".4">${shapes}</g>
+    <polygon points="64,-4 68,0 68,68 0,68 -4,64" clip-path="url(#${id})" fill="${shade}"/>${extra}
+    ${ink ? `<g fill="none" stroke="${ink}" stroke-width="1.3" stroke-linejoin="round">${shapes}</g>` : ""}`;
+}
+// Isometric projection: x runs down-right, y down-left, z up.
+function iso(ox, oy, k) { return (x, y, z) => [ox + (x - y) * .866 * k, oy + (x + y) * .5 * k - z * k]; }
+const pts = (P, list) => list.map(([x, y, z]) => P(x, y, z).map((v) => v.toFixed(2)).join(",")).join(" ");
+function box(P, w, d, z0, h, [top, left, right], ink = null) {
+  const faces = [
+    [[[0, 0, z0 + h], [w, 0, z0 + h], [w, d, z0 + h], [0, d, z0 + h]], top],
+    [[[0, d, z0], [w, d, z0], [w, d, z0 + h], [0, d, z0 + h]], left],
+    [[[w, 0, z0], [w, d, z0], [w, d, z0 + h], [w, 0, z0 + h]], right],
+  ];
+  return faces.map(([f, c]) => `<polygon points="${pts(P, f)}" fill="${c}" stroke="${ink || c}" stroke-width="${ink ? 1.1 : .4}" stroke-linejoin="round"/>`).join("");
+}
+function footprint(P, w, d) {
+  const soft = pts((x, y, z) => { const [a, b] = P(x, y, z); return [a + 2.5, b + 2]; }, [[-1.5, -1.5, 0], [w + 1.5, -1.5, 0], [w + 1.5, d + 1.5, 0], [-1.5, d + 1.5, 0]]);
+  return `<polygon points="${soft}" fill="#000" opacity=".22" stroke="#000" stroke-opacity=".22" stroke-width="3" stroke-linejoin="round"/>
+    <polygon points="${pts(P, [[0, 0, 0], [w, 0, 0], [w, d, 0], [0, d, 0]])}" fill="#000" opacity=".35"/>`;
+}
+function lines(P, face, w, d, list, color, width = .7) {
+  return list.map(([u0, v0, u1, v1]) => {
+    const a = face === "left" ? P(u0, d, v0) : P(w, u0, v0), b = face === "left" ? P(u1, d, v1) : P(w, u1, v1);
+    return `<line x1="${a[0].toFixed(2)}" y1="${a[1].toFixed(2)}" x2="${b[0].toFixed(2)}" y2="${b[1].toFixed(2)}" stroke="${color}" stroke-width="${width}" stroke-linecap="round"/>`;
+  }).join("");
+}
+// A rectangle drawn onto the left face (y = d) or right face (x = w) of a box.
+function onLeft(P, d, u0, u1, v0, v1, fill) { return `<polygon points="${pts(P, [[u0, d, v0], [u1, d, v0], [u1, d, v1], [u0, d, v1]])}" fill="${fill}"/>`; }
+function onRight(P, w, u0, u1, v0, v1, fill) { return `<polygon points="${pts(P, [[w, u0, v0], [w, u1, v0], [w, u1, v1], [w, u0, v1]])}" fill="${fill}"/>`; }
+
+const W = 30, D = 20, H = 16, LID = 9;
+const Pc = iso(30, 26, 1);
+const wood = ["#e9a352", "#c97a2d", "#9a5718"], lidWood = ["#f2b466", "#d4873a", "#a96222"], gold = "#ffd23f", goldDark = "#d9a800";
+const woodInk = "#6b3a0f";
+const chest = `${footprint(Pc, W, D)}
+  ${box(Pc, W, D, 0, H, wood, woodInk)}
+  ${lines(Pc, "left", W, D, [[1, 5.5, W - 1, 5.5], [1, 10.5, W - 1, 10.5]], "#b06a26")}
+  ${lines(Pc, "right", W, D, [[1, 5.5, D - 1, 5.5], [1, 10.5, D - 1, 10.5]], "#80460f")}
+  ${box(Pc, W, D, H, LID, lidWood, woodInk)}
+  ${onLeft(Pc, D, 0, W, H - 1.6, H + 1.6, gold)}${onRight(Pc, W, 0, D, H - 1.6, H + 1.6, goldDark)}
+  ${onLeft(Pc, D, 4, 7, 0, H + LID, "#b9852a")}${onLeft(Pc, D, W - 7, W - 4, 0, H + LID, "#b9852a")}
+  ${onLeft(Pc, D, W / 2 - 3.5, W / 2 + 3.5, H - 6, H + 3, gold)}${onLeft(Pc, D, W / 2 - 1, W / 2 + 1, H - 3.5, H - 0.5, "#6b3b0c")}
+  <polygon points="${pts(Pc, [[2, 2, H + LID], [12, 2, H + LID], [10, 4.5, H + LID], [2, 4.5, H + LID]])}" fill="#f8cf93"/>`;
+const coins = [[8, 7], [16, 9], [22, 6], [12, 13], [20, 14]].map(([x, y], i) => {
+  const [cx, cy] = Pc(x, y, H + 1); const yy = (cy - (i % 2) * 1.5).toFixed(1);
+  return `<ellipse cx="${cx.toFixed(1)}" cy="${(Number(yy) + 1.2).toFixed(1)}" rx="4.4" ry="2.6" fill="${goldDark}" stroke="#8a5d00" stroke-width=".9"/><ellipse cx="${cx.toFixed(1)}" cy="${yy}" rx="4.4" ry="2.6" fill="${i % 2 ? gold : "#ffe27a"}" stroke="#8a5d00" stroke-width=".9"/>`;
+}).join("");
+const chestOpen = `${footprint(Pc, W, D)}
+  ${box(Pc, W, 3, H, 18, lidWood, woodInk)}
+  <polygon points="${pts(Pc, [[0, 3, H], [W, 3, H], [W, D, H], [0, D, H]])}" fill="#5a3010" stroke="${woodInk}" stroke-width="1.1" stroke-linejoin="round"/>
+  ${coins}
+  <polygon points="${pts(Pc, [[0, D, 0], [W, D, 0], [W, D, H], [0, D, H]])}" fill="${wood[1]}" stroke="${woodInk}" stroke-width="1.1" stroke-linejoin="round"/>
+  <polygon points="${pts(Pc, [[W, 0, 0], [W, D, 0], [W, D, H], [W, 0, H]])}" fill="${wood[2]}" stroke="${woodInk}" stroke-width="1.1" stroke-linejoin="round"/>
+  ${lines(Pc, "left", W, D, [[1, 5.5, W - 1, 5.5]], "#b06a26")}
+  ${onLeft(Pc, D, 0, W, H - 3, H, gold)}${onRight(Pc, W, 0, D, H - 3, H, goldDark)}
+  ${onLeft(Pc, D, 4, 7, 0, H, "#b9852a")}${onLeft(Pc, D, W - 7, W - 4, 0, H, "#b9852a")}
+  ${onLeft(Pc, D, W / 2 - 3.5, W / 2 + 3.5, H - 7, H - 1, gold)}`;
+const Pi = iso(32, 24, 1);
+const S3 = 22;
+const ice = `${footprint(Pi, S3, S3)}${box(Pi, S3, S3, 0, S3, ["#d7f3ff", "#7fd6fd", "#3fb3ea"], "#1f7fb3")}
+  <polygon points="${pts(Pi, [[2.5, 2.5, S3], [9, 2.5, S3], [2.5, 9, S3]])}" fill="#ffffff"/>
+  ${onLeft(Pi, S3, 3, 4.6, 4, S3 - 4, "#d7f3ff")}
+  ${lines(Pi, "left", S3, S3, [[9, 15, 14, 11], [14, 11, 13, 6], [14, 11, 18, 9]], "#c2ecff", .8)}
+  ${lines(Pi, "right", S3, S3, [[6, 14, 11, 10], [11, 10, 15, 12]], "#7fd0f5", .8)}`;
+
+const SYMBOLS = {
+  "o-bolt": SHADOW + folded('<polygon points="38,4 13,35 29,35 24,58 51,25 35,25"/>', "#ffd23f", "#e5a900",
+    '<polygon points="34,11 20,30 24.5,30" fill="#fff3b0"/>', "#a87a00"),
+  "o-gem": `${SHADOW}<polygon points="22,12 42,12 36,24 28,24" fill="#ffc2de"/><polygon points="10,24 22,12 28,24" fill="#ff8ec3"/>
+    <polygon points="42,12 54,24 36,24" fill="#ea4b93"/><polygon points="10,24 28,24 32,54" fill="#f2669f"/>
+    <polygon points="28,24 36,24 32,54" fill="#d93e85"/><polygon points="36,24 54,24 32,54" fill="#b52b6c"/>
+    <polygon points="22,12 42,12 54,24 32,54 10,24" fill="none" stroke="#8f1f55" stroke-width="1.3" stroke-linejoin="round"/>
+    <path d="M18 14 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2 z" fill="#fff"/>`,
+  "o-flame": SHADOW + folded('<path d="M32 4 C 38 14 52 23 52 39 C 52 50 43 58 32 58 C 21 58 12 50 12 39 C 12 26 26 18 32 4 Z"/>', "#ffa233", "#f07c0c",
+    `<path d="M32 30 C 36 37 42 41 42 47.5 C 42 53.5 37.5 57.5 32 57.5 C 26.5 57.5 22 53.5 22 47.5 C 22 41 28 37 32 30 Z" fill="#ffd44d"/>
+     <path d="M32 30 C 36 37 42 41 42 47.5 C 42 53.5 37.5 57.5 32 57.5 Z" fill="#ffc21f"/>
+     <path d="M21 36 C 22 29 25 24 29 19" stroke="#ffd9a6" stroke-width="2.6" stroke-linecap="round" fill="none"/>`, "#b85400"),
+  "o-heart": SHADOW + folded('<path d="M32 55 L11 33 C 4 26 7 13 18 12 C 25 11.5 29.5 16 32 20 C 34.5 16 39 11.5 46 12 C 57 13 60 26 53 33 Z"/>', "#ff5a5f", "#df3a40",
+    '<ellipse cx="19" cy="21" rx="4.6" ry="2.8" fill="#ffc4c6" transform="rotate(-35 19 21)"/>', "#a8232a"),
+  "o-trophy": SHADOW + `<path fill-rule="evenodd" d="M15 14 h8 v4 h-6 c0 6 3 10 7 11 l-1 4 c-6 -1 -10 -7 -10 -15 z M49 14 h-8 v4 h6 c0 6 -3 10 -7 11 l1 4 c6 -1 10 -7 10 -15 z" fill="#ffc21f"/>`
+    + folded('<path d="M21 9 h22 v14 c0 9 -5 15 -11 15 s-11 -6 -11 -15 z"/><rect x="28.5" y="37" width="7" height="8"/><rect x="21" y="45" width="22" height="9" rx="2"/>', "#ffd23f", "#e5a900",
+      '<rect x="21" y="49" width="22" height="5" rx="1.5" fill="#9a5718"/><path d="M25 12 v9 c0 4 1 7 3 9" stroke="#fff3b0" stroke-width="2.4" stroke-linecap="round" fill="none"/>', "#a87a00"),
+  "o-flask": SHADOW + `<rect x="27" y="6" width="10" height="6" rx="2" fill="#c8945a"/><rect x="27" y="10" width="10" height="2" fill="#a77540"/>`
+    + folded('<path d="M26 12 h12 v10 c 8 3 13 10 13 18 c 0 10 -8.5 17 -19 17 s -19 -7 -19 -17 c 0 -8 5 -15 13 -18 z"/>', "#efe3ff", "#d6c3f2",
+      `<clipPath id="liq"><path d="M26 12 h12 v10 c 8 3 13 10 13 18 c 0 10 -8.5 17 -19 17 s -19 -7 -19 -17 c 0 -8 5 -15 13 -18 z"/></clipPath>
+       <g clip-path="url(#liq)"><rect x="0" y="36" width="64" height="30" fill="#b45cf6"/><polygon points="64,30 64,64 30,64" fill="#9033d8"/><rect x="0" y="35" width="64" height="2.5" fill="#d9a8ff"/></g>
+       <path d="M20 34 c -2 3 -3 6 -3 9" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" fill="none"/>`, "#7d4fb0"),
+  "o-kubo": `${SHADOW}<rect x="9" y="12" width="46" height="44" rx="14" fill="#3f3fc7"/><rect x="9" y="8" width="46" height="44" rx="14" fill="#5d5ff0"/>
+    <rect x="9" y="8" width="46" height="44" rx="14" fill="none" stroke="#2c2c96" stroke-width="1.3"/>
+    <path d="M15 27 V22 a8 8 0 0 1 8 -8 h12" fill="none" stroke="#a7acff" stroke-width="3.4" stroke-linecap="round"/>
+    <ellipse cx="23" cy="30" rx="4" ry="4.8" fill="#fff"/><ellipse cx="41" cy="30" rx="4" ry="4.8" fill="#fff"/><circle cx="23.8" cy="31" r="2.1" fill="#191a4d"/><circle cx="41.8" cy="31" r="2.1" fill="#191a4d"/>
+    <path d="M27 39 q5 5 10 0" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none"/><ellipse cx="17" cy="38" rx="3" ry="1.8" fill="#ff8fc0"/><ellipse cx="47" cy="38" rx="3" ry="1.8" fill="#ff8fc0"/>`,
+  "o-chest": chest, "o-chest-open": chestOpen, "o-ice": ice,
+};
+const MEDALS = { bronze: ["#f0b27a", "#c97a36", "#9a5520"], silver: ["#ffffff", "#c9d3df", "#94a3b8"], gold: ["#fff0a0", "#ffc21f", "#d99a00"] };
+for (const [tier, [lit, base, dark]] of Object.entries(MEDALS)) {
+  SYMBOLS[`o-medal-${tier}`] = SHADOW + `<polygon points="21,38 29,42 23,59 19,54 13,56" fill="#5d5ff0"/><polygon points="43,38 35,42 41,59 45,54 51,56" fill="#3f3fc7"/>`
+    + folded('<circle cx="32" cy="27" r="19"/>', base, dark,
+      `<circle cx="32" cy="27" r="13.5" fill="none" stroke="${lit}" stroke-width="1.6"/>
+       <polygon points="32,16 35,23.6 43,24.2 36.9,29.4 38.8,37.2 32,33 25.2,37.2 27.1,29.4 21,24.2 29,23.6" fill="${base}"/>
+       <path d="M19 20 a15 15 0 0 1 9 -9" stroke="${lit}" stroke-width="2.6" stroke-linecap="round" fill="none"/>`, dark);
+}
+document.getElementById("symbols").innerHTML = Object.entries(SYMBOLS).map(([id, body]) => `<symbol id="${id}" viewBox="0 0 64 64" overflow="visible">${body}</symbol>`).join("");
+
+/* ---------------- Lesson nodes: cylinder physics ---------------- */
+const GLYPHS = {
+  check: '<path d="m-9 0 6 6 12 -12" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  play: '<rect x="-10" y="-1" width="5" height="9" rx="2" fill="#fff"/><rect x="-2.5" y="-7" width="5" height="15" rx="2" fill="#fff"/><rect x="5" y="-11" width="5" height="19" rx="2" fill="#fff" opacity=".75"/>',
+  book: '<path d="M-10 -9 h12 a6 6 0 0 1 6 6 v14 h-12 a6 6 0 0 1 -6 -6 z" fill="#fff"/><path d="M-10 5 a6 6 0 0 1 6 -6 h12 v12 h-12 a6 6 0 0 1 -6 -6z" fill="#fff" opacity=".55"/>',
+  code: '<path d="m-5 -8 -8 8 8 8 M5 -8 l8 8 -8 8" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  star: '<polygon points="0,-12 3.5,-4 12,-3.7 5.5,2 7.4,10.5 0,6 -7.4,10.5 -5.5,2 -12,-3.7 -3.5,-4" fill="#fff"/>',
+  lock: '<rect x="-8" y="-2" width="16" height="12" rx="3" fill="#fff" opacity=".5"/><path d="M-5 -2 v-3 a5 5 0 0 1 10 0 v3" stroke="#fff" stroke-width="3" fill="none" opacity=".5"/>',
+};
+const NODE_STATES = [["Done", "#ffc21f", "#c98f00", "check"], ["Current", "var(--accent)", "var(--accent-lip)", "play"], ["Concept", "var(--overlay)", "var(--bg)", "book"], ["Code", "var(--overlay)", "var(--bg)", "code"], ["Unit test", "var(--overlay)", "var(--bg)", "star"], ["Locked", "var(--raised)", "var(--bg)", "lock"]];
+document.getElementById("nodes").innerHTML = NODE_STATES.map(([label, top, side, glyph]) => `
+  <div class="node"><svg viewBox="0 0 84 72" aria-hidden="true">
+    <ellipse cx="45" cy="57" rx="33" ry="8" fill="#000" opacity=".32"/>
+    <path d="M8 30 v12 a34 18 0 0 0 68 0 v-12 z" fill="${side}"/>
+    <ellipse cx="42" cy="30" rx="34" ry="18" fill="${top}"/>
+    <path d="M14 22 a34 18 0 0 1 32 -9" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".35"/>
+    <g transform="translate(42 30) scale(1 .62)">${GLYPHS[glyph]}</g>
   </svg>${label}</div>`).join("");
 </script>
 </body>
