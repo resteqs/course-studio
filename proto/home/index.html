@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype: course home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  .frame { margin: 0 auto; width: 100%; container-type: inline-size; }
+  .frame.mobile { width: 390px; border-inline: 1px solid #2b3648; min-height: 844px; }
+  svg.i { width: 18px; height: 18px; flex: none; }
+  .top { height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 24px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; }
+  .stat { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 14px; font-variant-numeric: tabular-nums; min-height: 44px; padding: 0 8px; border-radius: 12px; border: 0; background: none; cursor: pointer; }
+  .gem { width: 12px; height: 12px; background: #f472b6; transform: rotate(45deg); border-radius: 3px; display: inline-block; }
+  .sp { flex: 1; }
+
+  /* ---------- A: today ---------- */
+  .va .top .tab { display: inline-flex; align-items: center; gap: 8px; height: 64px; padding: 0 14px; font-weight: 600; color: var(--ink-2); border-bottom: 2px solid transparent; }
+  .va .top .tab.on { color: var(--ink); border-color: var(--accent-solid); }
+  .va .badge { background: var(--accent-tint); color: var(--accent); border-radius: 99px; padding: 1px 8px; font-size: 12px; font-weight: 700; }
+  .va .pillbox { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 14px; }
+  .va .grid { display: grid; grid-template-columns: 316px 1fr 268px; gap: 28px; padding: 18px 30px; }
+  .va .card { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 16px; margin-bottom: 12px; }
+  .va .card h3 { margin: 0 0 4px; font-size: 20px; }
+  .va .desc { color: var(--muted); font-size: 13px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 10px; }
+  .va .pills { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .va .pills span { border: 1px solid var(--field-border); border-radius: 999px; text-align: center; padding: 7px; font-size: 13px; font-weight: 600; box-shadow: 0 2px 0 var(--line-strong); }
+  .va .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--accent); margin: 16px 0 4px; }
+  .va .rail-h { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; letter-spacing: .08em; color: var(--muted); }
+  .va .rail-h a { color: var(--accent); letter-spacing: 0; font-weight: 600; }
+  .va .banner { height: 108px; border-radius: 16px; background: linear-gradient(135deg, #1d6b3c, #14532d); display: flex; align-items: center; justify-content: space-between; padding: 0 22px; box-shadow: 0 5px 0 #0f3d22; }
+  .va .banner small { font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+  .va .banner b { display: block; font-size: 20px; }
+  .va .node-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; height: 114px; }
+  .va .puck { justify-self: end; margin-right: var(--o); width: 78px; height: 66px; border-radius: 50%; background: #334155; box-shadow: 0 7px 0 #1e293b; display: grid; place-items: center; color: #94a3b8; position: relative; }
+  .va .puck.cur { background: var(--accent-solid); box-shadow: 0 7px 0 var(--accent-lip), 0 0 0 10px rgba(85,88,238,.18), 0 0 0 13px rgba(85,88,238,.45); color: #fff; }
+  .va .puck .startpill { position: absolute; top: -40px; border: 1px solid var(--accent-border); color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 4px 10px; border-radius: 8px; background: var(--bg); }
+  .va .lbl { padding-left: 26px; } .va .lbl b { display: block; font-size: 16px; } .va .lbl small { color: var(--muted); }
+  .va .lbl.muted b { color: var(--ink-2); }
+  .va .boost { border-color: #8a5a10; background: #2a2010; display: flex; align-items: center; gap: 10px; }
+  .va .ach { display: flex; gap: 10px; align-items: center; border-radius: 12px; background: var(--stage); padding: 10px; margin-top: 8px; font-size: 13px; }
+  .va .ach i { width: 30px; height: 30px; border-radius: 9px; background: var(--surface); display: grid; place-items: center; font-style: normal; }
+  .va .ach em { margin-left: auto; font-style: normal; font-size: 11px; font-weight: 800; border: 1px solid var(--line-strong); border-radius: 99px; padding: 2px 6px; }
+  .frame.mobile .va .grid, .va.m .grid { grid-template-columns: 1fr; padding: 14px; }
+
+  /* ---------- Shared de-slopped path (B, C) ---------- */
+  .ds .top { gap: 6px; }
+  .ds .navtab { border: 0; background: none; font-weight: 700; color: var(--muted); padding: 0 12px; min-height: 44px; cursor: pointer; font-size: 15px; }
+  .ds .navtab.on { color: var(--ink); }
+  .ds .navtab .due { color: var(--warn); }
+  .unit-head { display: grid; gap: 12px; margin: 0 0 8px; }
+  .unit-head > i { width: 56px; height: 10px; border-radius: 3px; background: var(--unit); }
+  .unit-head h2 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+  .unit-head p { margin: 4px 0 0; color: var(--muted); font-size: 14.5px; }
+  .path { position: relative; padding: 18px 0 40px; }
+  .step { display: grid; grid-template-columns: 1fr; justify-items: center; position: relative; height: 112px; }
+  .step:has(.launch) { height: 190px; }
+  .deed { position: relative; width: 72px; height: 72px; border-radius: 18px; border: 0; background: var(--stage); box-shadow: 0 6px 0 #141b26; cursor: pointer; display: grid; place-items: center; color: var(--muted); margin-left: var(--o);
+    transition: transform 150ms var(--ease-out); }
+  .deed::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 16px; border-radius: 18px 18px 0 0; background: var(--unit); opacity: .35; }
+  .deed.done { background: var(--unit); color: #0b1320; box-shadow: 0 6px 0 color-mix(in oklab, var(--unit), black 45%); }
+  .deed.done::before { opacity: 0; }
+  .deed.cur { background: var(--surface); color: var(--ink); box-shadow: 0 6px 0 color-mix(in oklab, var(--unit), black 45%), inset 0 0 0 3px var(--unit); }
+  .deed.cur::before { opacity: 1; }
+  .deed:active { transform: translateY(4px); box-shadow: 0 2px 0 #141b26; }
+  .deed svg { width: 26px; height: 26px; margin-top: 8px; }
+  .deed-name { position: absolute; top: 24px; left: calc(50% + var(--o) / 2 + 52px); width: 220px; text-align: left; font-weight: 700; font-size: 15px; color: var(--ink-2); }
+  .deed-name small { display: block; font-weight: 500; font-size: 13px; color: var(--muted); }
+  .launch { position: absolute; z-index: 3; left: calc(50% + var(--o) / 2 + 52px); top: -6px; width: 290px; padding: 18px; border-radius: 20px; background: var(--surface); box-shadow: 0 18px 40px rgba(0,0,0,.4), 0 0 0 1px var(--line);
+    animation: launchin calc(380ms * var(--speed)) var(--spring) both; }
+  .launch::before { content: ""; position: absolute; left: -7px; top: 34px; width: 14px; height: 14px; background: var(--surface); transform: rotate(45deg); box-shadow: -1px 1px 0 var(--line); }
+  @keyframes launchin { from { opacity: 0; transform: translateX(-10px) scale(.96); } }
+  .launch b { display: block; font-size: 18px; line-height: 1.3; margin-bottom: 4px; }
+  .launch small { color: var(--muted); font-size: 13.5px; }
+  .launch .btn { width: 100%; margin-top: 14px; }
+  .kubo-perch { position: absolute; left: calc(50% + var(--o) / 2 - 98px); top: 14px; }
+
+  /* B layout */
+  .vb .main { display: grid; grid-template-columns: 1fr 300px; gap: 48px; max-width: 1080px; margin: 0 auto; padding: 32px 32px 60px; }
+  .vb .col { max-width: 560px; }
+  .today { position: sticky; top: 24px; align-self: start; display: grid; gap: 22px; }
+  .today h3 { margin: 0; font-size: 15px; color: var(--ink-2); font-weight: 700; }
+  .quest-obj { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center; }
+  .ring { width: 64px; height: 64px; position: relative; }
+  .ring svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+  .ring .mini-chest { position: absolute; inset: 0; display: grid; place-items: center; }
+  .quest-obj b { display: block; font-size: 16px; } .quest-obj small { color: var(--muted); font-size: 13.5px; }
+  .potion { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; }
+  .potion .flask { width: 52px; height: 52px; margin: 0 6px; border-radius: 50% 50% 46% 46%; background: radial-gradient(circle at 40% 35%, #ffe7a3, var(--gold) 50%, var(--gold-lip)); position: relative; box-shadow: 0 4px 0 #7a5212; }
+  .potion .flask::before { content: ""; position: absolute; left: 50%; top: -9px; width: 16px; height: 12px; margin-left: -8px; border-radius: 4px; background: #b98b4a; }
+  .potion .flask span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #3a2400; }
+  .potion b { display: block; font-size: 15px; } .potion small { color: var(--muted); font-size: 13px; }
+  .btn.small { min-height: 40px; padding: 0 16px; font-size: 14px; }
+  .friend { display: flex; gap: 12px; align-items: center; color: var(--ink-2); font-size: 14px; line-height: 1.45; }
+  .friend a { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .frame.mobile .vb .main { grid-template-columns: 1fr; padding: 20px 16px; gap: 24px; }
+  .frame.mobile .vb .today { position: static; order: -1; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .frame.mobile .vb .today h3, .frame.mobile .vb .friend { display: none; }
+  .frame.mobile .potion { grid-template-columns: 48px 1fr; } .frame.mobile .potion .btn { grid-column: 1 / -1; }
+  .frame.mobile .potion .flask { width: 40px; height: 40px; }
+  .frame.mobile .deed-name, .frame.mobile .launch { left: auto; right: 0; }
+  .frame.mobile .launch { width: 210px; top: 82px; left: 50%; margin-left: -105px; } .frame.mobile .launch::before { left: 50%; top: -7px; margin-left: -7px; }
+  .frame.mobile .step:has(.launch) { height: 300px; }
+  .frame.mobile .deed-name { width: 150px; font-size: 14px; left: calc(50% + var(--o) / 2 + 46px); }
+  .frame.mobile .kubo-perch { display: none; }
+
+  /* C layout */
+  .vc .main { max-width: 760px; margin: 0 auto; padding: 36px 28px 60px; }
+  .session { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; padding: 28px; border-radius: 24px; background: var(--surface); position: relative; overflow: hidden; }
+  .session::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 10px; background: var(--unit); }
+  .session h2 { margin: 0 0 6px; font-size: 28px; letter-spacing: -.02em; }
+  .session p { margin: 0; color: var(--ink-2); font-size: 15.5px; line-height: 1.5; }
+  .session ol { list-style: none; padding: 0; margin: 18px 0 0; display: flex; gap: 10px; flex-wrap: wrap; }
+  .session li { display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 12px; background: var(--stage); font-size: 14px; font-weight: 700; }
+  .session li em { font-style: normal; color: var(--muted); font-weight: 600; }
+  .session .go-col { display: grid; justify-items: center; gap: 10px; }
+  .session .btn { min-height: 56px; padding: 0 32px; font-size: 17px; }
+  .session .gain { font-size: 13px; color: var(--muted); text-align: center; max-width: 200px; line-height: 1.4; }
+  .strip { margin-top: 40px; }
+  .strip h3 { display: flex; justify-content: space-between; margin: 0 0 14px; font-size: 16px; }
+  .strip h3 span { color: var(--muted); font-weight: 600; font-size: 14px; }
+  .tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .tile { position: relative; border-radius: 14px; background: var(--stage); padding: 26px 12px 12px; min-height: 96px; font-size: 13.5px; font-weight: 700; color: var(--ink-2); border: 0; text-align: left; cursor: pointer; line-height: 1.3; }
+  .tile::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 14px; border-radius: 14px 14px 0 0; background: var(--unit); opacity: .3; }
+  .tile.done::before, .tile.cur::before { opacity: 1; }
+  .tile.cur { box-shadow: inset 0 0 0 2px var(--unit); color: var(--ink); }
+  .tile small { display: block; color: var(--muted); font-weight: 500; margin-top: 4px; }
+  .later-units { margin-top: 28px; display: grid; gap: 8px; }
+  .later-units div { display: grid; grid-template-columns: 22px 1fr auto; gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); color: var(--ink-2); font-weight: 600; }
+  .later-units i { height: 28px; border-radius: 3px; background: var(--c); opacity: .8; }
+  .later-units small { color: var(--muted); font-weight: 500; }
+  .frame.mobile .session { grid-template-columns: 1fr; padding: 22px 20px 22px 26px; }
+  .frame.mobile .session .btn { width: 100%; }
+  .frame.mobile .tiles { grid-template-columns: repeat(5, 120px); overflow-x: auto; }
+  .frame.mobile .vc .main { padding: 20px 16px; }
+  .frame.mobile .brand { font-size: 0; gap: 0; } .frame.mobile .top { padding: 0 10px; gap: 0; }
+  .later-units i { width: 22px; height: 14px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="frame" id="frame"><div class="app" id="app"></div></div>
+<script type="module">
+import { reviewBar, sfx } from "../shared.js";
+// Same content for every variant. Invented course for the prototype (no course copy).
+const UNIT = { name: "Rewards over time", blurb: "How an agent decides what a late reward is worth.", color: "#7dd3fc",
+  lessons: [
+    { t: "Late rewards", k: "Concept", m: 4, done: true },
+    { t: "Explore or exploit", k: "Interactive", m: 5, done: true },
+    { t: "Discounting the future when the payoff is many turns away", k: "Interactive", m: 4, cur: true },
+    { t: "When does an episode end?", k: "Concept", m: 4 },
+    { t: "Code: returns by hand", k: "Code", m: 6 },
+  ] };
+const LATER = [["Values and the critic", "#f472b6", 4], ["Classic tabular methods", "#fb923c", 5], ["Policy gradients and masks", "#ef4444", 4], ["Actor critic", "#facc15", 3], ["The PPO objective", "#22c55e", 4], ["Rewards and evaluation", "#3b5bdb", 3]];
+const ic = {
+  book: '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z"/><path d="M5 16a4 4 0 0 1 4-4h10"/></svg>',
+  slider: '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 4v16M12 4v16M18 4v16"/><circle cx="6" cy="9" r="2" fill="currentColor"/><circle cx="12" cy="15" r="2" fill="currentColor"/><circle cx="18" cy="8" r="2" fill="currentColor"/></svg>',
+  code: '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 7-5 5 5 5M15 7l5 5-5 5"/></svg>',
+  check: '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5 9-10"/></svg>',
+  flame: '<svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z"/></svg>',
+  bolt: '<svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+  cards: '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="7" y="3" width="13" height="16" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h10"/></svg>',
+};
+const kindIcon = (k) => k === "Code" ? ic.code : k === "Interactive" ? ic.slider : ic.book;
+const offsets = [0, 46, 70, 46, 0];
+const app = document.getElementById("app"), frame = document.getElementById("frame");
+const brand = `<span class="brand"><span class="kubo" style="--size:30px"></span>Delightful Learn</span>`;
+
+function A() {
+  app.className = "app va";
+  app.innerHTML = `<header class="top">${brand}<span class="tab on">${ic.book}Course</span><span class="tab">${ic.cards}Anki Cards <span class="badge">11</span></span><span class="sp"></span>
+      <span class="pillbox" style="color:var(--warn)">${ic.flame}5</span><span class="pillbox"><span class="gem"></span>120</span><span class="pillbox" style="color:var(--accent)">${ic.bolt}640 XP</span>
+      <span class="pillbox">25:00 ▶</span><span class="pillbox">Settings</span></header>
+    <div class="grid">
+      <aside><div class="card"><h3>Reinforcement Learning, from first principles to the PPO objective</h3><p class="desc">Learn RL from first principles to PPO with bite-sized interactive lessons, hands-on visualisers, Python coding labs and built-in flashcards that sync with Anki.</p>
+        <div class="pills"><span>36 Lessons</span><span>9 Units</span><span>26 Labs</span><span>77 Cards</span></div>
+        <p class="eyebrow">UP NEXT</p><b>${UNIT.lessons[2].t}</b><button class="btn go" style="width:100%;margin-top:12px">Start</button>
+        <p style="display:flex;justify-content:space-between;font-weight:700;margin:18px 0 6px">Lv.4 Value Iterator <span style="color:var(--accent)">640 / 900 XP</span></p><div style="height:8px;border-radius:9px;background:var(--stage)"><i style="display:block;width:70%;height:100%;background:var(--accent-solid);border-radius:9px"></i></div>
+        <div class="ach" style="margin-top:14px"><span class="kubo" style="--size:26px"></span>Next unlock at 900 XP: Crown, Prism shape</div></div></aside>
+      <section><div class="banner"><div><small>UNIT 1</small><b>${UNIT.name}</b></div><span style="font-weight:800;border-radius:10px;background:rgba(0,0,0,.3);padding:6px 10px">2 / 5</span></div>
+        ${UNIT.lessons.map((l, i) => `<div class="node-row"><div class="puck ${l.cur ? "cur" : ""}" style="--o:${offsets[i]}px">${l.cur ? '<span class="startpill">NEXT</span>' : ""}${l.done ? ic.check : kindIcon(l.k)}</div><div class="lbl ${l.cur || l.done ? "" : "muted"}"><b>${l.t}</b><small>${l.k} (${l.m} min)${l.cur ? '<br><span style="color:var(--accent)">Up next</span>' : ""}</small></div></div>`).join("")}</section>
+      <aside><div class="card"><div class="rail-h">DAILY QUEST</div><p style="display:flex;justify-content:space-between;font-weight:700;margin:10px 0 6px">Earn XP today <span style="color:var(--muted)">30 / 50 XP</span></p><div style="height:8px;border-radius:9px;background:var(--stage)"><i style="display:block;width:60%;height:100%;background:var(--go);border-radius:9px"></i></div><small style="color:var(--muted)">Reward: 25 Gems + a 2× XP Boost</small></div>
+        <div class="card boost"><span style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:grid;place-items:center;color:#3a2400;font-weight:800;font-size:13px">2×</span><div style="flex:1"><b style="color:var(--gold)">2× XP Boost</b><br><small style="color:var(--gold)">15 min (1 ready)</small></div><button class="btn gold small">Start</button></div>
+        <div class="card"><div class="rail-h">LEADERBOARD #1 <a>View all</a></div><p style="color:var(--muted);font-size:14px">Add a friend to race them on the weekly XP board.</p><button class="btn secondary small" style="width:100%">Open leaderboard</button></div>
+        <div class="card"><div class="rail-h">ACHIEVEMENTS 3/20 <a>View all →</a></div>${["First Move", "On a Roll", "Unstoppable"].map((t, i) => `<div class="ach"><i>${["★", "◔", "◕"][i]}</i>${t}<em>+${[15, 20, 35][i]} XP</em></div>`).join("")}</div></aside>
+    </div>`;
+}
+
+function dsTop(active = "course") {
+  return `<header class="top">${brand}<span class="sp"></span>
+    <button class="navtab ${active === "course" ? "on" : ""}">Course</button><button class="navtab">Review <span class="due">6</span></button><span class="sp"></span>
+    <button class="stat" style="color:var(--warn)" aria-label="5 day streak">${ic.flame}5</button><button class="stat" aria-label="120 gems"><span class="gem"></span>120</button>
+    <button class="stat" aria-label="Profile and settings"><span class="kubo" style="--size:28px"></span></button></header>`;
+}
+function pathHtml(withLaunch = true) {
+  return `<div class="path">${UNIT.lessons.map((l, i) => `<div class="step" style="--o:${offsets[i]}px">
+      <button class="deed ${l.done ? "done" : ""} ${l.cur ? "cur" : ""}" aria-label="${l.t}, ${l.k}, ${l.m} minutes${l.done ? ", done" : ""}">${l.done ? ic.check : kindIcon(l.k)}</button>
+      ${l.cur && withLaunch ? `<span class="kubo-perch"><span class="kubo bob" style="--size:44px"></span></span><div class="launch" role="group" aria-label="Next lesson"><b>${l.t}</b><small>${l.k}, ${l.m} min</small><button class="btn go sheen" id="startbtn">Start lesson</button></div>`
+        : `<span class="deed-name">${l.t}<small>${l.k}, ${l.m} min</small></span>`}
+    </div>`).join("")}</div>`;
+}
+function B() {
+  app.className = "app ds vb";
+  const pct = 30 / 50, C = 2 * Math.PI * 28;
+  app.innerHTML = `${dsTop()}<div class="main" style="--unit:${UNIT.color}">
+    <section class="col"><div class="unit-head"><i></i><div><h2>${UNIT.name}</h2><p>${UNIT.blurb} 2 of 5 done.</p></div></div>${pathHtml()}</section>
+    <aside class="today"><h3>Today</h3>
+      <div class="quest-obj"><div class="ring"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="none" stroke="var(--stage)" stroke-width="7"/><circle cx="32" cy="32" r="28" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"/></svg>
+        <span class="mini-chest"><svg width="30" height="26" viewBox="0 0 150 130"><rect x="22" y="58" width="106" height="62" rx="10" fill="#9a5b13"/><path d="M22 60 Q22 26 75 26 Q128 26 128 60 Z" fill="#b8701c"/><rect x="22" y="52" width="106" height="10" rx="3" fill="#f5b82e"/><rect x="68" y="66" width="14" height="22" rx="4" fill="#f5b82e"/></svg></span></div>
+        <div><b>20 XP to your chest</b><small>One lesson gets you there.</small></div></div>
+      <div class="potion"><span class="flask"><span>2×</span></span><div><b>Boost ready</b><small>Double XP for 15 min</small></div><button class="btn secondary small">Use</button></div>
+      <p class="friend"><span class="kubo" style="--size:32px;filter:hue-rotate(160deg)"></span><span>Races are more fun with someone. <a href="#">Invite a friend</a></span></p>
+    </aside></div>`;
+  document.getElementById("startbtn").onclick = (e) => { sfx("correct"); e.currentTarget.textContent = "Opening…"; };
+}
+function C() {
+  app.className = "app ds vc";
+  const cur = UNIT.lessons.find((l) => l.cur);
+  app.innerHTML = `${dsTop()}<div class="main" style="--unit:${UNIT.color}">
+    <section class="session"><div><h2>Today: about 9 minutes</h2><p>One new lesson, then a quick review of what is fading.</p>
+      <ol><li>${kindIcon(cur.k)}${cur.t} <em>${cur.m} min</em></li><li>${ic.cards}6 cards <em>5 min</em></li></ol></div>
+      <div class="go-col"><span class="kubo bob" style="--size:56px"></span><button class="btn go sheen" id="startbtn">Start session</button><span class="gain">Keeps your 5 day streak and opens today’s chest</span></div></section>
+    <section class="strip"><h3>${UNIT.name}<span>2 of 5</span></h3><div class="tiles">${UNIT.lessons.map((l) => `<button class="tile ${l.done ? "done" : ""} ${l.cur ? "cur" : ""}">${l.t}<small>${l.done ? "Done" : `${l.k}, ${l.m} min`}</small></button>`).join("")}</div></section>
+    <section class="later-units">${LATER.map(([n, c, k]) => `<div><i style="--c:${c}"></i>${n}<small>${k} lessons</small></div>`).join("")}</section>
+  </div>`;
+  document.getElementById("startbtn").onclick = (e) => { sfx("correct"); e.currentTarget.textContent = "Opening…"; };
+}
+function start(v) { [A, B, C][v](); }
+const bar = reviewBar({
+  title: "Course home", axis: "how many things compete for the first click",
+  variants: ["Today", "One hero + Today rail", "Daily session"], onSwitch: start,
+  controls: `<label class="rb-ctl"><input type="checkbox" id="rb-mobile"> 390px phone</label>`,
+  note: "<b>Task, same in each:</b> you open the app on day 12 with a 5 day streak, 30 of 50 quest XP and a Boost in the bag. In five seconds, what would you click first? Then find the next lesson, the daily quest, and how to review cards. Try the 390px phone width too.",
+});
+document.getElementById("rb-mobile").onchange = (e) => { frame.classList.toggle("mobile", e.target.checked); start(bar.get()); };
+</script>
+</body>
+</html>

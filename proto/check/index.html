@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype: answering a check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  .app { display: grid; grid-template-rows: 64px 1fr 88px; }
+  .topbar { display: flex; align-items: center; gap: 18px; padding: 0 max(24px, calc(50% - 480px)); border-bottom: 1px solid var(--line); }
+  .x { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; color: var(--muted); border-radius: 12px; cursor: pointer; font-size: 22px; }
+  .bar { flex: 1; height: 12px; border-radius: 99px; background: var(--stage); overflow: hidden; position: relative; }
+  .bar > i { position: absolute; inset: 0; transform-origin: left; background: var(--go); border-radius: inherit; transition: transform calc(420ms * var(--speed)) var(--spring); pointer-events: none; }
+  .bar.flash > i { animation: barflash calc(500ms * var(--speed)) var(--ease-out); }
+  @keyframes barflash { 30% { filter: brightness(1.5); } }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; min-width: 64px; }
+  .chip svg { width: 16px; height: 16px; }
+  .combo { color: var(--warn); opacity: 0; transform: scale(.6); transition: opacity calc(200ms * var(--speed)), transform calc(320ms * var(--speed)) var(--spring); }
+  .combo.on { opacity: 1; transform: scale(1); }
+  .combo.pop { animation: pop calc(380ms * var(--speed)) var(--spring); }
+  @keyframes pop { 40% { transform: scale(1.35); } }
+  .stage { width: min(100% - 48px, 632px); margin: 0 auto; padding: 40px 0 40px; }
+  .footer { border-top: 1px solid var(--line); position: sticky; bottom: 0; background: var(--bg); min-height: 88px; display: flex; align-items: center; justify-content: space-between; padding: 0 max(24px, calc(50% - 316px)); }
+
+  /* ---------- Variant A: today (deliberately faithful) ---------- */
+  .va .lesson-h1 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 22px; }
+  .va .beat { border-left: 3px solid var(--accent-solid); padding-left: 16px; }
+  .va .beat h2 { font-size: 20px; margin: 0 0 14px; }
+  .va .bubble-row { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
+  .va .bubble { border: 1px solid var(--line-strong); border-radius: 14px; padding: 10px 14px; font-weight: 700; font-size: 15px; flex: 1; }
+  .va .q { font-weight: 700; font-size: 16.5px; line-height: 1.5; margin: 0 0 16px; }
+  .va .opt { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 14px 16px; margin-bottom: 10px;
+    border-radius: 14px; border: 1px solid var(--line-strong); background: var(--surface); box-shadow: 0 3px 0 var(--line-strong); cursor: pointer; font-weight: 600; }
+  .va .opt .k { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; background: var(--stage); font-size: 13px; color: var(--muted); flex: none; }
+  .va .opt.sel { border-color: var(--accent-solid); }
+  .va .opt.bad { border-color: var(--danger); background: var(--danger-tint); }
+  .va .opt.bad .k { background: var(--danger); color: #2b0711; }
+  .va .done-card { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 14px; background: var(--go-tint); }
+  .va .done-card b { display: block; } .va .done-card small { color: var(--muted); }
+  .va .tryagain { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: var(--danger-tint); color: var(--danger-ink); line-height: 1.5; }
+  .va .tryagain b { display: block; }
+  .va .hint { color: var(--muted); font-size: 14px; font-weight: 600; margin-top: 14px; }
+  .va .num { font: 600 16px var(--mono); width: 220px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--accent-border); background: var(--bg); color: var(--ink); }
+  .va .back { color: var(--ink-2); font-weight: 600; background: none; border: 0; cursor: pointer; }
+  .va .timer { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 6px 6px 6px 12px; font-weight: 700; }
+  .va .timer span.play { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-strong); display: grid; place-items: center; font-size: 11px; }
+  .va .good-inline { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: var(--go-tint); color: var(--go-ink); line-height: 1.5; }
+
+  /* ---------- Shared de-slopped question typography (B, C) ---------- */
+  .ds .eyebrow { font-size: 14px; font-weight: 600; color: var(--muted); margin: 0 0 10px; display: flex; align-items: center; gap: 10px; }
+  .ds .eyebrow i { width: 22px; height: 6px; border-radius: 2px; background: var(--unit, #7dd3fc); }
+  .ds .q { font-size: 22px; line-height: 1.4; font-weight: 700; letter-spacing: -.01em; margin: 0 0 28px; text-wrap: pretty; }
+  .ds .q .m { font-family: var(--mono); font-size: .86em; font-weight: 600; color: var(--ink); background: var(--stage); padding: 1px 6px; border-radius: 6px; }
+  .ds .opts { display: grid; gap: 12px; }
+  .ds .opt { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 16px 18px; min-height: 60px;
+    border-radius: 16px; border: 2px solid var(--line); background: transparent; cursor: pointer; font-size: 16px; font-weight: 600; line-height: 1.4; overflow: hidden;
+    transition: border-color calc(140ms * var(--speed)) var(--ease-out), background-color calc(140ms * var(--speed)) var(--ease-out), transform calc(160ms * var(--speed)) var(--ease-out), opacity calc(200ms * var(--speed)); }
+  .ds .opt:hover:not(:disabled) { border-color: var(--line-strong); }
+  .ds .opt:active:not(:disabled) { transform: scale(.985); }
+  .ds .opt .k { font: 600 13px var(--mono); color: var(--muted); width: 18px; flex: none; }
+  .ds .opt.sel { border-color: var(--accent); background: var(--accent-tint); }
+  .ds .opt.good { border-color: var(--go); background: var(--go-tint); color: var(--ink); }
+  .ds .opt.good .k { color: var(--go-ink); }
+  .ds .opt.bad { border-color: var(--danger); background: var(--danger-tint); }
+  .ds .opt.struck { opacity: .45; text-decoration: line-through; text-decoration-color: var(--danger); }
+  .ds .opt.shake { animation: shake calc(380ms * var(--speed)) var(--ease-out); }
+  @keyframes shake { 20% { transform: translateX(-7px); } 45% { transform: translateX(6px); } 70% { transform: translateX(-3px); } }
+  .ds .opt.good.sweep::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 30%, rgba(134,239,172,.35) 50%, transparent 70%); animation: sweep calc(700ms * var(--speed)) var(--ease-out) forwards; }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+  .ds .num-wrap { display: flex; gap: 12px; align-items: center; }
+  .ds .num { font: 600 22px var(--mono); width: 200px; padding: 14px 16px; border-radius: 16px; border: 2px solid var(--line-strong); background: transparent; color: var(--ink); }
+  .ds .num:focus { border-color: var(--accent); outline: none; }
+  .ds .num.bad { border-color: var(--danger); } .ds .num.good { border-color: var(--go); }
+  .ds .num.shake { animation: shake calc(380ms * var(--speed)) var(--ease-out); }
+  .ds .nudge { color: var(--warn-ink); font-weight: 600; font-size: 14px; min-height: 22px; margin-top: 10px; }
+
+  /* Variant B: bottom feedback sheet */
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; transform: translateY(105%); transition: transform calc(300ms * var(--speed)) var(--spring-snappy);
+    padding: 22px max(24px, calc(50% - 316px)) 22px; display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; }
+  .sheet.open { transform: none; }
+  .sheet.good { background: #12331f; border-top: 2px solid var(--go); }
+  .sheet.bad { background: #3a1520; border-top: 2px solid var(--danger); }
+  .sheet h3 { margin: 0 0 4px; font-size: 20px; font-weight: 800; }
+  .sheet.good h3 { color: var(--go-ink); } .sheet.bad h3 { color: var(--danger-ink); }
+  .sheet p { margin: 0; color: var(--ink-2); line-height: 1.5; font-size: 15px; max-width: 46ch; }
+  .sheet .later { display: block; margin-top: 6px; font-size: 13px; color: var(--warn-ink); font-weight: 600; }
+
+  /* Variant C: inline explanation */
+  .why { display: grid; grid-template-rows: 0fr; transition: grid-template-rows calc(320ms * var(--speed)) var(--ease-out); }
+  .why.open { grid-template-rows: 1fr; }
+  .why > div { overflow: hidden; }
+  .why p { margin: 18px 0 0; display: flex; gap: 12px; align-items: flex-start; line-height: 1.55; color: var(--ink-2); font-size: 15.5px; }
+  .opt-reason { font-size: 13.5px; font-weight: 500; color: var(--danger-ink); margin-top: 4px; display: block; }
+  .opt .txt { display: block; }
+  .showme { margin-top: 14px; }
+  .done { text-align: center; padding-top: 60px; }
+  .done h2 { font-size: 28px; margin: 14px 0 6px; } .done p { color: var(--muted); }
+  .light-note { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="sheet" id="sheet" role="status" aria-live="polite"></div>
+<script type="module">
+import { reviewBar, sfx, wait, confetti, coins } from "../shared.js";
+
+// Same task in every variant. Content written for this prototype only (no course copy).
+const QUESTIONS = [
+  { kind: "mcq2", text: "A café robot gets +1 when a customer smiles, which happens two cups after it adds cinnamon. Why is “cinnamon was good” hard to learn?",
+    options: ["The robot only learns from recipes a barista labelled in advance", "The reward shows up later than the action that earned it"], correct: 1,
+    why: "Credit has to travel back in time: the smile arrives two steps after the cinnamon.",
+    reasons: ["No labels here. The robot only sees smiles, which is what makes this RL.", ""] },
+  { kind: "mcq3", text: "With γ = 0.5, what is a +8 reward worth right now if it arrives two steps from now?",
+    options: ["+8, rewards keep their value", "+4, it is halved once", "+2, it is halved for each step"], correct: 2,
+    why: "Each step of delay multiplies by γ: 8 × 0.5 × 0.5 = 2.",
+    reasons: ["Only true when γ = 1.", "Two steps of delay means two factors of γ."] },
+  { kind: "num", text: "Rewards arrive as [0, +2] with γ = 0.5. What is the return G₀?", answer: 1, tol: 0.001,
+    why: "G₀ = 0 + 0.5 × 2 = 1.", nudge: "Each later reward gets one more factor of γ." },
+];
+
+const app = document.getElementById("app"), sheetEl = document.getElementById("sheet");
+let S;
+function fresh(v) { return { v, i: 0, sel: null, misses: 0, xp: 0, combo: 0, queue: QUESTIONS.map((q, k) => k), solved: 0, requeued: new Set() }; }
+const icon = {
+  bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+  flame: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z"/></svg>',
+};
+
+function shell(inner, footer, extraTop = "") {
+  app.className = "app " + (S.v === 0 ? "va" : "ds");
+  const total = QUESTIONS.length + S.requeued.size;
+  app.innerHTML = `
+    <header class="topbar">
+      <button class="x" aria-label="Leave lesson">×</button>
+      <div class="bar" role="progressbar" aria-label="Lesson progress" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${S.solved}"><i style="transform:scaleX(${Math.max(.04, S.solved / total)})"></i></div>
+      ${S.v === 0 ? "" : `<span class="chip combo ${S.combo >= 2 ? "on" : ""}" id="combo">${icon.flame}<span>${S.combo}</span></span>`}
+      <span class="chip" id="xp" style="color:var(--accent)">${icon.bolt}<span>${S.xp}</span></span>
+      ${extraTop}
+    </header>
+    <main class="stage" id="stage">${inner}</main>
+    <footer class="footer">${footer}</footer>`;
+}
+function progress(flash = true) {
+  const total = QUESTIONS.length + S.requeued.size, bar = app.querySelector(".bar");
+  bar.querySelector("i").style.transform = `scaleX(${Math.max(.04, S.solved / total)})`;
+  if (flash) { bar.classList.remove("flash"); void bar.offsetWidth; bar.classList.add("flash"); }
+}
+function gainXp(n) { S.xp += n; const el = document.querySelector("#xp span"); if (el) el.textContent = S.xp; }
+function bumpCombo(ok) {
+  S.combo = ok ? S.combo + 1 : 0;
+  const c = document.getElementById("combo"); if (!c) return;
+  c.querySelector("span").textContent = S.combo; c.classList.toggle("on", S.combo >= 2);
+  if (ok && S.combo >= 2) { c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop"); if (S.combo === 3) sfx("combo"); }
+}
+const q = () => QUESTIONS[S.queue[S.i]];
+const mq = (t) => t.replace(/(γ = [\d.]+|\[0, \+2\]|G₀|8 × 0\.5 × 0\.5 = 2)/g, '<span class="m">$1</span>');
+
+function finish() {
+  closeSheet();
+  shell(`<div class="done"><span class="kubo hop" style="--size:84px"></span><h2>Checks done</h2><p>${S.xp} XP. This is where the lesson complete screen takes over (see the Finish prototype).</p>
+    <button class="btn secondary" id="again">Run the task again</button></div>`, "");
+  document.getElementById("again").onclick = () => start(S.v);
+  confetti(document.querySelector(".kubo"));
+}
+function next() {
+  S.i++; S.sel = null; S.misses = 0; closeSheet();
+  if (S.i >= S.queue.length) return finish();
+  render();
+}
+
+/* ---------------- Variant A: today ---------------- */
+function renderA() {
+  const Q = q(), n = S.i;
+  const timer = `<span class="timer">25:00 <span class="play">▶</span></span>`;
+  const bubbles = ["Quick check before we move on.", "Choose the answer you can explain.", "Work through the numbers before checking."];
+  let body = "";
+  if (Q.kind === "mcq2") {
+    body = `<p class="q">${Q.text}</p>${Q.options.map((o, k) => `<button class="opt" data-k="${k}"><span class="k">${k + 1}</span>${o}</button>`).join("")}<div id="fb"></div>`;
+  } else if (Q.kind === "mcq3") {
+    body = `<p class="q">${Q.text}</p>${Q.options.map((o, k) => `<button class="opt" data-k="${k}"><span class="k">${"ABC"[k]}</span>${o}</button>`).join("")}<p class="hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;margin-right:6px"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>Hint 1 of 1</p><div id="fb"></div>`;
+  } else {
+    body = `<p class="q">${Q.text}</p><input class="num" id="num" inputmode="decimal" placeholder="e.g. 0.81" aria-label="Numeric answer"><p class="hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;margin-right:6px"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>Hint 1 of 2</p><div id="fb"></div>`;
+  }
+  const primary = Q.kind === "mcq2" ? `<button class="btn go" id="primary" disabled>Continue</button>` : `<button class="btn go" id="primary">Check</button>`;
+  shell(`<h1 class="lesson-h1">Credit, delay and discounting</h1><section class="beat"><h2>${["Delayed rewards", "Discounting", "Discounted return"][Math.min(n, 2)]}</h2>
+    <div class="bubble-row"><span class="kubo" style="--size:40px"></span><div class="bubble">${bubbles[Math.min(n, 2)]}</div></div>${body}</section>`,
+    `<button class="back">← Back to course</button>${primary}`, timer);
+  const P = document.getElementById("primary"), fb = document.getElementById("fb");
+  if (Q.kind === "mcq2") {
+    app.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+      const k = +b.dataset.k;
+      if (k === Q.correct) {
+        sfx("correct"); gainXp(15); S.solved++;
+        b.closest(".beat").querySelector(".q").remove(); app.querySelectorAll(".opt").forEach((o) => o.remove());
+        fb.innerHTML = `<div class="done-card">✓<div><b>${Q.text.slice(0, 70)}…</b><small>Your answer: ${Q.options[k]}</small></div></div>`;
+        P.disabled = false; progress(false);
+      } else { sfx("wrong"); b.classList.add("bad"); fb.innerHTML = `<div class="tryagain"><b>Try again</b>${Q.reasons[k]}</div>`; }
+    });
+    P.onclick = next;
+  } else if (Q.kind === "mcq3") {
+    let solved = false;
+    app.querySelectorAll(".opt").forEach((b) => b.onclick = () => { app.querySelectorAll(".opt").forEach((o) => o.classList.remove("sel", "bad")); b.classList.add("sel"); S.sel = +b.dataset.k; });
+    P.onclick = () => {
+      if (solved) return next();
+      if (S.sel == null) return; // enabled but silent, like today
+      if (S.sel === Q.correct) { solved = true; sfx("correct"); gainXp(15); S.solved++; progress(false); fb.innerHTML = `<div class="good-inline"><b>Correct!</b> ${Q.why}</div>`; P.textContent = "Continue"; }
+      else { sfx("wrong"); app.querySelector(`.opt[data-k="${S.sel}"]`).classList.add("bad"); fb.innerHTML = `<div class="tryagain"><b>Try again</b>${Q.reasons[S.sel]}</div>`; } // Check stays enabled on the same wrong pick
+    };
+  } else {
+    let solved = false;
+    P.onclick = () => {
+      if (solved) return next();
+      const v = document.getElementById("num").value.trim(); if (!v) return; // silent no-op on empty
+      if (Math.abs(parseFloat(v) - Q.answer) <= Q.tol) { solved = true; sfx("correct"); gainXp(20); S.solved++; progress(false); fb.innerHTML = `<div class="good-inline"><b>Correct!</b> ${Q.why}</div>`; P.textContent = "Finish lesson"; }
+      else { sfx("wrong"); fb.innerHTML = `<div class="tryagain"><b>Try again</b>Not quite. Check your arithmetic.</div>`; }
+    };
+    document.getElementById("num").addEventListener("keydown", (e) => { if (e.key === "Enter") P.click(); });
+  }
+}
+
+/* ---------------- Variant B: check + feedback sheet ---------------- */
+function closeSheet() { sheetEl.className = "sheet"; sheetEl.innerHTML = ""; }
+function openSheet(kind, html) {
+  sheetEl.className = `sheet ${kind}`; sheetEl.innerHTML = html; void sheetEl.offsetWidth; sheetEl.classList.add("open");
+  setTimeout(() => sheetEl.querySelector("button")?.focus({ preventScroll: true }), 30);
+}
+function questionHtml(Q, withReasons = false) {
+  const eyebrow = `<p class="eyebrow"><i></i>Credit, delay and discounting</p>`;
+  if (Q.kind === "num") return `${eyebrow}<p class="q">${mq(Q.text)}</p><div class="num-wrap"><input class="num" id="num" inputmode="decimal" autocomplete="off" placeholder="Your answer" aria-label="Your answer"></div><div class="nudge" id="nudge" aria-live="polite"></div>`;
+  return `${eyebrow}<p class="q">${mq(Q.text)}</p><div class="opts" role="radiogroup">${Q.options.map((o, k) =>
+    `<button class="opt" role="radio" aria-checked="false" data-k="${k}"><span class="k">${k + 1}</span><span class="txt">${o}${withReasons ? `<span class="opt-reason" hidden></span>` : ""}</span></button>`).join("")}</div>`;
+}
+function renderB() {
+  const Q = q();
+  const later = S.requeued.has(S.queue[S.i]) && S.i >= QUESTIONS.length;
+  shell(questionHtml(Q) + (later ? `<p class="light-note">Back from earlier. One more go.</p>` : ""), `<span></span><button class="btn go" id="primary" disabled>Check</button>`);
+  const P = document.getElementById("primary");
+  const struck = new Set();
+  const canCheck = () => { P.disabled = Q.kind === "num" ? !document.getElementById("num").value.trim() : (S.sel == null || struck.has(S.sel)); };
+  if (Q.kind === "num") {
+    const inp = document.getElementById("num");
+    inp.addEventListener("input", () => { inp.classList.remove("bad"); canCheck(); });
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); if (!P.disabled) P.click(); } });
+    setTimeout(() => inp.focus(), 50);
+  } else {
+    app.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+      if (struck.has(+b.dataset.k)) return;
+      sfx("tap"); S.sel = +b.dataset.k;
+      app.querySelectorAll(".opt").forEach((o) => { o.classList.toggle("sel", o === b); o.setAttribute("aria-checked", String(o === b)); });
+      canCheck();
+    });
+  }
+  P.onclick = () => {
+    if (P.disabled) return;
+    const ok = Q.kind === "num" ? Math.abs(parseFloat(document.getElementById("num").value) - Q.answer) <= Q.tol : S.sel === Q.correct;
+    if (ok) {
+      sfx("correct"); gainXp(S.misses ? 5 : 15); S.solved++; progress(); bumpCombo(S.misses === 0);
+      const el = Q.kind === "num" ? document.getElementById("num") : app.querySelector(`.opt[data-k="${S.sel}"]`);
+      el.classList.add("good"); el.classList.remove("sel");
+      if (S.combo === 3) confetti(el, 28);
+      coins(el, 6, document.getElementById("xp"));
+      openSheet("good", `<span class="kubo hop" style="--size:56px"></span><div><h3>${S.combo >= 3 ? `${S.combo} in a row!` : "Nice."}</h3><p>${Q.why}</p></div><button class="btn go sheen" id="cont">Continue</button>`);
+      document.getElementById("cont").onclick = next;
+    } else {
+      sfx("wrong"); S.misses++; bumpCombo(false);
+      const el = Q.kind === "num" ? document.getElementById("num") : app.querySelector(`.opt[data-k="${S.sel}"]`);
+      el.classList.add("bad", "shake"); setTimeout(() => el.classList.remove("shake"), 400);
+      if (S.misses >= 2) {
+        // Reveal, then bring the question back at the end of the lesson.
+        const reveal = Q.kind === "num" ? `The answer is ${Q.answer}. ${Q.why}` : `It’s “${Q.options[Q.correct]}”. ${Q.why}`;
+        if (!S.requeued.has(S.queue[S.i])) { S.requeued.add(S.queue[S.i]); S.queue.push(S.queue[S.i]); }
+        openSheet("bad", `<span class="kubo wobble" style="--size:56px"></span><div><h3>Here’s how it works</h3><p>${reveal}</p><span class="later">This one comes back at the end of the lesson.</span></div><button class="btn danger" id="cont">Got it</button>`);
+        document.getElementById("cont").onclick = next;
+        progress(false);
+      } else {
+        const hint = Q.kind === "num" ? Q.nudge : Q.reasons[S.sel];
+        openSheet("bad", `<span class="kubo wobble" style="--size:56px"></span><div><h3>Not quite</h3><p>${hint}</p></div><button class="btn danger" id="cont">Try again</button>`);
+        document.getElementById("cont").onclick = () => {
+          closeSheet();
+          if (Q.kind === "num") { const inp = document.getElementById("num"); inp.select(); inp.focus(); }
+          else { struck.add(S.sel); el.classList.remove("bad"); el.classList.add("struck"); el.disabled = true; el.setAttribute("aria-disabled", "true"); S.sel = null; app.querySelectorAll(".opt").forEach((o) => o.classList.remove("sel")); }
+          canCheck();
+        };
+      }
+    }
+  };
+}
+
+/* ---------------- Variant C: tap commits, explanation inline ---------------- */
+function renderC() {
+  const Q = q();
+  shell(questionHtml(Q, true) + `<div class="why" id="why"><div><p><span class="kubo" style="--size:34px;flex:none"></span><span>${mq(Q.why)}</span></p></div></div><div id="showme"></div>`,
+    `<span></span><button class="btn go" id="primary" ${Q.kind === "num" ? "" : "disabled"}>${Q.kind === "num" ? "Check" : "Continue"}</button>`);
+  const P = document.getElementById("primary"), why = document.getElementById("why");
+  let solved = false;
+  const win = (el) => {
+    solved = true; sfx("correct"); gainXp(S.misses ? 5 : 15); S.solved++; progress(); bumpCombo(S.misses === 0);
+    el.classList.add("good", "sweep"); why.classList.add("open");
+    why.querySelector(".kubo").classList.add("hop");
+    coins(el, 6, document.getElementById("xp")); if (S.combo === 3) confetti(el, 28);
+    P.disabled = false; P.textContent = "Continue"; P.classList.add("sheen"); setTimeout(() => P.focus({ preventScroll: true }), 30);
+    app.querySelectorAll(".opt").forEach((o) => { if (o !== el) o.disabled = true; });
+  };
+  const offerShow = () => {
+    if (S.misses < 2 || document.querySelector("#showme button")) return;
+    document.getElementById("showme").innerHTML = `<button class="btn ghost showme" id="sm">Show me the answer</button>`;
+    document.getElementById("sm").onclick = () => {
+      const el = Q.kind === "num" ? document.getElementById("num") : app.querySelector(`.opt[data-k="${Q.correct}"]`);
+      if (Q.kind === "num") el.value = Q.answer;
+      S.misses = 9; win(el); document.getElementById("showme").innerHTML = "";
+    };
+  };
+  if (Q.kind === "num") {
+    const inp = document.getElementById("num"), nudge = document.getElementById("nudge");
+    setTimeout(() => inp.focus(), 50);
+    const check = () => {
+      if (solved) return next();
+      const v = inp.value.trim();
+      if (!v) { inp.classList.remove("shake"); void inp.offsetWidth; inp.classList.add("shake"); nudge.textContent = "Type a number first."; return; }
+      if (Math.abs(parseFloat(v) - Q.answer) <= Q.tol) { nudge.textContent = ""; win(inp); }
+      else { sfx("wrong"); S.misses++; bumpCombo(false); inp.classList.add("bad", "shake"); setTimeout(() => inp.classList.remove("shake"), 400); nudge.textContent = Q.nudge; offerShow(); }
+    };
+    P.onclick = check; inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); check(); } });
+    inp.addEventListener("input", () => inp.classList.remove("bad"));
+  } else {
+    P.onclick = () => solved && next();
+    app.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+      if (solved || b.disabled) return;
+      const k = +b.dataset.k;
+      if (k === Q.correct) return win(b);
+      sfx("wrong"); S.misses++; bumpCombo(false);
+      b.classList.add("bad", "shake"); b.disabled = true;
+      const r = b.querySelector(".opt-reason"); r.textContent = Q.reasons[k]; r.hidden = false;
+      offerShow();
+    });
+  }
+}
+
+function render() { [renderA, renderB, renderC][S.v](); }
+function start(v) { closeSheet(); S = fresh(v); render(); }
+addEventListener("keydown", (e) => {
+  if (e.target.closest("input") || e.altKey || e.metaKey || e.ctrlKey) return;
+  const n = Number(e.key); if (n >= 1 && n <= 3) { const b = app.querySelector(`.opt[data-k="${n - 1}"]`); if (b && !b.disabled) { e.preventDefault(); b.click(); } }
+  if (e.key === "Enter" && !e.target.closest("button")) { const c = sheetEl.classList.contains("open") ? sheetEl.querySelector("button") : document.getElementById("primary"); if (c && !c.disabled) { e.preventDefault(); c.click(); } }
+});
+reviewBar({
+  title: "Answering a check", axis: "how an answer is committed and how feedback arrives",
+  variants: ["Today", "Check + sheet", "Tap + explain"],
+  onSwitch: start,
+  controls: `<button class="rb-btn" id="rb-reset">Restart task</button>`,
+  note: "<b>Task, same in each:</b> answer all three checks. Get the first one wrong once and the second one wrong twice, and leave the number box empty and press Check. Switch with Alt+1/2/3. Option keys 1 to 3 and Enter work inside the lesson.",
+});
+document.getElementById("rb-reset").onclick = () => start(S.v);
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Delightful Learn prototypes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  main { width: min(100% - 48px, 860px); margin: 0 auto; padding: 56px 0 80px; }
+  h1 { font-size: 34px; letter-spacing: -.03em; margin: 0 0 10px; }
+  .lede { color: var(--ink-2); font-size: 16.5px; line-height: 1.6; max-width: 62ch; margin: 0 0 40px; }
+  .proto { padding: 28px 0 32px; border-top: 1px solid var(--line); }
+  .proto header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .proto h2 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+  .proto h2 span { display: inline-block; width: 30px; height: 8px; border-radius: 2px; background: var(--c); margin-right: 12px; vertical-align: middle; }
+  .proto a.open { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .axis { color: var(--muted); margin: 6px 0 14px; font-size: 14.5px; }
+  .task { line-height: 1.6; color: var(--ink-2); margin: 0 0 16px; max-width: 70ch; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+  td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; color: var(--ink-2); }
+  td:first-child { color: var(--ink); font-weight: 700; white-space: nowrap; }
+  td a { color: var(--accent); text-decoration: none; }
+  .foot { color: var(--muted); font-size: 13.5px; line-height: 1.6; margin-top: 36px; }
+  kbd { font-family: var(--mono); font-size: 12px; background: var(--stage); padding: 1px 6px; border-radius: 5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Three open choices, tried for real</h1>
+  <p class="lede">Each prototype runs the same task in two or three directions. Variant 1 is how the app behaves today. Try each one at full size before reading the table, switch with <kbd>Alt</kbd>+<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>, and note what you noticed before you pick: one, a mix, one more round, or none. The motion slider and sound toggle sit in the bar on top. Everything outside the part being judged is rough on purpose, and the lesson text is written for the prototypes, not taken from the course.</p>
+
+  <section class="proto" style="--c:#7dd3fc">
+    <header><h2><span></span>Answering a check</h2><a class="open" href="./check/">Open →</a></header>
+    <p class="axis">Axis: how an answer is committed and how feedback arrives.</p>
+    <p class="task">Answer three checks. Get the first wrong once, the second wrong twice, and press Check with the number box empty.</p>
+    <table>
+      <thead><tr><th>Variant</th><th>Place on the axis</th><th>Right when</th><th>Costs</th></tr></thead>
+      <tbody>
+        <tr><td><a href="./check/?v=1">1 Today</a></td><td>Mixed: numbered options commit on tap, lettered ones need Check; feedback is an inline card</td><td>You want to keep what learners already know</td><td>Two rules to learn, Check can be pressed again on the same wrong pick, empty Check does nothing</td></tr>
+        <tr><td><a href="./check/?v=2">2 Check + sheet</a></td><td>Every check is pick, then Check; a sheet rises from the bottom with the result</td><td>Feedback should feel like a moment, and a miss should come back later</td><td>One extra tap per question; the sheet covers the bottom of the screen</td></tr>
+        <tr><td><a href="./check/?v=3">3 Tap + explain</a></td><td>A tap is the answer; wrong options explain themselves in place</td><td>Speed and flow matter most, and reasons should sit next to the wrong idea</td><td>No take-backs on a slip; the explanation pushes content down</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="proto" style="--c:#f472b6">
+    <header><h2><span></span>Finishing a lesson</h2><a class="open" href="./finish/">Open →</a></header>
+    <p class="axis">Axis: how much ceremony and information the finish carries, and in what order.</p>
+    <p class="task">You just earned 45 XP, got 4 of 5 checks right first try in 3:42, finished the daily quest and reached a 6 day streak. Go to the end. Ask what you feel, what you know now, and whether you want the next lesson.</p>
+    <table>
+      <thead><tr><th>Variant</th><th>Place on the axis</th><th>Right when</th><th>Costs</th></tr></thead>
+      <tbody>
+        <tr><td><a href="./finish/?v=1">1 Today</a></td><td>Short: a title and the completion bonus, then streak and quest screens</td><td>Learners chain lessons quickly and want to move on</td><td>Shows +15 XP when the lesson paid 45; nothing about what was learned</td></tr>
+        <tr><td><a href="./finish/?v=2">2 Count-up + chest</a></td><td>High ceremony: stat tiles count up, the quest chest opens, the streak flips</td><td>The finish is the main reward loop and retention is the goal</td><td>Three screens and about ten seconds per lesson; the learning itself is not named</td></tr>
+        <tr><td><a href="./finish/?v=3">3 Recap first</a></td><td>One screen: what you can now do, unit progress, compact rewards, next lesson</td><td>Mastery and the next step should outweigh the loot</td><td>Less spectacle; needs a short “you can now” line written for every lesson</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="proto" style="--c:#fb923c">
+    <header><h2><span></span>Course home</h2><a class="open" href="./home/">Open →</a></header>
+    <p class="axis">Axis: how many things compete for the first click.</p>
+    <p class="task">Day 12, a 5 day streak, 30 of 50 quest XP, one Boost saved. In five seconds, what would you click? Then find the next lesson, the quest and card review. Repeat at the 390px phone width.</p>
+    <table>
+      <thead><tr><th>Variant</th><th>Place on the axis</th><th>Right when</th><th>Costs</th></tr></thead>
+      <tbody>
+        <tr><td><a href="./home/?v=1">1 Today</a></td><td>Everything visible: three columns, two Start buttons, stats, quest, Boost, leaderboard, achievements</td><td>Power users who want every number on one screen</td><td>Several equal calls to action; “Start” means two different things</td></tr>
+        <tr><td><a href="./home/?v=2">2 One hero + Today rail</a></td><td>The path is the page, the next lesson owns the only big button; one quiet rail for today</td><td>The path should stay the mental model and the rewards should feel like objects</td><td>Achievements and stats move to the profile</td></tr>
+        <tr><td><a href="./home/?v=3">3 Daily session</a></td><td>One planned session (lesson plus cards) with one button; the path becomes a strip</td><td>Returning and ADHD-prone learners who need the decision made for them</td><td>Less sense of a journey; free browsing is a step further away</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <p class="foot">These are throwaway prototypes for a decision. None of this code is meant to be merged as it is. Variants 2 and 3 share one visual direction to judge alongside the choices: less chrome, no accent rails or cards inside cards, and each unit owning a property colour that repeats on its tiles.</p>
+</main>
+</body>
+</html>

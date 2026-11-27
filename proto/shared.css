@@ -1,0 +1,73 @@
+/* Prototype shell. Throwaway: production imports nothing from here. Tokens mirror course_lib/static/style.css (dark). */
+:root {
+  color-scheme: dark;
+  --bg: #11161f; --surface: #18202c; --stage: #1f2937; --line: #263244; --line-strong: #3b4b63; --field-border: #6c81a0;
+  --ink: #f3f6fa; --ink-2: #c7d0dd; --muted: #8d9bb0;
+  --accent: #93a3ff; --accent-solid: #5558ee; --accent-lip: #4338ca; --accent-border: #4f46e5; --accent-tint: rgba(99,102,241,.16);
+  --go: #22c55e; --go-lip: #15803d; --go-tint: rgba(34,197,94,.14); --go-ink: #86efac;
+  --danger: #fb7185; --danger-lip: #be123c; --danger-tint: rgba(251,113,133,.14); --danger-ink: #fda4af;
+  --warn: #fbbf24; --warn-tint: rgba(251,191,36,.16); --warn-ink: #fde68a;
+  --gold: #f5b82e; --gold-lip: #b7791f; --ice: #7dd3fc;
+  --ease-out: cubic-bezier(.23,1,.32,1); --spring: cubic-bezier(.17,.75,.27,1.15); --spring-snappy: cubic-bezier(.18,.74,.26,1);
+  --font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --speed: 1; /* motion multiplier, driven by the review bar */
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); -webkit-font-smoothing: antialiased; }
+body { min-height: 100dvh; display: flex; flex-direction: column; }
+body > .app { flex: 1 1 auto; min-height: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Review bar: lives above the prototype, not part of any design */
+.review-bar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 8px 16px; background: #0a0d13; border-bottom: 1px solid #222b3a; font-size: 13px; color: var(--muted); }
+.review-bar strong { color: var(--ink); font-weight: 700; }
+.review-bar a { color: var(--accent); text-decoration: none; }
+.rb-variants { display: flex; gap: 4px; padding: 3px; background: #151b26; border-radius: 10px; }
+.rb-variants button { border: 0; background: transparent; padding: 6px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 13px; min-height: 32px; }
+.rb-variants button[aria-pressed="true"] { background: var(--accent-solid); color: #fff; }
+.rb-variants kbd { font-family: var(--mono); font-size: 11px; opacity: .7; margin-right: 6px; }
+.rb-axis { flex: 1 1 260px; min-width: 0; }
+.rb-ctl { display: inline-flex; align-items: center; gap: 6px; }
+.rb-ctl input[type=range] { width: 110px; accent-color: var(--accent-solid); }
+.rb-btn { border: 1px solid #2b3648; background: #151b26; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; color: var(--ink-2); min-height: 32px; }
+.rb-note { width: 100%; font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
+.rb-note b { color: var(--warn); font-weight: 700; }
+
+/* Tactile buttons (same recipe as production) */
+.btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 24px; border-radius: 999px; border: none; font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: transform 150ms var(--ease-out), background-color 140ms var(--ease-out), opacity 140ms var(--ease-out); }
+.btn:disabled { cursor: not-allowed; }
+.btn.go { background: var(--go); color: #06230f; box-shadow: 0 4px 0 var(--go-lip); }
+.btn.go:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--go-lip); transition-duration: 0ms; }
+.btn.go:disabled { background: #2a3546; color: #74839a; box-shadow: 0 4px 0 #1d2633; }
+.btn.danger { background: var(--danger); color: #2b0711; box-shadow: 0 4px 0 var(--danger-lip); }
+.btn.danger:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--danger-lip); transition-duration: 0ms; }
+.btn.accent { background: var(--accent-solid); color: #fff; box-shadow: 0 4px 0 var(--accent-lip); }
+.btn.gold { background: var(--gold); color: #3a2400; box-shadow: 0 4px 0 var(--gold-lip); }
+.btn.secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--field-border); box-shadow: 0 3px 0 var(--line-strong); }
+.btn.secondary:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-strong); transition-duration: 0ms; }
+.btn.ghost { background: transparent; color: var(--ink-2); box-shadow: none; }
+.btn.sheen::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.35) 50%, transparent 65%);
+  transform: translateX(-120%); animation: sheen calc(2.6s * var(--speed)) var(--ease-out) 600ms infinite; pointer-events: none; }
+@keyframes sheen { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+
+.kubo { display: inline-block; width: var(--size, 44px); height: var(--size, 44px); background: url(./kubo.svg) center/contain no-repeat; }
+.kubo.bob { animation: bob calc(3.2s * var(--speed)) ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.kubo.hop { animation: hop calc(.6s * var(--speed)) var(--spring) both; }
+@keyframes hop { 0% { transform: translateY(0) scale(1); } 30% { transform: translateY(4px) scale(1.08,.9); } 60% { transform: translateY(-18px) scale(.95,1.06); } 100% { transform: translateY(0) scale(1); } }
+.kubo.wobble { animation: wobble calc(.5s * var(--speed)) ease-in-out both; }
+@keyframes wobble { 25% { transform: rotate(-8deg); } 75% { transform: rotate(6deg); } }
+
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.coin { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff6c9, var(--gold) 45%, var(--gold-lip)); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+.confetti { position: absolute; width: 8px; height: 12px; border-radius: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}

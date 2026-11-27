@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype: finishing a lesson</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  .app { display: grid; place-items: center; padding: 32px 24px 48px; }
+  .scene { width: min(100%, 520px); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+  .in { animation: rise calc(420ms * var(--speed)) var(--spring) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+  h2 { margin: 0; font-size: 34px; letter-spacing: -.03em; line-height: 1.1; }
+  .sub { margin: 0; color: var(--ink-2); font-size: 16px; line-height: 1.5; }
+  .actions { display: flex; flex-direction: column; gap: 10px; width: min(100%, 320px); margin-top: 12px; }
+  .actions .btn { width: 100%; }
+
+  /* A: today */
+  .va h2 { color: var(--go-ink); }
+  .va .lesson-xp { font-size: 40px; font-weight: 800; color: var(--go-ink); }
+  .va .details { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .va .details span { border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13px; color: var(--ink-2); }
+  .va .week { display: flex; gap: 10px; list-style: none; padding: 0; margin: 4px 0; }
+  .va .week li { display: grid; gap: 6px; justify-items: center; font-size: 12px; color: var(--muted); }
+  .va .week i { width: 34px; height: 34px; border-radius: 50%; background: var(--stage); display: grid; place-items: center; font-style: normal; }
+  .va .week i.on { background: var(--warn-tint); color: var(--warn); }
+  .va .quest { width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: var(--surface); }
+  .va .quest .t { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; }
+  .va .quest .b { height: 8px; border-radius: 9px; background: var(--stage); margin: 10px 0 6px; overflow: hidden; }
+  .va .quest .b i { display: block; height: 100%; background: var(--go); border-radius: inherit; }
+  .va .quest small { color: var(--muted); }
+
+  /* B: count-up + chest */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; margin-top: 8px; }
+  .tile { border-radius: 16px; padding: 3px; background: var(--c); opacity: 0; transform: translateY(14px) scale(.9); }
+  .tile.show { animation: tilein calc(460ms * var(--speed)) var(--spring) forwards; }
+  @keyframes tilein { to { opacity: 1; transform: none; } }
+  .tile b { display: block; color: #0b0f16; font-size: 12px; font-weight: 800; letter-spacing: .02em; padding: 4px 0 6px; }
+  .tile span { display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--bg); border-radius: 13px; padding: 14px 6px; font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--c); }
+  .chest-wrap { position: relative; width: 150px; height: 130px; cursor: pointer; border: 0; background: none; padding: 0; }
+  .chest-wrap:disabled { cursor: default; }
+  .chest { position: absolute; inset: 0; }
+  .chest .lid { transform-origin: 20% 100%; transition: transform calc(420ms * var(--speed)) var(--spring); }
+  .chest-wrap.ready .chest { animation: chestwobble calc(1.4s * var(--speed)) ease-in-out infinite; }
+  @keyframes chestwobble { 0%, 70%, 100% { transform: rotate(0); } 76% { transform: rotate(-6deg); } 82% { transform: rotate(5deg); } 88% { transform: rotate(-3deg); } }
+  .chest-wrap.open .lid { transform: rotate(-38deg) translateY(-8px); }
+  .chest-wrap.open .glow { opacity: 1; transform: scale(1); }
+  .glow { position: absolute; left: 50%; top: 30%; width: 150px; height: 150px; margin: -75px; border-radius: 50%; background: radial-gradient(circle, rgba(245,184,46,.55), transparent 65%); opacity: 0; transform: scale(.4); transition: all calc(500ms * var(--speed)) var(--ease-out); }
+  .qbar { width: 100%; height: 18px; border-radius: 99px; background: var(--stage); overflow: hidden; position: relative; }
+  .qbar i { position: absolute; inset: 0; background: linear-gradient(var(--gold), #e09a12); transform-origin: left; transform: scaleX(.6); transition: transform calc(900ms * var(--speed)) var(--ease-out); border-radius: inherit; }
+  .qlabel { display: flex; justify-content: space-between; width: 100%; font-weight: 700; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .wallet { position: fixed; top: 96px; right: 24px; display: inline-flex; gap: 8px; align-items: center; font-weight: 800; font-variant-numeric: tabular-nums; padding: 8px 14px; border-radius: 999px; background: var(--surface); }
+  .wallet .gem { width: 14px; height: 14px; background: #f472b6; transform: rotate(45deg); border-radius: 3px; }
+  .wallet.bump { animation: pop calc(320ms * var(--speed)) var(--spring); }
+  @keyframes pop { 40% { transform: scale(1.18); } }
+  .flame-big { position: relative; width: 120px; height: 140px; display: grid; place-items: center; }
+  .flame-big svg { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--warn); filter: drop-shadow(0 8px 24px rgba(251,191,36,.35)); }
+  .flame-big svg.grow { animation: flamegrow calc(700ms * var(--speed)) var(--spring); }
+  @keyframes flamegrow { 0% { transform: scale(.6); } 60% { transform: scale(1.12); } }
+  .flip { position: relative; z-index: 1; height: 60px; overflow: hidden; font-size: 52px; font-weight: 800; line-height: 60px; color: #2b1800; margin-top: 30px; }
+  .flip .col { display: block; transition: transform calc(520ms * var(--speed)) var(--spring); }
+  .flip .col.go { transform: translateY(-60px); }
+  .days { display: flex; gap: 10px; }
+  .day { display: grid; justify-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
+  .day i { width: 36px; height: 36px; border-radius: 12px; background: var(--stage); display: grid; place-items: center; }
+  .day i.on { background: var(--warn); color: #2b1800; }
+  .day i.today { box-shadow: 0 0 0 2px var(--warn); }
+  .day i.fill { animation: dayfill calc(480ms * var(--speed)) var(--spring) forwards; }
+  @keyframes dayfill { 0% { transform: scale(.6); background: var(--stage); } 60% { transform: scale(1.15); } 100% { transform: scale(1); background: var(--warn); color: #2b1800; } }
+
+  /* C: recap first */
+  .vc .scene { text-align: left; align-items: stretch; }
+  .vc .head { display: flex; align-items: center; gap: 16px; }
+  .vc h2 { font-size: 30px; }
+  .vc .cando { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 12px; }
+  .vc .cando li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; font-size: 17px; line-height: 1.45; font-weight: 600; }
+  .vc .cando svg { width: 26px; height: 26px; }
+  .vc .cando path { stroke-dasharray: 30; stroke-dashoffset: 30; }
+  .vc .cando li.in path { animation: draw calc(420ms * var(--speed)) var(--ease-out) forwards; animation-delay: calc(var(--d) * var(--speed)); }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .deeds { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .deed { height: 54px; border-radius: 10px; border: 2px solid var(--line); position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 6px 8px; font-size: 11px; font-weight: 700; color: var(--muted); }
+  .deed::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 14px; background: var(--unit); opacity: .25; }
+  .deed.done { border-color: var(--unit); color: var(--ink); }
+  .deed.done::before { opacity: 1; }
+  .deed.flipin { animation: deedflip calc(620ms * var(--speed)) var(--spring) both; animation-delay: calc(500ms * var(--speed)); }
+  @keyframes deedflip { 0% { transform: rotateY(90deg); border-color: var(--line); } 100% { transform: none; } }
+  .unit-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; color: var(--ink-2); }
+  .rewards { display: flex; gap: 22px; flex-wrap: wrap; font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .rewards span { display: inline-flex; gap: 8px; align-items: center; }
+  .rewards small { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .rewards svg { width: 18px; height: 18px; }
+  .next { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 16px; border-radius: 16px; background: var(--surface); }
+  .next b { display: block; font-size: 16px; } .next small { color: var(--muted); font-size: 13.5px; }
+  .bet { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+  .bet b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="wallet" id="wallet" hidden><span class="gem"></span><span id="gems">120</span></div>
+<script type="module">
+import { reviewBar, sfx, wait, confetti, coins, countUp } from "../shared.js";
+const R = { xp: 45, bonus: 15, acc: 80, time: "3:42", combo: 3, streakFrom: 5, quest: { from: 30, to: 75, goal: 50 }, gems: 25, unit: { done: 2, total: 5 } };
+const app = document.getElementById("app"), wallet = document.getElementById("wallet");
+let run = 0;
+const flame = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-4-1-6 1-9z"/></svg>';
+const bolt = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>';
+const target = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>';
+const clock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+const chestSvg = `<svg class="chest" viewBox="0 0 150 130" aria-hidden="true">
+  <rect x="22" y="58" width="106" height="62" rx="10" fill="#9a5b13"/><rect x="22" y="58" width="106" height="14" fill="#7a440b"/>
+  <rect x="68" y="66" width="14" height="22" rx="4" fill="#f5b82e"/>
+  <g class="lid"><path d="M22 60 Q22 26 75 26 Q128 26 128 60 Z" fill="#b8701c"/><rect x="22" y="52" width="106" height="10" rx="3" fill="#f5b82e"/></g></svg>`;
+
+/* ---- A: today, centred (in the current code it renders pinned left at 1440px) ---- */
+function A(phase = "reward") {
+  app.className = "app va";
+  if (phase === "reward") {
+    app.innerHTML = `<section class="scene in"><span class="kubo bob" style="--size:84px"></span><h2>Lesson complete!</h2>
+      <p class="lesson-xp">+${R.bonus} XP</p><div class="details"><span>${R.combo} correct in a row</span><span>4 of 5 checks first try</span></div>
+      <div class="actions"><button class="btn go" id="c">Continue</button></div></section>`;
+    document.getElementById("c").onclick = () => A("streak");
+  } else if (phase === "streak") {
+    app.innerHTML = `<section class="scene in"><span style="color:var(--warn);width:56px;height:56px;display:block">${flame}</span><h2>${R.streakFrom + 1}-day streak</h2>
+      <p class="sub">You kept your learning streak going today.</p>
+      <ul class="week">${"MTWTFSS".split("").map((d, i) => `<li><i class="${i <= 4 ? "on" : ""}">${i <= 4 ? flame.replace("<svg", '<svg width="16" height="16"') : ""}</i>${d}</li>`).join("")}</ul>
+      <div class="actions"><button class="btn go" id="c">Continue</button></div></section>`;
+    document.getElementById("c").onclick = () => A("quest");
+  } else {
+    app.innerHTML = `<section class="scene in"><h2>Daily Quest</h2><div class="quest"><div class="t"><span>Earn XP today</span><span>${R.quest.to} / ${R.quest.goal} XP</span></div><div class="b"><i style="width:100%"></i></div><small>Reward claimed: 25 Gems + a 2× XP Boost</small></div>
+      <div class="actions"><button class="btn go" id="c">Back to course</button></div></section>`;
+    document.getElementById("c").onclick = () => start(0);
+  }
+}
+
+/* ---- B: count-up tiles, then quest chest, then streak ---- */
+async function B() {
+  const my = ++run;
+  app.className = "app vb"; wallet.hidden = false; document.getElementById("gems").textContent = 120;
+  app.innerHTML = `<section class="scene"><span class="kubo hop" id="k" style="--size:96px"></span><h2 class="in">Lesson complete</h2>
+    <div class="tiles">
+      <div class="tile" style="--c:var(--gold)"><b>TOTAL XP</b><span>${bolt.replace("<svg", '<svg width="20" height="20"')}<em id="t1" style="font-style:normal">0</em></span></div>
+      <div class="tile" style="--c:var(--go)"><b>ACCURACY</b><span><em id="t2" style="font-style:normal">0</em>%</span></div>
+      <div class="tile" style="--c:var(--ice)"><b>TIME</b><span id="t3">0:00</span></div>
+    </div><div class="actions"><button class="btn go" id="c" disabled>Continue</button></div></section>`;
+  confetti(document.getElementById("k"), 40); sfx("streak");
+  const tiles = [...app.querySelectorAll(".tile")];
+  await wait(350); if (my !== run) return;
+  tiles[0].classList.add("show"); sfx("tap"); await countUp(document.getElementById("t1"), R.xp, 650); if (my !== run) return;
+  tiles[1].classList.add("show"); sfx("tap"); await countUp(document.getElementById("t2"), R.acc, 550); if (my !== run) return;
+  tiles[2].classList.add("show"); sfx("tap"); await countUp(document.getElementById("t3"), 222, 550, (v) => `${Math.floor(v / 60)}:${String(Math.round(v) % 60).padStart(2, "0")}`);
+  if (my !== run) return;
+  const c = document.getElementById("c"); c.disabled = false; c.classList.add("sheen"); c.focus({ preventScroll: true });
+  c.onclick = () => Bquest(my);
+}
+async function Bquest(my) {
+  app.innerHTML = `<section class="scene in"><h2>Daily quest done</h2><p class="sub">You earned ${R.quest.to} of ${R.quest.goal} XP today.</p>
+    <div class="qlabel"><span>Earn ${R.quest.goal} XP</span><span id="ql">${R.quest.from} / ${R.quest.goal}</span></div><div class="qbar"><i id="qb"></i></div>
+    <button class="chest-wrap" id="chest" disabled aria-label="Open the quest chest"><span class="glow"></span>${chestSvg}</button>
+    <p class="sub" id="chest-hint" style="min-height:24px"></p>
+    <div class="actions"><button class="btn go" id="c" hidden>Continue</button></div></section>`;
+  await wait(300); if (my !== run) return;
+  document.getElementById("qb").style.transform = "scaleX(1)";
+  countUp(document.getElementById("ql"), R.quest.to, 900, (v) => `${Math.round(v)} / ${R.quest.goal}`);
+  await wait(950); if (my !== run) return;
+  const chest = document.getElementById("chest"); chest.disabled = false; chest.classList.add("ready"); sfx("chest");
+  document.getElementById("chest-hint").textContent = "Tap the chest";
+  chest.onclick = async () => {
+    chest.onclick = null; chest.classList.remove("ready"); chest.classList.add("open"); sfx("coin");
+    coins(chest, 14, wallet);
+    document.getElementById("chest-hint").innerHTML = `<b style="color:var(--gold)">+${R.gems} gems</b> and a 2× XP Boost for later`;
+    await wait(900); if (my !== run) return;
+    countUp(document.getElementById("gems"), 120 + R.gems, 400, (v) => Math.round(120 + (v - 120) * 1)); wallet.classList.add("bump");
+    document.getElementById("gems").textContent = 120 + R.gems;
+    const c = document.getElementById("c"); c.hidden = false; c.focus({ preventScroll: true }); c.onclick = () => Bstreak(my);
+  };
+}
+async function Bstreak(my) {
+  wallet.hidden = true;
+  const d = R.streakFrom;
+  app.innerHTML = `<section class="scene in"><div class="flame-big">${flame}<div class="flip" aria-live="polite"><span class="col" id="col">${d}<br>${d + 1}</span></div></div>
+    <h2>${d + 1} day streak</h2><p class="sub">Come back tomorrow to make it ${d + 2}.</p>
+    <div class="days">${"MTWTFSS".split("").map((x, i) => `<span class="day"><i class="${i < 4 ? "on" : ""} ${i === 4 ? "today" : ""}" id="d${i}">${i < 4 ? flame.replace("<svg", '<svg width="16" height="16"') : ""}</i>${x}</span>`).join("")}</div>
+    <div class="actions"><button class="btn go" id="c">Keep going</button><button class="btn ghost" id="done">Done for today</button></div></section>`;
+  await wait(450); if (my !== run) return;
+  document.getElementById("col").classList.add("go"); app.querySelector(".flame-big svg").classList.add("grow"); sfx("streak");
+  await wait(300); const t = document.getElementById("d4"); t.classList.add("fill"); t.innerHTML = flame.replace("<svg", '<svg width="16" height="16"');
+  document.getElementById("c").onclick = document.getElementById("done").onclick = () => start(1);
+}
+
+/* ---- C: recap first, rewards compact, next lesson as the main action ---- */
+async function C() {
+  const my = ++run;
+  app.className = "app vc"; wallet.hidden = true;
+  const deeds = ["Late rewards", "Explore or exploit", "Discounting", "Episode ends", "Code it"];
+  app.innerHTML = `<section class="scene" style="--unit:#7dd3fc">
+    <div class="head in"><span class="kubo hop" style="--size:64px"></span><div><h2>Discounting, done</h2><p class="sub" style="margin-top:6px">Lesson 3 of 5 in Rewards over time</p></div></div>
+    <ul class="cando">
+      <li style="--d:300ms"><svg viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="12" fill="var(--go-tint)"/><path d="M7.5 13.5l3.6 3.6 7.4-8" stroke="var(--go)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>You can explain why a reward two steps away is worth less now.</li>
+      <li style="--d:520ms"><svg viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="12" fill="var(--go-tint)"/><path d="M7.5 13.5l3.6 3.6 7.4-8" stroke="var(--go)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>You can compute a return by hand for a short episode.</li>
+    </ul>
+    <div class="unit-row"><span>Rewards over time</span><span>${R.unit.done + 1} of ${R.unit.total}</span></div>
+    <div class="deeds">${deeds.map((n, i) => `<div class="deed ${i <= R.unit.done ? "done" : ""} ${i === R.unit.done ? "flipin" : ""}">${n}</div>`).join("")}</div>
+    <div class="rewards"><span style="color:var(--accent)">${bolt}<em id="x" style="font-style:normal">0</em> <small>XP</small></span><span style="color:var(--go-ink)">${target}${R.acc}% <small>first try</small></span><span style="color:var(--warn)">${flame}${R.streakFrom + 1} <small>day streak</small></span><span style="color:var(--ink-2)">${clock}${R.time}</span></div>
+    <p class="bet">Your opening bet was <b>Not sure yet</b>. It gets settled at the end of this unit.</p>
+    <div class="next"><div><small>Up next, 4 min</small><b>When does an episode end?</b></div><button class="btn go sheen" id="c">Keep going</button></div>
+    <button class="btn ghost" id="done" style="align-self:center">Done for today</button>
+  </section>`;
+  app.querySelectorAll(".cando li").forEach((li) => li.classList.add("in"));
+  await wait(200); if (my !== run) return;
+  sfx("correct"); countUp(document.getElementById("x"), R.xp, 700);
+  await wait(800); if (my !== run) return;
+  sfx("coin"); confetti(app.querySelector(".deed.flipin"), 18);
+  document.getElementById("c").onclick = document.getElementById("done").onclick = () => start(2);
+}
+
+function start(v) { run++; wallet.hidden = true; [A, B, C][v](); }
+reviewBar({
+  title: "Finishing a lesson", axis: "how much ceremony and information the finish carries, and in what order",
+  variants: ["Today", "Count-up + chest", "Recap first"], onSwitch: start,
+  controls: `<button class="rb-btn" id="rb-replay">Replay</button>`,
+  note: "<b>Task, same in each:</b> you just finished a lesson with 45 XP, 4 of 5 checks first try, 3:42, which also completes the daily quest and makes a 6 day streak. Go through to the end and ask: what do I feel, what do I know now, and do I want the next lesson? Today’s version is shown centred; in the current code it renders pinned to the left edge at 1440px.",
+});
+document.getElementById("rb-replay").onclick = () => start(Number(new URLSearchParams(location.search).get("v") || 1) - 1);
+</script>
+</body>
+</html>
