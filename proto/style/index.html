@@ -4,187 +4,278 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Style proposal, round 2</title>
+<title>Delightful Learn style proposal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root { --font: "Plus Jakarta Sans", system-ui, sans-serif; --xp:#f9cc21; --xp-lip:#d9a800; --gem:#f85da5; --streak:#fd9320; --freeze:#60ccfc; }
+:root { --font: "Plus Jakarta Sans", system-ui, sans-serif; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); -webkit-font-smoothing: antialiased; }
 button, input { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
-.wrap { width: min(100% - 48px, 1120px); margin: 0 auto; padding: 40px 0 96px; }
+.wrap { width: min(100% - 48px, 1120px); margin: 0 auto; padding: 28px 0 96px; }
 a { color: var(--accent-text); font-weight: 700; text-decoration: none; }
-h1 { font-size: 36px; letter-spacing: -.03em; margin: 14px 0 8px; }
-.lede { color: var(--ink-2); max-width: 72ch; line-height: 1.6; margin: 0; }
+.top { font-size: 14px; }
+h1 { font-size: 34px; letter-spacing: -.03em; margin: 12px 0 6px; line-height: 1.15; }
+.lede { color: var(--ink-2); max-width: 70ch; line-height: 1.55; margin: 0 0 22px; font-size: 17px; }
 section { margin-top: 56px; }
 section > h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: -.01em; }
 section > p.note { color: var(--ink-3); margin: 0 0 20px; line-height: 1.55; max-width: 76ch; }
-.card { background: var(--surface); border: 2px solid var(--line); border-bottom-width: 5px; border-radius: 20px; padding: 18px; }
-.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(var(--min, 240px), 1fr)); }
-.changes li { margin: 6px 0; color: var(--ink-2); }
-.changes b { color: var(--ink); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; min-width: 0; }
+svg.ic { width: 18px; height: 18px; flex: none; }
 
-/* Influences */
-.inf h3 { margin: 0 0 4px; font-size: 16px; }
-.inf .take { color: var(--ink-2); font-size: 14.5px; line-height: 1.5; margin: 0 0 6px; }
-.inf .leave { color: var(--ink-3); font-size: 13.5px; line-height: 1.5; margin: 0; }
+/* Hero: one answered lesson, Kubo and the objects */
+.hero { margin-top: 0; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
+.lesson { display: grid; gap: 12px; align-content: start; }
+.ph { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 14px; background: var(--raised); }
+.ph .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; margin-right: auto; font-size: 15px; }
+.ph svg { width: 26px; height: 26px; }
+.stat { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-variant-numeric: tabular-nums; padding: 2px 6px; font-size: 15px; }
+.stat svg { width: 22px; height: 22px; }
+.lesson h3 { margin: 6px 0 0; font-size: 21px; letter-spacing: -.01em; }
+.lesson p, .prose p { margin: 0; color: var(--ink-2); line-height: 1.6; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 16px; border: 0; font-weight: 800; cursor: pointer; transition: transform .12s, box-shadow .12s; text-decoration: none; }
+.btn:active { transform: translateY(4px); box-shadow: none !important; }
+.btn.go { background: var(--go); color: var(--on-go); box-shadow: 0 4px 0 var(--go-lip); }
+.btn.accent { background: var(--accent); color: var(--on-accent); box-shadow: 0 4px 0 var(--accent-lip); }
+.btn.secondary { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 2px var(--line) inset, 0 4px 0 var(--line); }
+/* When the accent and success colours are too alike to tell apart, the accent action becomes an outline. */
+.collide .btn.accent { background: var(--surface); color: var(--accent-text); box-shadow: 0 0 0 2px var(--accent) inset, 0 4px 0 var(--accent-lip); }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.specimen .label { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--ink-3); }
+.specimen .btn { cursor: default; }
+.choice { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 16px; background: var(--surface); border: 2px solid var(--line); border-bottom-width: 5px; font-weight: 700; min-width: 0; }
+.choice .k { width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--line); display: grid; place-items: center; font-size: 13px; color: var(--ink-3); font-weight: 800; flex: none; }
+.choice .t { margin-right: auto; min-width: 0; }
+.choice .tag { display: inline-flex; align-items: center; gap: 4px; font-size: 13.5px; font-weight: 800; flex: none; }
+.choice.right { border-color: var(--go); } .choice.right .k { background: var(--go); border-color: var(--go); color: var(--on-go); } .choice.right .tag { color: var(--go-text); }
+.choice.wrong { border-color: var(--danger); } .choice.wrong .k { background: var(--danger); border-color: var(--danger); color: var(--on-danger); } .choice.wrong .tag { color: var(--danger-text); }
+.choice.idle { color: var(--ink-2); }
+.feedback { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 16px; background: var(--raised); }
+.feedback .msg { display: flex; gap: 10px; align-items: flex-start; margin-right: auto; min-width: 0; flex: 1 1 220px; }
+.feedback .msg svg { color: var(--feedback-text); margin-top: 2px; }
+.feedback b { display: block; color: var(--feedback-text); }
+.feedback span { color: var(--ink); line-height: 1.5; }
+.side { display: grid; gap: 14px; grid-template-rows: auto 1fr; min-width: 0; }
+.kubo { display: grid; grid-template-columns: 136px minmax(0, 1fr); gap: 14px; align-items: center; background: var(--ground); border-radius: 18px; padding: 10px 16px 10px 8px; }
+.kubo svg { width: 136px; height: 136px; }
+.bubble { position: relative; margin: 0; background: var(--raised); border-radius: 16px; padding: 12px 14px; line-height: 1.5; color: var(--ink); font-weight: 600; }
+.bubble::before { content: ""; position: absolute; left: -8px; top: 22px; border: 8px solid transparent; border-left: 0; border-right-color: var(--raised); }
+.strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; background: var(--ground); }
+.strip figure { margin: 0; display: grid; justify-items: center; gap: 0; font-size: 12.5px; color: var(--ink-2); font-weight: 700; }
+.strip svg { width: min(100%, 96px); height: auto; aspect-ratio: 1; }
 
 /* Generator */
-.gen { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
-.presets { display: grid; gap: 10px; }
-.preset { text-align: left; border: 2px solid var(--line); border-bottom-width: 4px; background: var(--surface); border-radius: 16px; padding: 12px 14px; cursor: pointer; }
+.gen { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.group h3 { margin: 22px 0 4px; font-size: 15px; }
+.group:first-child h3 { margin-top: 0; }
+.group > p { margin: 0 0 10px; color: var(--ink-3); font-size: 13px; line-height: 1.45; }
+.presets { display: grid; gap: 8px; }
+.presets.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.preset { text-align: left; border: 2px solid var(--line); border-bottom-width: 4px; background: var(--surface); border-radius: 14px; padding: 10px 12px; cursor: pointer; min-width: 0; }
 .preset[aria-pressed="true"] { border-color: var(--accent); background: var(--raised); }
-.preset b { display: flex; align-items: center; gap: 10px; }
-.preset small { display: block; color: var(--ink-3); margin-top: 6px; line-height: 1.45; }
-.sw { display: inline-grid; grid-template-columns: repeat(4, 10px); gap: 2px; }
+.preset b { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.preset small { display: block; color: var(--ink-3); margin-top: 6px; line-height: 1.45; font-size: 12.5px; }
+.preset[aria-pressed="true"] small { color: var(--caption); }
+.sw { display: inline-grid; grid-template-columns: repeat(4, 9px); gap: 2px; flex: none; }
 .sw i { height: 18px; border-radius: 3px; }
-.sliders { display: grid; gap: 12px; margin-top: 16px; }
+.sliders { display: grid; gap: 12px; margin-top: 14px; padding: 14px 0 0; border-top: 1px solid var(--line); }
+#tune-slot .sliders { border-top: 0; margin-top: 10px; padding-top: 0; }
+.slider-context { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.45; font-weight: 600; }
 .sliders label { display: grid; gap: 6px; font-weight: 700; font-size: 14px; }
 .sliders label span { display: flex; justify-content: space-between; color: var(--ink-2); }
 .sliders input[type=range] { width: 100%; accent-color: var(--accent); }
-.preview { display: grid; gap: 14px; }
-.ph { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-radius: 18px; background: var(--surface); border: 2px solid var(--line); }
-.ph .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; margin-right: auto; }
-.ph svg { width: 30px; height: 30px; }
-.stat { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-variant-numeric: tabular-nums; padding: 4px 8px; border-radius: 10px; }
-.stat svg { width: 24px; height: 24px; }
-.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 16px; border: 0; font-weight: 800; cursor: pointer; transition: transform .12s, box-shadow .12s; }
-.btn:active { transform: translateY(4px); box-shadow: none !important; }
-.btn.go { background: var(--go); color: var(--bg); box-shadow: 0 4px 0 var(--go-lip); }
-.btn.accent { background: var(--accent); color: #fff; box-shadow: 0 4px 0 var(--accent-lip); }
-.btn.secondary { background: var(--surface); box-shadow: 0 0 0 2px var(--line) inset, 0 4px 0 var(--line); }
-.choice { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 2px solid var(--line); border-bottom-width: 5px; font-weight: 700; }
-.choice .k { width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--line); display: grid; place-items: center; font-size: 13px; color: var(--ink-3); font-weight: 800; }
-.choice.right { border-color: var(--go); } .choice.right .k { background: var(--go); border-color: var(--go); color: var(--bg); }
-.choice.wrong { border-color: var(--danger); } .choice.wrong .k { background: var(--danger); border-color: var(--danger); color: var(--bg); }
-.prose h4 { margin: 0 0 6px; font-size: 18px; } .prose p { margin: 0 0 8px; color: var(--ink-2); line-height: 1.6; } .prose .muted { color: var(--ink-3); font-size: 14px; }
-.tokens { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-.tok { border-radius: 12px; overflow: hidden; border: 2px solid var(--line); font-size: 12px; }
-.tok i { display: block; height: 34px; }
-.tok span { display: block; padding: 6px 8px; font-family: "JetBrains Mono", monospace; color: var(--ink-2); }
-.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; font-size: 13.5px; }
-.checks div { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 10px; background: var(--surface); }
+.sample { position: sticky; top: 16px; display: grid; gap: 12px; min-width: 0; }
+.picker, .tune { display: none; }
+.picker { gap: 6px; font-size: 13px; font-weight: 700; color: var(--ink-3); }
+.picker select { width: 100%; min-height: 48px; padding: 0 14px; border-radius: 14px; border: 2px solid var(--control-edge); border-bottom-width: 4px; background: var(--surface); color: var(--ink); font-weight: 700; font-size: 16px; }
+.sample .now { margin: 0; font-weight: 800; font-size: 18px; }
+.sample .now small { display: block; font-weight: 600; font-size: 13.5px; color: var(--ink-3); margin-top: 4px; line-height: 1.45; }
+.prose { display: grid; gap: 6px; }
+.prose h4 { margin: 0; font-size: 17px; } .prose .muted { color: var(--ink-3); font-size: 14px; }
+.mini-nodes { display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 12px 12px 6px; border-radius: 16px; background: var(--ground); }
+.mini-nodes figure { margin: 0; display: grid; justify-items: center; gap: 2px; }
+.mini-nodes figcaption { font-size: 11.5px; font-weight: 700; color: var(--ink-2); }
+.mini-nodes svg { width: 64px; height: 54px; }
+details.more { border-top: 1px solid var(--line); padding-top: 12px; }
+details.more summary { cursor: pointer; font-weight: 800; color: var(--accent-text); list-style: none; }
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::after { content: " +"; }
+details.more[open] summary::after { content: " −"; }
+details.more > div { display: grid; gap: 12px; margin-top: 12px; }
+.tokens { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(124px, 100%), 1fr)); gap: 8px; }
+.tok { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); font-size: 12px; min-width: 0; }
+.tok i { display: block; height: 30px; }
+.tok span { display: block; padding: 6px 8px; font-family: "JetBrains Mono", monospace; color: var(--ink-2); line-height: 1.45; overflow-wrap: anywhere; }
+.tok em { display: block; font-style: normal; font-family: var(--font); color: var(--ink-3); font-size: 11.5px; }
+.checks h4 { margin: 4px 0 6px; font-size: 14px; }
+.checks .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 6px; font-size: 13.5px; }
+.checks .list div { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: var(--surface); min-width: 0; }
+.checks .pair { display: inline-grid; place-items: center; width: 26px; height: 20px; border-radius: 5px; font-size: 12px; font-weight: 800; flex: none; }
+.checks .pair i { width: 12px; height: 12px; border-radius: 3px; display: block; }
+.checks span.n { margin-right: auto; min-width: 0; }
+.checks b { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .checks b.ok { color: var(--go-text); } .checks b.bad { color: var(--danger-text); }
+.adjust { margin: 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; }
 
 /* Objects */
-.objs { --min: 150px; }
-.obj { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 16px 10px 14px; }
-.obj svg { width: 92px; height: 92px; }
-.obj b { font-size: 14px; } .obj small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
-.rules { --min: 230px; }
-.rules h3 { margin: 0 0 6px; font-size: 15.5px; } .rules p { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 1.5; }
-.nodes { display: flex; gap: 28px; flex-wrap: wrap; align-items: end; }
-.node { display: grid; justify-items: center; gap: 8px; color: var(--ink-3); font-weight: 700; font-size: 13px; }
-.node svg { width: 84px; height: 72px; }
+.objs { display: grid; gap: 12px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.obj.kubo-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 20px; text-align: left; padding: 10px 24px 10px 14px; }
+.obj.kubo-row b { display: block; font-size: 16px; } .obj.kubo-row small { display: block; font-size: 13.5px; margin-top: 2px; }
+.obj.kubo-row p { margin: 8px 0 0; color: var(--ink-2); font-size: 14px; line-height: 1.5; max-width: 60ch; }
+.obj { display: grid; justify-items: center; gap: 4px; text-align: center; padding: 8px 10px 14px; background: var(--ground); }
+.obj svg { width: 112px; height: 112px; }
+.obj b { font-size: 14px; } .obj small { color: var(--object-caption); font-size: 12.5px; line-height: 1.4; }
+.nodes { display: flex; gap: 22px; flex-wrap: wrap; align-items: end; padding: 22px 24px 16px; border-radius: 20px; background: var(--ground); }
+.node { display: grid; justify-items: center; gap: 8px; color: var(--ink-2); font-weight: 700; font-size: 13px; }
+.node svg { width: 96px; height: 80px; }
+
+/* Lists with hairlines instead of card walls */
+.lined { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+.lined li { border-top: 1px solid var(--line); padding: 14px 0; }
+.lined h3 { margin: 0 0 4px; font-size: 15.5px; }
+.lined p { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.5; }
 .sources li { margin: 4px 0; color: var(--ink-2); font-size: 14px; }
-@media (max-width: 900px) { .gen { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .objs { grid-template-columns: repeat(3, minmax(0, 1fr)); } .gen, .hero { grid-template-columns: minmax(0, 1fr); } .lined { grid-template-columns: minmax(0, 1fr); } .sample { position: static; } #presets { display: none; } .picker { display: grid; } .tune { display: block; } }
+@media (max-width: 600px) {
+  .wrap { width: calc(100% - 32px); padding-top: 20px; }
+  h1 { font-size: 28px; }
+  .ph { flex-wrap: wrap; row-gap: 8px; }
+  .ph .brand { flex-basis: 100%; }
+  .ph .stat { flex: 1; justify-content: center; }
+  .kubo { grid-template-columns: 96px minmax(0, 1fr); }
+  .kubo svg { width: 96px; height: 96px; }
+  .strip svg { width: min(100%, 80px); }
+  .presets.compact { grid-template-columns: minmax(0, 1fr); }
+  .nodes { gap: 12px; padding: 16px 12px 12px; justify-content: center; }
+  .node svg { width: 80px; height: 67px; }
+  .objs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .obj.kubo-row { gap: 12px; padding: 10px 14px 10px 6px; } .obj.kubo-row svg { width: 96px; height: 96px; flex: none; }
+  .obj svg { width: min(100%, 112px); height: auto; aspect-ratio: 1; }
+}
 </style>
 </head>
 <body>
 <svg id="defs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="symbols"></defs></svg>
+<svg id="measure" width="10" height="10" style="position:absolute;left:-9999px;top:0" aria-hidden="true"><g id="mg"></g></svg>
 <div class="wrap">
-  <a href="../">← All prototypes</a>&nbsp;&nbsp;<a href="../style-v1/">Round 1</a>
-  <h1>One look, round 2</h1>
-  <p class="lede">Built from your feedback on round 1. Palettes are now generated from one method instead of invented, the objects are redrawn with one light source and real geometry, and the lesson nodes are proper cylinders.</p>
-  <ul class="changes">
-    <li><b>Palettes:</b> one recipe (OKLCH scales, tinted neutrals, contrast-checked), three presets, and a Linear-style generator to tune them.</li>
-    <li><b>Objects:</b> front-facing objects use a single diagonal "paper fold" for light and shade; boxes (chest, ice) are true isometric. Fewer facets, cleaner silhouettes.</li>
-    <li><b>Nodes:</b> a top face, a visible side wall, a glyph that lies flat on the top, and a ground shadow under the base.</li>
-    <li><b>Font:</b> Plus Jakarta Sans stays.</li>
-  </ul>
+  <div class="top"><a href="../">← All prototypes</a></div>
+  <h1>Delightful Learn style proposal</h1>
+  <p class="lede">Preview a lesson, then compare its colours and rewards.</p>
 
-  <section>
-    <h2>What we take from whom</h2>
-    <p class="note">Steal like an artist: take a specific idea from several sources and combine them, so the result is ours and not a copy of any one.</p>
-    <div class="grid" style="--min:250px">
-      <div class="card inf"><h3>Duolingo</h3><p class="take">Fixed colours for game objects, chunky tactile controls with a bottom lip, one highlight per object.</p><p class="leave">Leave: the white canvas, the green brand, cartoon characters.</p></div>
-      <div class="card inf"><h3>Brilliant</h3><p class="take">Restraint: one idea per screen, generous space, precise geometry, colour only where it means something.</p><p class="leave">Leave: the monochrome line art (too quiet for our reward moments).</p></div>
-      <div class="card inf"><h3>Linear</h3><p class="take">Themes generated from three inputs (base, accent, contrast) in a perceptual colour space, and surfaces that step in small, even increments.</p><p class="leave">Leave: the productivity-tool density.</p></div>
-      <div class="card inf"><h3>Vercel (Geist)</h3><p class="take">A strict neutral scale with very high text contrast, and typography doing most of the work.</p><p class="leave">Leave: pure black and white starkness; we keep warmth.</p></div>
-      <div class="card inf"><h3>Carrot Weather</h3><p class="take">A mascot with a voice that reacts to you, and selectable looks as a reward people enjoy collecting.</p><p class="leave">Leave: the snark; Kubo stays encouraging.</p></div>
-      <div class="card inf"><h3>Monument Valley</h3><p class="take">One light direction everywhere and honest isometric boxes, so objects feel like they sit on the same table.</p><p class="leave">Leave: the pastel dreaminess.</p></div>
+  <section class="hero" aria-label="Lesson preview">
+    <div class="card lesson">
+      <div class="ph"><span class="brand"><svg><use href="#o-kubo-b"/></svg>Delightful Learn</span>
+        <span class="stat"><svg><use href="#o-flame-b"/></svg>12</span><span class="stat"><svg><use href="#o-gem-b"/></svg>245</span><span class="stat"><svg><use href="#o-bolt-b"/></svg>1,840</span></div>
+      <h3>Discounting the future</h3>
+      <p>Each step of delay multiplies a reward by γ. How do you value a win that is two steps away?</p>
+      <div class="choice right"><span class="k">A</span><span class="t">Multiply by γ once per step</span><span class="tag"><svg class="ic" viewBox="0 0 20 20"><path d="m4 10.5 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Example answer</span></div>
+      <div class="choice idle"><span class="k">B</span><span class="t">Keep the full reward</span></div>
+      <div class="feedback"><div class="msg"><svg class="ic" viewBox="0 0 20 20"><path d="m4 10.5 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b>Correct</b><span>Two steps away is worth γ² of a win right now.</span></div></div><a class="btn go" href="#palettes">Compare palettes</a></div>
+    </div>
+    <div class="side">
+      <div class="kubo"><svg><use href="#o-kubo"/></svg><p class="bubble">Nice. That γ² will come back when we add up whole episodes.</p></div>
+      <div class="card strip">
+        <figure><svg><use href="#o-bolt"/></svg>XP</figure>
+        <figure><svg><use href="#o-flame"/></svg>Streak</figure>
+        <figure><svg><use href="#o-gem"/></svg>Gems</figure>
+        <figure><svg><use href="#o-chest"/></svg>Chest</figure>
+        <figure><svg><use href="#o-ice"/></svg>Freeze</figure>
+        <figure><svg><use href="#o-medal-gold"/></svg>Gold</figure>
+      </div>
     </div>
   </section>
 
-  <section>
-    <h2>Palettes from one recipe</h2>
-    <p class="note">Every preset is computed, not picked: a 12-step neutral scale in OKLCH (tighter steps in the middle, wider at the ends), Kubo's indigo as the accent, shared state colours, and four surface levels. The checks below recompute live; every pair must pass 4.5:1. Game-object colours never change.</p>
+  <section id="palettes">
+    <h2>Palettes from known methods</h2>
+    <p class="note">Choose a palette to see how it changes the lesson and path. Game-object colours stay the same in every palette.</p>
     <div class="gen">
-      <div>
-        <div class="presets" id="presets"></div>
-        <div class="sliders">
-          <label><span>Neutral hue <em id="v-nh"></em></span><input type="range" id="nh" min="0" max="360" step="1"></label>
-          <label><span>Neutral tint <em id="v-nc"></em></span><input type="range" id="nc" min="0" max="0.035" step="0.001"></label>
-          <label><span>Accent hue <em id="v-ah"></em></span><input type="range" id="ah" min="0" max="360" step="1"></label>
-          <label><span>Contrast <em id="v-ct"></em></span><input type="range" id="ct" min="0.85" max="1.15" step="0.01"></label>
-        </div>
-      </div>
-      <div class="preview">
-        <div class="ph"><span class="brand"><svg><use href="#o-kubo"/></svg>Delightful Learn</span>
-          <span class="stat"><svg><use href="#o-flame"/></svg>12</span><span class="stat"><svg><use href="#o-gem"/></svg>245</span><span class="stat"><svg><use href="#o-bolt"/></svg>1,840</span></div>
-        <div class="card prose"><h4>Discounting the future</h4><p>Each step of delay multiplies a reward by γ. A win two steps away is worth γ² of a win right now.</p><p class="muted">Secondary text sits at ink-3 and still passes contrast.</p></div>
-        <div class="choice right"><span class="k">A</span>It is halved for each step</div>
-        <div class="choice wrong"><span class="k">B</span>Rewards keep their value</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap"><button class="btn go">Continue</button><button class="btn accent">Start lesson</button><button class="btn secondary">Skip for now</button></div>
-        <div class="tokens" id="tokens"></div>
-        <div class="checks" id="checks"></div>
+      <div id="presets"></div>
+      <div class="sample">
+        <label class="picker"><span>Palette</span><select id="picker"></select></label>
+        <p class="now" id="now" aria-live="polite"></p>
+        <div class="card prose"><h4>Discounting the future</h4><p>Each step of delay multiplies a reward by γ, so a win two steps away is worth γ² of a win now.</p><p class="muted">Hint: γ is a number between 0 and 1.</p></div>
+        <div class="choice right"><span class="k">A</span><span class="t">Multiply by γ once per step</span><span class="tag"><svg class="ic" viewBox="0 0 20 20"><path d="m4 10.5 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Correct</span></div>
+        <div class="choice wrong"><span class="k">B</span><span class="t">Keep the full reward</span><span class="tag"><svg class="ic" viewBox="0 0 20 20"><path d="m5.5 5.5 9 9m0-9-9 9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Not quite</span></div>
+        <div class="specimen"><p class="label">Button styles</p><div class="row"><span class="btn go">Continue</span><span class="btn accent">Start lesson</span><span class="btn secondary">Skip</span></div></div>
+        <div class="mini-nodes" id="mini-nodes" role="group" aria-label="Lesson path in this palette"></div>
+        <details class="more tune" id="tune"><summary>Tune this recipe</summary><div id="tune-slot"></div></details>
+        <details class="more"><summary>View tokens and contrast</summary><div>
+          <p class="adjust">Recipe presets and the Radix-inspired pairings are computed: a 12-step neutral scale in OKLCH, an accent, shared state colours and four surface levels. Developer themes use their published hex values on the same tokens. Text pairs are checked live against 4.5:1 and shapes against 3:1.</p>
+          <div class="tokens" id="tokens"></div>
+          <div class="checks" id="checks"></div>
+          <p class="adjust" id="adjust"></p>
+        </div></details>
       </div>
     </div>
   </section>
 
   <section>
-    <h2>Object rules</h2>
-    <div class="grid rules">
-      <div class="card"><h3>One light, top left</h3><p>Lit faces point up or left, shaded faces down or right. Ground shadows fall slightly down and to the right, flat under the contact point.</p></div>
-      <div class="card"><h3>Front objects fold once</h3><p>Gem, bolt, flame, heart, medal and trophy split along one diagonal into a lit and a shaded half. One highlight, no gradients, no outlines.</p></div>
-      <div class="card"><h3>Boxes are isometric</h3><p>The chest and the ice cube use true 30° isometry with three visible faces: top lightest, left middle, right darkest.</p></div>
-      <div class="card"><h3>Fixed colours</h3><p>XP yellow, gems pink, streak orange, freezes ice blue, mistakes red, in every palette.</p></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Game objects, redrawn</h2>
-    <p class="note">Compare with <a href="../style-v1/">round 1</a>: simpler silhouettes, one fold instead of scattered facets, and boxes you can read as boxes.</p>
-    <div class="grid objs">
+    <h2>Game objects</h2>
+    <p class="note">Thick plates with lit and shaded walls, outlined in their own darkest colour. Each object has one detail that names it, like the side lick on the flame or the snowflake on the ice. Collectibles hover just above the floor; chests and ice stand on it.</p>
+    <div class="objs">
       <div class="card obj"><svg><use href="#o-bolt"/></svg><b>XP</b><small>Earned by learning</small></div>
       <div class="card obj"><svg><use href="#o-gem"/></svg><b>Gem</b><small>The currency</small></div>
       <div class="card obj"><svg><use href="#o-flame"/></svg><b>Streak</b><small>Days in a row</small></div>
       <div class="card obj"><svg><use href="#o-ice"/></svg><b>Streak Freeze</b><small>A block of ice that protects a day</small></div>
       <div class="card obj"><svg><use href="#o-chest"/></svg><b>Chest</b><small>Lesson and quest rewards</small></div>
-      <div class="card obj"><svg><use href="#o-chest-open"/></svg><b>Chest, open</b><small>Lid back, gems inside</small></div>
+      <div class="card obj"><svg><use href="#o-chest-open"/></svg><b>Chest, open</b><small>Lid back, coins inside</small></div>
       <div class="card obj"><svg><use href="#o-flask"/></svg><b>2× Boost</b><small>A flask of double XP</small></div>
       <div class="card obj"><svg><use href="#o-trophy"/></svg><b>Leaderboard</b><small>Weekly race with friends</small></div>
       <div class="card obj"><svg><use href="#o-medal-bronze"/></svg><b>Bronze</b><small>Small achievements</small></div>
       <div class="card obj"><svg><use href="#o-medal-silver"/></svg><b>Silver</b><small>Bigger achievements</small></div>
       <div class="card obj"><svg><use href="#o-medal-gold"/></svg><b>Gold</b><small>Course milestones</small></div>
       <div class="card obj"><svg><use href="#o-heart"/></svg><b>Mistake</b><small>Used in wrong-answer feedback</small></div>
-      <div class="card obj"><svg><use href="#o-kubo"/></svg><b>Kubo</b><small>Same mascot, cleaner depth</small></div>
+      <div class="card obj kubo-row"><svg><use href="#o-kubo"/></svg><div><b>Kubo</b><small>Lesson guide</small><p>Kubo reacts to every answer in the lesson. Same camera, light and floor as the rewards, but it is a character, so it gets its own row.</p></div></div>
     </div>
   </section>
 
   <section>
-    <h2>Lesson nodes, physically correct</h2>
-    <p class="note">A cylinder seen from slightly above: the top face, a darker side wall, the glyph squashed to lie flat on the top, and a soft shadow on the ground under the base. Pressed, the top sinks into the wall.</p>
+    <h2>Lesson nodes</h2>
+    <p class="note">The path through a unit. Done is gold with a dark check, the current lesson carries a ring on its face, and pressing sinks the top into its lip.</p>
     <div class="nodes" id="nodes"></div>
+  </section>
+
+  <section>
+    <h2>Object rules</h2>
+    <ul class="lined">
+      <li><h3>One camera</h3><p>Every object uses the same orthographic view, turned 25° and looking down 36°, so the top, front and right sides always show.</p></li>
+      <li><h3>One light, three tones</h3><p>Light comes from the top left. Up-facing walls are the lightest tone, the front is the base colour, right-facing walls are the darkest. No gradients, no transparency.</p></li>
+      <li><h3>Ink, never black</h3><p>Each object is outlined in its own darkest colour, on the silhouette and where two tones meet. Flat faces carry no extra lines.</p></li>
+      <li><h3>Shadows on one floor</h3><p>Every vertex is cast onto the floor along one light, 0.4 units of throw per unit of height. Collectibles hover 4 units up; chests, ice and nodes touch their shadow. In the toolbar, objects drop the shadow so it does not read as a second icon.</p></li>
+      <li><h3>Lesson nodes</h3><p>A puck seen from above: a 34 by 24 top over an 8-unit lip, 2 units when pressed. The base stays put, so a press moves only the top and shortens the shadow.</p></li>
+      <li><h3>Fixed colours</h3><p>XP yellow, gems pink, streak orange, freezes ice blue, mistakes red, in every palette. If an accent is close to Done gold in both lightness and hue, the current node switches to a neutral face with an accent ring.</p></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What we take from whom</h2>
+    <ul class="lined">
+      <li><h3>Duolingo</h3><p>Fixed colours for game objects and chunky controls with a bottom lip, on a dark canvas instead of its white one.</p></li>
+      <li><h3>Brilliant</h3><p>Restraint and precise geometry, with more colour than its line art so rewards feel like rewards.</p></li>
+      <li><h3>Linear</h3><p>Themes generated from base, accent and contrast in a perceptual colour space, without the dense productivity layout.</p></li>
+      <li><h3>Vercel (Geist)</h3><p>A strict neutral scale where typography does most of the work, warmed slightly so it is not stark.</p></li>
+      <li><h3>Kurzgesagt</h3><p>Bold flat colour and silhouettes that read at a glance. We skip the glows.</p></li>
+      <li><h3>Carrot Weather and Monument Valley</h3><p>A mascot who talks to you, looks worth collecting, and one light direction for the whole world. Kubo stays kind where Carrot is snarky.</p></li>
+    </ul>
   </section>
 
   <section>
     <h2>Sources</h2>
     <ul class="sources">
+      <li><a href="https://www.radix-ui.com/colors/docs/palette-composition/composing-a-palette">Radix Colors: composing a palette (neutral and accent pairings)</a></li>
+      <li><a href="https://linear.app/now/how-we-redesigned-the-linear-ui">Linear: how we redesigned the Linear UI (three-input themes)</a></li>
+      <li><a href="https://vercel.com/geist/colors">Vercel Geist: colours</a></li>
+      <li><a href="https://catppuccin.com/palette">Catppuccin palette</a>, <a href="https://www.nordtheme.com/docs/colors-and-palettes">Nord</a>, <a href="https://rosepinetheme.com/palette/">Rosé Pine</a>, <a href="https://github.com/folke/tokyonight.nvim">Tokyo Night</a>, <a href="https://draculatheme.com/spec">Dracula</a>, <a href="https://github.com/morhetz/gruvbox">Gruvbox</a></li>
       <li><a href="https://evilmartians.com/chronicles/exploring-the-oklch-ecosystem-and-its-tools">Evil Martians: the OKLCH ecosystem and Harmonizer</a></li>
-      <li><a href="https://www.designsystemscollective.com/oklch-from-a-ui-designers-perspective-moving-beyond-intuition-in-color-design-9874a536257d">OKLCH from a UI designer's perspective</a></li>
-      <li><a href="https://blog.logrocket.com/oklch-css-consistent-accessible-color-palettes">LogRocket: OKLCH for consistent, accessible palettes</a></li>
-      <li><a href="https://muz.li/blog/whats-changing-in-mobile-app-design-ui-patterns-that-matter-in-2026/">Muzli: UI patterns that matter in 2026 (surface levels in dark mode)</a></li>
-      <li><a href="https://muz.li/blog/best-color-palette-tools-and-generators-for-designers-2026/">Muzli: colour palette tools in 2026 (Radix, Leonardo, Realtime Colors, Huetone)</a></li>
       <li><a href="https://medium.com/@NateBaldwin/accessible-color-for-design-systems-just-got-easier-40e8420a8371">Nate Baldwin: Adobe Leonardo, contrast-based generation</a></li>
-      <li><a href="https://www.adobe.com/uk/creativecloud/design/discover/color-trends">Adobe: colour trends</a></li>
+      <li><a href="https://github.com/MengTo/Skills">Meng To: illustration skills (teal spot, isometric mono, flat)</a></li>
     </ul>
   </section>
 </div>
 
 <script>
-/* ---------------- OKLCH palette generator (same maths as gen/palettes.py) ---------------- */
+/* ---------------- Colour maths ---------------- */
 function oklch(L, C, h) {
   const a = C * Math.cos(h * Math.PI / 180), b = C * Math.sin(h * Math.PI / 180);
   const l_ = L + .3963377774 * a + .2158037573 * b, m_ = L - .1055613458 * a - .0638541728 * b, s_ = L - .0894841775 * a - 1.291485548 * b;
@@ -192,175 +283,448 @@ function oklch(L, C, h) {
   const rgb = [4.0767416621 * l - 3.3077115913 * m + .2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - .3413193965 * s, -.0041960863 * l - .7034186147 * m + 1.707614701 * s];
   return "#" + rgb.map((x) => { x = Math.min(1, Math.max(0, x)); x = x <= .0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - .055; return Math.round(x * 255).toString(16).padStart(2, "0"); }).join("");
 }
-function lum(hx) { return [1, 3, 5].map((i) => parseInt(hx.slice(i, i + 2), 16) / 255).map((c) => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4).reduce((t, c, i) => t + c * [.2126, .7152, .0722][i], 0); }
+const lin = (hx) => [1, 3, 5].map((i) => parseInt(hx.slice(i, i + 2), 16) / 255).map((c) => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
+function toOklch(hx) {
+  const [r, g, b] = lin(hx);
+  const l = Math.cbrt(.4122214708 * r + .5363325363 * g + .0514459929 * b), m = Math.cbrt(.2119034982 * r + .6806995451 * g + .1073969566 * b), s = Math.cbrt(.0883024619 * r + .2817188376 * g + .6299787005 * b);
+  const L = .2104542553 * l + .793617785 * m - .0040720468 * s, A = 1.9779984951 * l - 2.428592205 * m + .4505937099 * s, B = .0259040371 * l + .7827717662 * m - .808675766 * s;
+  return [L, Math.hypot(A, B), (Math.atan2(B, A) * 180 / Math.PI + 360) % 360];
+}
+const shade = (hx, dL) => { const [L, C, h] = toOklch(hx); return oklch(Math.max(0, Math.min(1, L + dL)), C, h); };
+const mixL = (a, b, t) => { const [L1, C1, h1] = toOklch(a), [L2, C2] = toOklch(b); return oklch(L1 + (L2 - L1) * t, C1 + (C2 - C1) * t, h1); };
+function lum(hx) { return lin(hx).reduce((t, c, i) => t + c * [.2126, .7152, .0722][i], 0); }
 function contrast(a, b) { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); }
+// Lift a colour in OKLCH lightness only (hue and chroma kept) until it reaches `min` against bg.
+function ensure(fg, bg, min = 4.5) {
+  if (contrast(fg, bg) >= min) return [fg, false];
+  const [L, C, h] = toOklch(fg), up = lum(bg) < .18;
+  for (let k = 1; k <= 80; k++) { const c = oklch(Math.min(1, Math.max(0, L + (up ? k : -k) * .01)), C, h); if (contrast(c, bg) >= min) return [c, true]; }
+  return [up ? "#ffffff" : "#000000", true];
+}
+// Text on a filled control: the best of white, the darkest neutral and black.
+const onColour = (fill, darkest) => ["#ffffff", darkest, "#000000"].reduce((best, c) => contrast(c, fill) > contrast(best, fill) + 1e-9 ? c : best);
+const DONE = "#ffc21f";
+
+/* ---------------- Presets ---------------- */
 const N_L = [.165, .2, .235, .275, .32, .385, .47, .64, .72, .81, .89, .965];
-const PRESETS = {
-  "brand-tinted": { name: "Brand-tinted neutrals", why: "A hint of Kubo's indigo in every grey, so the app feels like one product. Closest to today, but derived instead of picked.", nh: 277, nc: .022, ah: 277, ct: 1 },
-  "quiet": { name: "Quiet graphite", why: "Near-colourless greys in the spirit of Vercel and Brilliant: colour appears only for brand, state and rewards.", nh: 277, nc: .007, ah: 277, ct: 1.04 },
-  "warm-ink": { name: "Warm ink", why: "Greys lean warm like paper and ink against the cool indigo. Softer for long reading and unlike the usual blue-grey dark mode.", nh: 60, nc: .012, ah: 277, ct: 1 },
+const RECIPE = {
+  "brand-tinted": { name: "Brand-tinted neutrals", why: "A hint of Kubo's indigo in every grey, so the app feels like one product.", nh: 277, nc: .022, ah: 277, ct: 1 },
+  "quiet": { name: "Quiet graphite", why: "Near-colourless greys in the spirit of Vercel and Brilliant: colour only for brand, state and rewards.", nh: 277, nc: .007, ah: 277, ct: 1.04 },
+  "warm-ink": { name: "Warm ink", why: "Greys lean warm like paper and ink against the cool indigo. Softer for long reading.", nh: 60, nc: .012, ah: 277, ct: 1 },
 };
+// Radix pairs each accent with the neutral that carries a little of its hue. Hues and tints are our approximation of
+// Radix's dark scales, run through our recipe; they are not Radix's own hex values.
+const RADIX = {
+  "slate-indigo": { name: "Slate and indigo", nh: 260, nc: .012, ah: 270, ct: 1 },
+  "slate-blue": { name: "Slate and blue", nh: 255, nc: .012, ah: 250, al: .62, ac: .17, ct: 1 },
+  "mauve-violet": { name: "Mauve and violet", nh: 305, nc: .012, ah: 292, ct: 1 },
+  "sage-teal": { name: "Sage and teal", nh: 170, nc: .01, ah: 182, al: .64, ac: .12, ct: 1 },
+  "olive-grass": { name: "Olive and grass", nh: 135, nc: .01, ah: 150, al: .64, ac: .15, ct: 1 },
+  "sand-amber": { name: "Sand and amber", nh: 75, nc: .008, ah: 80, al: .82, ac: .16, ct: 1 },
+};
+// Developer themes: published hex values. Roles a theme does not publish are derived and labelled on the token.
+const THEMES = {
+  "catppuccin": { name: "Catppuccin Mocha", bg: "#181825", surface: "#1e1e2e", raised: "#313244", overlay: "#45475a", line: "#45475a", "line-strong": "#585b70", "ink-3": "#9399b2", "ink-2": "#bac2de", ink: "#cdd6f4", accent: "#cba6f7", go: "#a6e3a1", danger: "#f38ba8" },
+  "nord": { name: "Nord", bg: "#2e3440", surface: "#3b4252", raised: "#434c5e", overlay: "#4c566a", line: "#4c566a", "line-strong": "#616e88", "ink-3": "#616e88", "ink-2": "#d8dee9", ink: "#eceff4", accent: "#88c0d0", go: "#a3be8c", danger: "#bf616a" },
+  "rose-pine": { name: "Rosé Pine", bg: "#191724", surface: "#1f1d2e", raised: "#26233a", overlay: "#403d52", line: "#403d52", "line-strong": "#524f67", "ink-3": "#908caa", "ink-2": null, ink: "#e0def4", accent: "#c4a7e7", go: "#9ccfd8", danger: "#eb6f92" },
+  "tokyo-night": { name: "Tokyo Night", bg: "#16161e", surface: "#1a1b26", raised: "#292e42", overlay: "#3b4261", line: "#3b4261", "line-strong": "#414868", "ink-3": "#737aa2", "ink-2": "#a9b1d6", ink: "#c0caf5", accent: "#7aa2f7", go: "#9ece6a", danger: "#f7768e" },
+  "dracula": { name: "Dracula", bg: "#21222c", surface: "#282a36", raised: "#343746", overlay: "#424450", line: "#44475a", "line-strong": "#6272a4", "ink-3": "#6272a4", "ink-2": null, ink: "#f8f8f2", accent: "#bd93f9", go: "#50fa7b", danger: "#ff5555" },
+  "gruvbox": { name: "Gruvbox Dark", bg: "#1d2021", surface: "#282828", raised: "#3c3836", overlay: "#504945", line: "#504945", "line-strong": "#665c54", "ink-3": "#a89984", "ink-2": "#d5c4a1", ink: "#ebdbb2", accent: "#fe8019", go: "#b8bb26", danger: "#fb4934" },
+};
+const NAMES = { recipe: RECIPE, radix: RADIX, theme: THEMES };
 const root = document.documentElement;
-let cur = { ...PRESETS["brand-tinted"] };
-function build(p) {
+let sel = { kind: "recipe", key: "brand-tinted" };
+let params = { ...RECIPE["brand-tinted"] };
+let basis = RECIPE["brand-tinted"].name;      // the generated palette the sliders resume from
+
+// Tokens every palette ends with: on-* colours, caption on raised, lock glyph, and the current-node treatment.
+function finish(t, src, darkest) {
+  for (const [on, fill] of [["on-accent", "accent"], ["on-go", "go"], ["on-danger", "danger"]]) { t[on] = onColour(t[fill], darkest); src[on] = `best of white, ${darkest}, black on ${fill}`; }
+  const [cap, cl] = ensure(t["ink-3"], t.raised); t.caption = cap; src.caption = cl ? `ink-3 lifted to pass on raised` : "same as ink-3";
+  // The "Correct" label sits on raised in the feedback bar: lift go-text there, with a small margin over 4.5.
+  const [fb, fbl] = ensure(t["go-text"], t.raised, 4.6); t["feedback-text"] = fb; src["feedback-text"] = fbl ? `go-text ${t["go-text"]} lifted to 4.6:1 on raised` : "same as go-text";
+  // Floor shadows: a small step below the ground for objects, a deeper one for lesson nodes.
+  t.shadow = shade(t.ground, -.03); src.shadow = "ground, 0.03 darker in OKLCH";
+  t["node-shadow"] = shade(t.ground, -.09); src["node-shadow"] = "ground, 0.09 darker in OKLCH";
+  // Captions under gallery objects sit on the ground, not on surface.
+  const [oc, ocl] = ensure(t["ink-3"], t.ground); t["object-caption"] = oc; src["object-caption"] = ocl ? `ink-3 lifted to pass on ground` : "same as ink-3";
+  // The mobile picker's 2px edge must read against both the page and its own fill.
+  const [ce1] = ensure(t["line-strong"], t.surface, 3), [ce, cel] = [ensure(ce1, t.bg, 3)[0], ce1 !== t["line-strong"]];
+  t["control-edge"] = ce; src["control-edge"] = cel || ce !== ce1 ? `line-strong lifted to 3:1 on bg and surface` : "same as line-strong";
+  const [lock, ll] = ensure(t["ink-3"], t.overlay, 3); t.lock = lock; src.lock = ll ? `ink-3 lifted to 3:1 on overlay` : "same as ink-3";
+  // Current node: accent face with an on-accent ring, unless the accent looks like Done gold.
+  // Hue-gated so pastel blues and purples (also low contrast against gold) keep their accent face.
+  const hueGap = Math.abs(((toOklch(t.accent)[2] - toOklch(DONE)[2] + 540) % 360) - 180);
+  const nearDone = contrast(t.accent, DONE) < 1.7 && hueGap < 45;
+  t["cur-top"] = nearDone ? t["line-strong"] : t.accent; t["cur-lip"] = nearDone ? t.overlay : t["accent-lip"];
+  t["cur-ring"] = nearDone ? ensure(t.accent, t["line-strong"], 3)[0] : t["on-accent"]; t["cur-glyph"] = nearDone ? t.ink : t["on-accent"];
+  src["cur-top"] = nearDone ? `line-strong: accent is ${contrast(t.accent, DONE).toFixed(2)}:1 from Done gold` : "accent";
+  src["cur-ring"] = nearDone ? "accent, lifted to 3:1 on the face" : "on-accent";
+  t.nearDone = nearDone; t.collide = contrast(t.accent, t.go) < 1.7;
+}
+function buildRecipe(p) {
   const L = (x) => Math.min(.99, Math.max(.05, .5 + (x - .5) * p.ct));
   const scale = N_L.map((l, i) => oklch(L(l), p.nc * (i > 8 ? .7 : 1), p.nh));
-  return {
+  const al = p.al ?? .545, ac = p.ac ?? .21;
+  const t = {
     bg: scale[0], surface: scale[1], raised: scale[2], overlay: scale[3], line: scale[4], "line-strong": scale[5], "ink-3": scale[7], "ink-2": scale[9], ink: scale[11],
-    accent: oklch(.545, .21, p.ah), "accent-lip": oklch(.44, .19, p.ah), "accent-text": oklch(.78, .12, p.ah),
+    accent: oklch(al, ac, p.ah), "accent-text": oklch(Math.max(.78, al), .12, p.ah),
     go: oklch(.74, .19, 145), "go-lip": oklch(.6, .16, 145), "go-text": oklch(.84, .14, 145),
     danger: oklch(.68, .19, 22), "danger-lip": oklch(.55, .18, 22), "danger-text": oklch(.8, .11, 22),
+    ground: oklch(L(.215), p.nc, p.nh),
   };
+  const src = {};
+  for (const k of ["ink-3", "ink-2"]) { const [v, l] = ensure(t[k], t.surface); if (l) { src[k] = `lifted from ${t[k]} to pass on surface`; t[k] = v; } }
+  const [acc, al2] = ensure(t.accent, t.surface, 3); if (al2) { src.accent = `lifted from ${t.accent} to 3:1 on surface`; t.accent = acc; }
+  t["accent-lip"] = shade(t.accent, -.105);
+  finish(t, src, scale[0]);
+  return { t, src };
+}
+function buildTheme(th) {
+  const t = {}, src = {};
+  for (const k of ["bg", "surface", "raised", "overlay", "line", "line-strong", "ink", "accent", "go", "danger"]) t[k] = th[k];
+  const lift = (k, from) => { const [v, l] = ensure(from, t.surface); t[k] = v; if (l) src[k] = `lifted from ${from}`; };
+  lift("ink-3", th["ink-3"]);
+  if (th["ink-2"]) t["ink-2"] = th["ink-2"]; else { t["ink-2"] = mixL(t["ink-3"], th.ink, .5); src["ink-2"] = `derived: halfway from ${t["ink-3"]} to ${th.ink}`; }
+  for (const k of ["accent", "go", "danger"]) {
+    const [fill, fl] = ensure(th[k], t.surface, 3); if (fl) { t[k] = fill; src[k] = `lifted from ${th[k]} to 3:1 on surface`; }
+    t[`${k}-lip`] = shade(t[k], -.12); src[`${k}-lip`] = `derived: ${t[k]} 0.12 darker`;
+    const [v, l] = ensure(th[k], t.surface); t[`${k}-text`] = v; src[`${k}-text`] = l ? `lifted from ${th[k]}` : `same as ${k}`;
+  }
+  t.ground = th.surface; src.ground = "same as surface";
+  finish(t, src, t.bg);
+  return { t, src };
+}
+const current = () => sel.kind === "theme" ? buildTheme(THEMES[sel.key]) : buildRecipe(params);
+const ORDER = ["bg", "surface", "raised", "overlay", "line", "line-strong", "ground", "ink-3", "caption", "object-caption", "lock", "ink-2", "ink", "accent", "accent-lip", "accent-text", "on-accent", "go", "go-lip", "go-text", "feedback-text", "on-go", "danger", "danger-lip", "danger-text", "on-danger", "cur-top", "cur-ring", "control-edge", "shadow", "node-shadow"];
+// [name, foreground, background, threshold]
+function checkPairs(t) {
+  return [
+    ["ink on bg", t.ink, t.bg, 4.5], ["ink-2 on bg (body text)", t["ink-2"], t.bg, 4.5], ["ink-2 on surface", t["ink-2"], t.surface, 4.5], ["ink on raised", t.ink, t.raised, 4.5],
+    ["ink-3 on surface", t["ink-3"], t.surface, 4.5], ["selected caption on raised", t.caption, t.raised, 4.5], ["node label on ground", t["ink-2"], t.ground, 4.5], ["object caption on ground", t["object-caption"], t.ground, 4.5],
+    ["accent text on surface", t["accent-text"], t.surface, 4.5], ["on-accent on accent", t["on-accent"], t.accent, 4.5], ["on-go on go (A badge, Continue)", t["on-go"], t.go, 4.5],
+    ["on-danger on danger (B badge)", t["on-danger"], t.danger, 4.5], ["go text on surface", t["go-text"], t.surface, 4.5], ["Correct label on raised (feedback bar)", t["feedback-text"], t.raised, 4.5], ["danger text on surface", t["danger-text"], t.surface, 4.5],
+    ["lock glyph on Locked node", t.lock, t.overlay, 3], ["accent fill on surface", t.accent, t.surface, 3], ["go fill on surface", t.go, t.surface, 3],
+    ["danger fill on surface", t.danger, t.surface, 3], ["palette picker edge on bg", t["control-edge"], t.bg, 3], ["palette picker edge on its fill", t["control-edge"], t.surface, 3], ["Current ring on its face", t["cur-ring"], t["cur-top"], 3],
+  ];
 }
 function apply() {
-  const t = build(cur);
-  for (const [k, v] of Object.entries(t)) root.style.setProperty(`--${k}`, v);
-  document.getElementById("tokens").innerHTML = Object.entries(t).map(([k, v]) => `<div class="tok"><i style="background:${v}"></i><span>${k}<br>${v}</span></div>`).join("");
-  const pairs = [["ink on bg", t.ink, t.bg], ["ink-2 on surface", t["ink-2"], t.surface], ["ink-3 on surface", t["ink-3"], t.surface], ["accent text on surface", t["accent-text"], t.surface], ["white on accent", "#ffffff", t.accent], ["bg on go button", t.bg, t.go], ["danger text on surface", t["danger-text"], t.surface]];
-  document.getElementById("checks").innerHTML = pairs.map(([n, a, b]) => { const c = contrast(a, b); return `<div>${n}<b class="${c >= 4.5 ? "ok" : "bad"}">${c.toFixed(1)}:1</b></div>`; }).join("");
+  const { t, src } = current();
+  for (const [k, v] of Object.entries(t)) if (typeof v === "string") root.style.setProperty(`--${k}`, v);
+  document.body.classList.toggle("collide", t.collide);
+  document.getElementById("tokens").innerHTML = ORDER.map((k) => `<div class="tok"><i style="background:${t[k]}"></i><span>${k}<br>${t[k]}${src[k] ? `<em>${src[k]}</em>` : ""}</span></div>`).join("");
+  const pairs = checkPairs(t).map(([n, a, b, min]) => ({ n, a, b, min, c: contrast(a, b) }));
+  const row = (p) => `<div><span class="pair" style="background:${p.b};color:${p.a}">${p.min < 4.5 ? `<i style="background:${p.a}"></i>` : "Aa"}</span><span class="n">${p.n}</span><b class="${p.c >= p.min ? "ok" : "bad"}">${p.c.toFixed(2)}:1 ${p.c >= p.min ? "Pass" : "Fail"}</b></div>`;
+  const text = pairs.filter((p) => p.min === 4.5), shapes = pairs.filter((p) => p.min === 3), fails = pairs.filter((p) => p.c < p.min);
+  document.getElementById("checks").innerHTML = `<h4>Text, 4.5:1</h4><div class="list">${text.map(row).join("")}</div><h4>Shapes and control edges, 3:1</h4><div class="list">${shapes.map(row).join("")}</div>`;
+  const notes = [];
+  if (t.collide) notes.push(`Accent and success are ${contrast(t.accent, t.go).toFixed(2)}:1 apart, so Start lesson becomes an outline button and success always carries a check and a label.`);
+  if (t.nearDone) notes.push(`The accent is ${contrast(t.accent, DONE).toFixed(2)}:1 from Done gold and close in hue, so the current node gets a neutral face with an accent ring.`);
+  notes.push(sel.kind === "theme" ? "Tokens without a note are the theme's published hex values; notes show what was derived or lifted, and from which colour." : "Every token is computed by the recipe; notes show where a value had to be lifted.");
+  document.getElementById("adjust").textContent = notes.join(" ");
+  const name = sel.kind === "custom" ? `Custom, based on ${basis}` : NAMES[sel.kind][sel.key].name;
+  const lowT = Math.min(...text.map((p) => p.c)), lowS = Math.min(...shapes.map((p) => p.c));
+  document.getElementById("now").innerHTML = `${name} applied<small>${text.length} text pairs (lowest ${lowT.toFixed(2)}:1) and ${shapes.length} shape pairs (lowest ${lowS.toFixed(2)}:1). ${fails.length ? `Failing: ${fails.map((p) => `${p.n} needs ${p.min}:1`).join(", ")}.` : "No failures."}</small>`;
   for (const [id, fmt] of [["nh", (v) => `${v}°`], ["nc", (v) => v.toFixed(3)], ["ah", (v) => `${v}°`], ["ct", (v) => `${Math.round(v * 100)}%`]]) {
-    document.getElementById(id).value = cur[id]; document.getElementById("v-" + id).textContent = fmt(cur[id]);
+    document.getElementById(id).value = params[id]; document.getElementById("v-" + id).textContent = fmt(params[id]);
   }
+  document.getElementById("slider-context").textContent = sel.kind === "theme" ? `${THEMES[sel.key].name} keeps its own values. Editing resumes ${basis} as a custom recipe.`
+    : sel.kind === "custom" ? `Custom recipe, based on ${basis}.` : `Tuning ${basis}. Moving a slider turns it into a custom recipe.`;
+  document.querySelectorAll(".preset").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.kind === sel.kind && x.dataset.k === sel.key)));
+  const pk = document.getElementById("picker");
+  if (pk) { document.getElementById("custom-opt").textContent = `Custom, based on ${basis}`; pk.value = sel.kind === "custom" ? "custom" : `${sel.kind}:${sel.key}`; }
 }
-document.getElementById("presets").innerHTML = Object.entries(PRESETS).map(([k, p]) => {
-  const t = build(p);
-  return `<button class="preset" data-k="${k}" aria-pressed="${k === "brand-tinted"}"><b><span class="sw">${[t.bg, t.surface, t["ink-3"], t.accent].map((c) => `<i style="background:${c}"></i>`).join("")}</span>${p.name}</b><small>${p.why}</small></button>`;
-}).join("");
-document.querySelectorAll(".preset").forEach((b) => b.onclick = () => { cur = { ...PRESETS[b.dataset.k] }; document.querySelectorAll(".preset").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); apply(); });
-for (const id of ["nh", "nc", "ah", "ct"]) document.getElementById(id).oninput = (e) => { cur[id] = Number(e.target.value); document.querySelectorAll(".preset").forEach((x) => x.setAttribute("aria-pressed", "false")); apply(); };
-apply();
+const sw = (t) => `<span class="sw">${[t.bg, t.surface, t["ink-3"], t.accent].map((c) => `<i style="background:${c}"></i>`).join("")}</span>`;
+document.getElementById("presets").innerHTML = `
+  <div class="group"><h3>Recipe</h3><p>Our own recipe with Kubo's indigo.</p><div class="presets">${Object.entries(RECIPE).map(([k, p]) => `<button class="preset" data-kind="recipe" data-k="${k}"><b>${sw(buildRecipe(p).t)}${p.name}</b><small>${p.why}</small></button>`).join("")}</div>
+    <div class="sliders" id="sliders">
+      <p class="slider-context" id="slider-context"></p>
+      <label><span>Neutral hue <em id="v-nh"></em></span><input type="range" id="nh" min="0" max="360" step="1"></label>
+      <label><span>Neutral tint <em id="v-nc"></em></span><input type="range" id="nc" min="0" max="0.035" step="0.001"></label>
+      <label><span>Accent hue <em id="v-ah"></em></span><input type="range" id="ah" min="0" max="360" step="1"></label>
+      <label><span>Contrast <em id="v-ct"></em></span><input type="range" id="ct" min="0.85" max="1.15" step="0.01"></label>
+    </div></div>
+  <div class="group"><h3>Radix-inspired pairings</h3><p>Neutral and accent pairs following Radix Colors' pairing advice. The hues are our approximation, run through our recipe, not Radix's own values.</p><div class="presets compact">${Object.entries(RADIX).map(([k, p]) => `<button class="preset" data-kind="radix" data-k="${k}"><b>${sw(buildRecipe(p).t)}${p.name}</b></button>`).join("")}</div></div>
+  <div class="group"><h3>Developer themes</h3><p>Editor themes our learners already know, with their published colours.</p><div class="presets compact">${Object.entries(THEMES).map(([k, p]) => `<button class="preset" data-kind="theme" data-k="${k}"><b>${sw(buildTheme(p).t)}${p.name}</b></button>`).join("")}</div></div>`;
+// One selection handler for the desktop buttons and the mobile picker.
+function choose(kind, key) {
+  sel = { kind, key };
+  if (kind !== "theme") { params = { ...NAMES[kind][key] }; basis = params.name; }
+  apply();
+}
+document.querySelectorAll(".preset").forEach((b) => b.onclick = () => choose(b.dataset.kind, b.dataset.k));
+const picker = document.getElementById("picker");
+picker.innerHTML = [["Recipe", "recipe", RECIPE], ["Radix-inspired pairings", "radix", RADIX], ["Developer themes", "theme", THEMES]]
+  .map(([g, kind, set]) => `<optgroup label="${g}">${Object.entries(set).map(([key, p]) => `<option value="${kind}:${key}">${p.name}</option>`).join("")}</optgroup>`).join("")
+  + `<option value="custom" id="custom-opt" hidden>Custom recipe</option>`;
+picker.onchange = () => { if (picker.value !== "custom") { const [kind, key] = picker.value.split(":"); choose(kind, key); } };
+// Sliders live under Recipe on desktop and in the "Tune this recipe" disclosure at 900px and below.
+{
+  const mq = matchMedia("(max-width: 900px)"), el = document.getElementById("sliders"), home = el.parentElement;
+  const place = () => (mq.matches ? document.getElementById("tune-slot") : home).append(el);
+  mq.addEventListener("change", place); place();
+}
+for (const id of ["nh", "nc", "ah", "ct"]) document.getElementById(id).oninput = (e) => { params[id] = Number(e.target.value); sel = { kind: "custom", key: "" }; apply(); };
 
-/* ---------------- Objects ---------------- */
-const SHADOW = '<ellipse cx="34" cy="58.5" rx="17" ry="3.4" fill="#000" opacity=".28"/>';
-// The paper fold: the lower-right half of a shape, cut along the diagonal from top-right to bottom-left.
-let clipId = 0;
-// Meng To rules: no gradients or see-through shading; a hairline in the fill's own colour hides seams;
-// a thin ink edge in the object's darkest tone (never black) closes the silhouette.
-function folded(shapes, base, shade, extra = "", ink = null) {
-  const id = `fold${++clipId}`;
-  return `<clipPath id="${id}">${shapes}</clipPath>
-    <g fill="${base}" stroke="${base}" stroke-width=".4">${shapes}</g>
-    <polygon points="64,-4 68,0 68,68 0,68 -4,64" clip-path="url(#${id})" fill="${shade}"/>${extra}
-    ${ink ? `<g fill="none" stroke="${ink}" stroke-width="1.3" stroke-linejoin="round">${shapes}</g>` : ""}`;
+/* ---------------- Objects: one camera, one light, one floor (after Meng To's teal-spot skill) ----------------
+   Orthographic camera, azimuth -25°, elevation 36°: +x runs to the lower right, +y away (upper right), +z up.
+   Light from the top left: up-facing walls lightest, front faces the base colour, right-facing walls darkest.
+   Every shadow is cast vertex by vertex onto a floor along one light vector. Each symbol is then framed to its
+   measured body-plus-shadow bounds on a shared scale, with the floor contact on a common baseline. */
+const TH = -25 * Math.PI / 180, PH = 36 * Math.PI / 180;
+const cT = Math.cos(TH), sT = Math.sin(TH), cP = Math.cos(PH), sP = Math.sin(PH);
+const cam = (x, y, z) => { const x1 = x * cT - y * sT, y1 = x * sT + y * cT; return [x1, -(z * cP + y1 * sP)]; };
+const SHADOW_INK = "#10121a";          // fallback only; the live colour is the palette's --shadow token, a solid step below the ground
+const f2 = (n) => n.toFixed(2);
+const pts = (list) => list.map((p) => p.map(f2).join(",")).join(" ");
+// The light: one screen direction, LIGHT_LEN screen units of throw per world unit of height.
+const LIGHT_DIR = (() => { const l = Math.hypot(5, 4.2); return [5 / l, 4.2 / l]; })(), LIGHT_LEN = .40;
+const GROUND = (() => { const u = LIGHT_LEN * LIGHT_DIR[0], w = -LIGHT_LEN * LIGHT_DIR[1] / sP; return [cT * u + sT * w, -sT * u + cT * w]; })(); // world (dx, dy) per unit of height
+const FLOAT_LIFT = 4;                  // collectibles hover this many units above the floor (4 below their lowest point)
+const S = .85;                         // plate scale
+const shadowPoly = (list) => `<polygon points="${pts(list)}" style="fill:var(--shadow,${SHADOW_INK});stroke:var(--shadow,${SHADOW_INK})" stroke-width=".8" stroke-linejoin="round"/>`;
+function hull(P) {                      // convex hull, monotone chain
+  const p = [...P].sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = [];
+  for (const q of p) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of p.reverse()) { while (up.length > 1 && cr(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
 }
-// Isometric projection: x runs down-right, y down-left, z up.
-function iso(ox, oy, k) { return (x, y, z) => [ox + (x - y) * .866 * k, oy + (x + y) * .5 * k - z * k]; }
-const pts = (P, list) => list.map(([x, y, z]) => P(x, y, z).map((v) => v.toFixed(2)).join(",")).join(" ");
-function box(P, w, d, z0, h, [top, left, right], ink = null) {
-  const faces = [
-    [[[0, 0, z0 + h], [w, 0, z0 + h], [w, d, z0 + h], [0, d, z0 + h]], top],
-    [[[0, d, z0], [w, d, z0], [w, d, z0 + h], [0, d, z0 + h]], left],
-    [[[w, 0, z0], [w, d, z0], [w, d, z0 + h], [w, 0, z0 + h]], right],
-  ];
-  return faces.map(([f, c]) => `<polygon points="${pts(P, f)}" fill="${c}" stroke="${ink || c}" stroke-width="${ink ? 1.1 : .4}" stroke-linejoin="round"/>`).join("");
-}
-function footprint(P, w, d) {
-  const soft = pts((x, y, z) => { const [a, b] = P(x, y, z); return [a + 2.5, b + 2]; }, [[-1.5, -1.5, 0], [w + 1.5, -1.5, 0], [w + 1.5, d + 1.5, 0], [-1.5, d + 1.5, 0]]);
-  return `<polygon points="${soft}" fill="#000" opacity=".22" stroke="#000" stroke-opacity=".22" stroke-width="3" stroke-linejoin="round"/>
-    <polygon points="${pts(P, [[0, 0, 0], [w, 0, 0], [w, d, 0], [0, d, 0]])}" fill="#000" opacity=".35"/>`;
-}
-function lines(P, face, w, d, list, color, width = .7) {
-  return list.map(([u0, v0, u1, v1]) => {
-    const a = face === "left" ? P(u0, d, v0) : P(w, u0, v0), b = face === "left" ? P(u1, d, v1) : P(w, u1, v1);
-    return `<line x1="${a[0].toFixed(2)}" y1="${a[1].toFixed(2)}" x2="${b[0].toFixed(2)}" y2="${b[1].toFixed(2)}" stroke="${color}" stroke-width="${width}" stroke-linecap="round"/>`;
-  }).join("");
-}
-// A rectangle drawn onto the left face (y = d) or right face (x = w) of a box.
-function onLeft(P, d, u0, u1, v0, v1, fill) { return `<polygon points="${pts(P, [[u0, d, v0], [u1, d, v0], [u1, d, v1], [u0, d, v1]])}" fill="${fill}"/>`; }
-function onRight(P, w, u0, u1, v0, v1, fill) { return `<polygon points="${pts(P, [[w, u0, v0], [w, u1, v0], [w, u1, v1], [w, u0, v1]])}" fill="${fill}"/>`; }
+const castPt = (o, [x, y, z], zf = 0) => { const dz = z - zf, [X, Y] = cam(x + GROUND[0] * dz, y + GROUND[1] * dz, zf); return [o[0] + X, o[1] + Y]; };
+const castBox = (o, corners) => shadowPoly(hull(corners.map((c) => castPt(o, c))));
 
-const W = 30, D = 20, H = 16, LID = 9;
-const Pc = iso(30, 26, 1);
-const wood = ["#e9a352", "#c97a2d", "#9a5718"], lidWood = ["#f2b466", "#d4873a", "#a96222"], gold = "#ffd23f", goldDark = "#d9a800";
-const woodInk = "#6b3a0f";
-const chest = `${footprint(Pc, W, D)}
-  ${box(Pc, W, D, 0, H, wood, woodInk)}
-  ${lines(Pc, "left", W, D, [[1, 5.5, W - 1, 5.5], [1, 10.5, W - 1, 10.5]], "#b06a26")}
-  ${lines(Pc, "right", W, D, [[1, 5.5, D - 1, 5.5], [1, 10.5, D - 1, 10.5]], "#80460f")}
-  ${box(Pc, W, D, H, LID, lidWood, woodInk)}
-  ${onLeft(Pc, D, 0, W, H - 1.6, H + 1.6, gold)}${onRight(Pc, W, 0, D, H - 1.6, H + 1.6, goldDark)}
-  ${onLeft(Pc, D, 4, 7, 0, H + LID, "#b9852a")}${onLeft(Pc, D, W - 7, W - 4, 0, H + LID, "#b9852a")}
-  ${onLeft(Pc, D, W / 2 - 3.5, W / 2 + 3.5, H - 6, H + 3, gold)}${onLeft(Pc, D, W / 2 - 1, W / 2 + 1, H - 3.5, H - 0.5, "#6b3b0c")}
-  <polygon points="${pts(Pc, [[2, 2, H + LID], [12, 2, H + LID], [10, 4.5, H + LID], [2, 4.5, H + LID]])}" fill="#f8cf93"/>`;
-const coins = [[8, 7], [16, 9], [22, 6], [12, 13], [20, 14]].map(([x, y], i) => {
-  const [cx, cy] = Pc(x, y, H + 1); const yy = (cy - (i % 2) * 1.5).toFixed(1);
-  return `<ellipse cx="${cx.toFixed(1)}" cy="${(Number(yy) + 1.2).toFixed(1)}" rx="4.4" ry="2.6" fill="${goldDark}" stroke="#8a5d00" stroke-width=".9"/><ellipse cx="${cx.toFixed(1)}" cy="${yy}" rx="4.4" ry="2.6" fill="${i % 2 ? gold : "#ffe27a"}" stroke="#8a5d00" stroke-width=".9"/>`;
-}).join("");
-const chestOpen = `${footprint(Pc, W, D)}
-  ${box(Pc, W, 3, H, 18, lidWood, woodInk)}
-  <polygon points="${pts(Pc, [[0, 3, H], [W, 3, H], [W, D, H], [0, D, H]])}" fill="#5a3010" stroke="${woodInk}" stroke-width="1.1" stroke-linejoin="round"/>
-  ${coins}
-  <polygon points="${pts(Pc, [[0, D, 0], [W, D, 0], [W, D, H], [0, D, H]])}" fill="${wood[1]}" stroke="${woodInk}" stroke-width="1.1" stroke-linejoin="round"/>
-  <polygon points="${pts(Pc, [[W, 0, 0], [W, D, 0], [W, D, H], [W, 0, H]])}" fill="${wood[2]}" stroke="${woodInk}" stroke-width="1.1" stroke-linejoin="round"/>
-  ${lines(Pc, "left", W, D, [[1, 5.5, W - 1, 5.5]], "#b06a26")}
-  ${onLeft(Pc, D, 0, W, H - 3, H, gold)}${onRight(Pc, W, 0, D, H - 3, H, goldDark)}
-  ${onLeft(Pc, D, 4, 7, 0, H, "#b9852a")}${onLeft(Pc, D, W - 7, W - 4, 0, H, "#b9852a")}
-  ${onLeft(Pc, D, W / 2 - 3.5, W / 2 + 3.5, H - 7, H - 1, gold)}`;
-const Pi = iso(32, 24, 1);
-const S3 = 22;
-const ice = `${footprint(Pi, S3, S3)}${box(Pi, S3, S3, 0, S3, ["#d7f3ff", "#7fd6fd", "#3fb3ea"], "#1f7fb3")}
-  <polygon points="${pts(Pi, [[2.5, 2.5, S3], [9, 2.5, S3], [2.5, 9, S3]])}" fill="#ffffff"/>
-  ${onLeft(Pi, S3, 3, 4.6, 4, S3 - 4, "#d7f3ff")}
-  ${lines(Pi, "left", S3, S3, [[9, 15, 14, 11], [14, 11, 13, 6], [14, 11, 18, 9]], "#c2ecff", .8)}
-  ${lines(Pi, "right", S3, S3, [[6, 14, 11, 10], [11, 10, 15, 12]], "#7fd0f5", .8)}`;
-
-const SYMBOLS = {
-  "o-bolt": SHADOW + folded('<polygon points="38,4 13,35 29,35 24,58 51,25 35,25"/>', "#ffd23f", "#e5a900",
-    '<polygon points="34,11 20,30 24.5,30" fill="#fff3b0"/>', "#a87a00"),
-  "o-gem": `${SHADOW}<polygon points="22,12 42,12 36,24 28,24" fill="#ffc2de"/><polygon points="10,24 22,12 28,24" fill="#ff8ec3"/>
-    <polygon points="42,12 54,24 36,24" fill="#ea4b93"/><polygon points="10,24 28,24 32,54" fill="#f2669f"/>
-    <polygon points="28,24 36,24 32,54" fill="#d93e85"/><polygon points="36,24 54,24 32,54" fill="#b52b6c"/>
-    <polygon points="22,12 42,12 54,24 32,54 10,24" fill="none" stroke="#8f1f55" stroke-width="1.3" stroke-linejoin="round"/>
-    <path d="M18 14 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2 z" fill="#fff"/>`,
-  "o-flame": SHADOW + folded('<path d="M32 4 C 38 14 52 23 52 39 C 52 50 43 58 32 58 C 21 58 12 50 12 39 C 12 26 26 18 32 4 Z"/>', "#ffa233", "#f07c0c",
-    `<path d="M32 30 C 36 37 42 41 42 47.5 C 42 53.5 37.5 57.5 32 57.5 C 26.5 57.5 22 53.5 22 47.5 C 22 41 28 37 32 30 Z" fill="#ffd44d"/>
-     <path d="M32 30 C 36 37 42 41 42 47.5 C 42 53.5 37.5 57.5 32 57.5 Z" fill="#ffc21f"/>
-     <path d="M21 36 C 22 29 25 24 29 19" stroke="#ffd9a6" stroke-width="2.6" stroke-linecap="round" fill="none"/>`, "#b85400"),
-  "o-heart": SHADOW + folded('<path d="M32 55 L11 33 C 4 26 7 13 18 12 C 25 11.5 29.5 16 32 20 C 34.5 16 39 11.5 46 12 C 57 13 60 26 53 33 Z"/>', "#ff5a5f", "#df3a40",
-    '<ellipse cx="19" cy="21" rx="4.6" ry="2.8" fill="#ffc4c6" transform="rotate(-35 19 21)"/>', "#a8232a"),
-  "o-trophy": SHADOW + `<path fill-rule="evenodd" d="M15 14 h8 v4 h-6 c0 6 3 10 7 11 l-1 4 c-6 -1 -10 -7 -10 -15 z M49 14 h-8 v4 h6 c0 6 -3 10 -7 11 l1 4 c6 -1 10 -7 10 -15 z" fill="#ffc21f"/>`
-    + folded('<path d="M21 9 h22 v14 c0 9 -5 15 -11 15 s-11 -6 -11 -15 z"/><rect x="28.5" y="37" width="7" height="8"/><rect x="21" y="45" width="22" height="9" rx="2"/>', "#ffd23f", "#e5a900",
-      '<rect x="21" y="49" width="22" height="5" rx="1.5" fill="#9a5718"/><path d="M25 12 v9 c0 4 1 7 3 9" stroke="#fff3b0" stroke-width="2.4" stroke-linecap="round" fill="none"/>', "#a87a00"),
-  "o-flask": SHADOW + `<rect x="27" y="6" width="10" height="6" rx="2" fill="#c8945a"/><rect x="27" y="10" width="10" height="2" fill="#a77540"/>`
-    + folded('<path d="M26 12 h12 v10 c 8 3 13 10 13 18 c 0 10 -8.5 17 -19 17 s -19 -7 -19 -17 c 0 -8 5 -15 13 -18 z"/>', "#efe3ff", "#d6c3f2",
-      `<clipPath id="liq"><path d="M26 12 h12 v10 c 8 3 13 10 13 18 c 0 10 -8.5 17 -19 17 s -19 -7 -19 -17 c 0 -8 5 -15 13 -18 z"/></clipPath>
-       <g clip-path="url(#liq)"><rect x="0" y="36" width="64" height="30" fill="#b45cf6"/><polygon points="64,30 64,64 30,64" fill="#9033d8"/><rect x="0" y="35" width="64" height="2.5" fill="#d9a8ff"/></g>
-       <path d="M20 34 c -2 3 -3 6 -3 9" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" fill="none"/>`, "#7d4fb0"),
-  "o-kubo": `${SHADOW}<rect x="9" y="12" width="46" height="44" rx="14" fill="#3f3fc7"/><rect x="9" y="8" width="46" height="44" rx="14" fill="#5d5ff0"/>
-    <rect x="9" y="8" width="46" height="44" rx="14" fill="none" stroke="#2c2c96" stroke-width="1.3"/>
-    <path d="M15 27 V22 a8 8 0 0 1 8 -8 h12" fill="none" stroke="#a7acff" stroke-width="3.4" stroke-linecap="round"/>
-    <ellipse cx="23" cy="30" rx="4" ry="4.8" fill="#fff"/><ellipse cx="41" cy="30" rx="4" ry="4.8" fill="#fff"/><circle cx="23.8" cy="31" r="2.1" fill="#191a4d"/><circle cx="41.8" cy="31" r="2.1" fill="#191a4d"/>
-    <path d="M27 39 q5 5 10 0" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none"/><ellipse cx="17" cy="38" rx="3" ry="1.8" fill="#ff8fc0"/><ellipse cx="47" cy="38" rx="3" ry="1.8" fill="#ff8fc0"/>`,
-  "o-chest": chest, "o-chest-open": chestOpen, "o-ice": ice,
-};
-const MEDALS = { bronze: ["#f0b27a", "#c97a36", "#9a5520"], silver: ["#ffffff", "#c9d3df", "#94a3b8"], gold: ["#fff0a0", "#ffc21f", "#d99a00"] };
-for (const [tier, [lit, base, dark]] of Object.entries(MEDALS)) {
-  SYMBOLS[`o-medal-${tier}`] = SHADOW + `<polygon points="21,38 29,42 23,59 19,54 13,56" fill="#5d5ff0"/><polygon points="43,38 35,42 41,59 45,54 51,56" fill="#3f3fc7"/>`
-    + folded('<circle cx="32" cy="27" r="19"/>', base, dark,
-      `<circle cx="32" cy="27" r="13.5" fill="none" stroke="${lit}" stroke-width="1.6"/>
-       <polygon points="32,16 35,23.6 43,24.2 36.9,29.4 38.8,37.2 32,33 25.2,37.2 27.1,29.4 21,24.2 29,23.6" fill="${base}"/>
-       <path d="M19 20 a15 15 0 0 1 9 -9" stroke="${lit}" stroke-width="2.6" stroke-linecap="round" fill="none"/>`, dark);
+// A plate: a 2D outline in the front plane (u right, v up), extruded `depth` away from the viewer.
+function plate(outline, { depth = 6, front, top, side, ink, origin = [0, 0], scale = S, floor, extra = () => "" }) {
+  const [ox, oy] = origin;
+  const at = (u, v, y = 0) => { const [X, Y] = cam(u * scale, y, v * scale); return [ox + X, oy + Y]; };
+  let O = outline;
+  const area = O.reduce((s, [u, v], i) => { const [u2, v2] = O[(i + 1) % O.length]; return s + u * v2 - u2 * v; }, 0);
+  if (area < 0) O = [...O].reverse();
+  const n = O.length, walls = [];
+  for (let i = 0; i < n; i++) {
+    const p = O[i], q = O[(i + 1) % n], du = q[0] - p[0], dv = q[1] - p[1], len = Math.hypot(du, dv) || 1;
+    const nu = dv / len, nv = -du / len;
+    walls.push({ p, q, vis: nu * -sT + nv * (sP / cP) > 1e-6, tone: nv >= nu * .75 ? "top" : "side", depthKey: ((p[0] + q[0]) / 2) * sT - ((p[1] + q[1]) / 2) * (sP / cP) });
+  }
+  const quad = (w) => pts([at(...w.p), at(...w.q), at(w.q[0], w.q[1], depth), at(w.p[0], w.p[1], depth)]);
+  const vis = walls.filter((w) => w.vis).sort((a, b) => b.depthKey - a.depthKey);
+  const frontPts = pts(O.map(([u, v]) => at(u, v))), backPts = pts(O.map(([u, v]) => at(u, v, depth)));
+  const zf = floor ?? Math.min(...O.map(([, v]) => v * scale)) - FLOAT_LIFT;
+  const cp = (u, v, y) => castPt([ox, oy], [u * scale, y, v * scale], zf);
+  const shadow = shadowPoly(O.map(([u, v]) => cp(u, v, depth))) + shadowPoly(O.map(([u, v]) => cp(u, v, 0)))
+    + walls.map((w) => shadowPoly([cp(...w.p, 0), cp(...w.q, 0), cp(...w.q, depth), cp(...w.p, depth)])).join("");
+  const solidFill = (fill, sw) => `<polygon points="${backPts}" fill="${fill}" stroke="${fill}" stroke-width="${sw}" stroke-linejoin="round"/>`
+    + vis.map((w) => `<polygon points="${quad(w)}" fill="${fill}" stroke="${fill}" stroke-width="${sw}" stroke-linejoin="round"/>`).join("")
+    + `<polygon points="${frontPts}" fill="${fill}" stroke="${fill}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+  let body = solidFill(ink, 2.6);
+  body += vis.map((w) => { const c = w.tone === "top" ? top : side; return `<polygon points="${quad(w)}" fill="${c}" stroke="${c}" stroke-width=".7" stroke-linejoin="round"/>`; }).join("");
+  for (let i = 0; i < n; i++) {
+    const a = walls[(i - 1 + n) % n], b = walls[i];
+    if (a.vis && b.vis && a.tone !== b.tone) { const [x1, y1] = at(...O[i]), [x2, y2] = at(O[i][0], O[i][1], depth);
+      body += `<line x1="${f2(x1)}" y1="${f2(y1)}" x2="${f2(x2)}" y2="${f2(y2)}" stroke="${ink}" stroke-width="1" stroke-linecap="round"/>`; }
+  }
+  body += `<polygon points="${frontPts}" fill="${front}" stroke="${ink}" stroke-width="1.3" stroke-linejoin="round"/>` + extra(at);
+  const [, contactY] = cam(0, 0, zf);     // screen y of the floor directly under the plate
+  return { shadow, body, contact: oy + contactY };
 }
-document.getElementById("symbols").innerHTML = Object.entries(SYMBOLS).map(([id, body]) => `<symbol id="${id}" viewBox="0 0 64 64" overflow="visible">${body}</symbol>`).join("");
+const solo = (p) => ({ shadow: p.shadow, body: p.body, contact: p.contact });
+const group = (...ps) => ({ shadow: ps.map((p) => p.shadow).join(""), body: ps.map((p) => p.body).join(""), contact: Math.max(...ps.map((p) => p.contact)) });
+const circle = (cx, cy, r, n = 40) => Array.from({ length: n }, (_, i) => [cx + r * Math.cos(2 * Math.PI * i / n), cy + r * Math.sin(2 * Math.PI * i / n)]);
+function bezierPath(segments, n = 14) {
+  const out = [];
+  for (const [p0, c1, c2, p3] of segments) for (let i = 0; i < n; i++) {
+    const t = i / n, mt = 1 - t;
+    out.push([0, 1].map((k) => mt ** 3 * p0[k] + 3 * mt * mt * t * c1[k] + 3 * mt * t * t * c2[k] + t ** 3 * p3[k]));
+  }
+  return out;
+}
+const onFront = (at, list) => pts(list.map(([u, v]) => at(u, v)));
+function streak(at, [u, v], [du, dv], len, color, w = 2.2) {
+  const l = Math.hypot(du, dv), d = [du / l, dv / l], P = (s) => at(u + d[0] * s, v + d[1] * s);
+  const seg = (s0, s1) => { const [a, b] = [P(s0), P(s1)]; return `<line x1="${f2(a[0])}" y1="${f2(a[1])}" x2="${f2(b[0])}" y2="${f2(b[1])}" stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>`; };
+  return seg(0, len) + seg(len + 3, len + 5);
+}
+function solidBox(o, w, d, z0, h, [top, front, right], ink, y0 = 0) {
+  const P = (x, y, z) => { const [X, Y] = cam(x, y, z); return [o[0] + X, o[1] + Y]; };
+  const q = (list) => pts(list.map((p) => P(...p)));
+  const face = (list, c) => `<polygon points="${q(list)}" fill="${c}" stroke="${ink}" stroke-width="1.2" stroke-linejoin="round"/>`;
+  const faces = {
+    top: face([[0, y0, z0 + h], [w, y0, z0 + h], [w, y0 + d, z0 + h], [0, y0 + d, z0 + h]], top),
+    front: face([[0, y0, z0], [w, y0, z0], [w, y0, z0 + h], [0, y0, z0 + h]], front),
+    right: face([[w, y0, z0], [w, y0 + d, z0], [w, y0 + d, z0 + h], [w, y0, z0 + h]], right),
+  };
+  const corners = [];
+  for (const x of [0, w]) for (const y of [y0, y0 + d]) for (const z of [z0, z0 + h]) corners.push([x, y, z]);
+  const silhouette = `<polygon points="${pts(hull(corners.map((c) => P(...c))))}" fill="${ink}" stroke="${ink}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  return { P, q, faces, corners, silhouette, svg: silhouette + faces.top + faces.front + faces.right };
+}
 
-/* ---------------- Lesson nodes: cylinder physics ---------------- */
+const SYMBOLS = {};
+SYMBOLS["o-bolt"] = solo(plate([[3, 25], [-13, -1], [-2.5, -1], [-6, -25], [13, 5], [2.5, 5], [9, 25]],
+  { front: "#ffd23f", top: "#ffe88a", side: "#e09f00", ink: "#7a5200", extra: (at) => streak(at, [3.4, 19.5], [-16, -26], 4.5, "#fff6c4", 2) }));
+SYMBOLS["o-gem"] = solo(plate([[-21, 8], [-11, 19], [11, 19], [21, 8], [0, -23]],
+  { front: "#ff7ab8", top: "#ffb0d4", side: "#c62f78", ink: "#6e1543", extra: (at) =>
+    `<polygon points="${onFront(at, [[-11, 19], [11, 19], [5.5, 8], [-5.5, 8]])}" fill="#ffc6df" stroke="#6e1543" stroke-width="1" stroke-linejoin="round"/>
+     <polygon points="${onFront(at, [[5.5, 8], [21, 8], [0, -23]])}" fill="#ea4f98" stroke="#6e1543" stroke-width="1" stroke-linejoin="round"/>
+     <polyline points="${onFront(at, [[-21, 8], [-5.5, 8], [0, -23]])}" fill="none" stroke="#6e1543" stroke-width="1" stroke-linejoin="round"/>
+     <polyline points="${onFront(at, [[-11, 19], [-5.5, 8]])}" fill="none" stroke="#6e1543" stroke-width="1"/>
+     ${streak(at, [-15, 9.5], [1, 1.1], 4, "#ffe0ee", 2)}` }));
+const flameOut = bezierPath([
+  [[3, 27], [9, 19], [17, 12], [17, -3]], [[17, -3], [17, -16], [9, -24], [0, -24]], [[0, -24], [-10, -24], [-17, -16], [-17, -5]],
+  [[-17, -5], [-17, 3], [-14, 10], [-10, 15]], [[-10, 15], [-8, 10], [-5, 7], [-2.5, 9]], [[-2.5, 9], [-1, 15], [0, 21], [3, 27]]]);
+const flameIn = bezierPath([[[1, 7], [4, 2], [8, -4], [8, -11]], [[8, -11], [8, -17], [4, -20], [0, -20]], [[0, -20], [-4, -20], [-8, -17], [-8, -11]], [[-8, -11], [-8, -5], [-3, 0], [1, 7]]]);
+SYMBOLS["o-flame"] = solo(plate(flameOut, { front: "#ff9a2e", top: "#ffc078", side: "#d96a00", ink: "#7a3500", extra: (at) =>
+  `<polygon points="${onFront(at, flameIn)}" fill="#ffd44d" stroke="#7a3500" stroke-width="1" stroke-linejoin="round"/>${streak(at, [-13.5, -3], [0, 1], 4, "#ffd9ad", 2)}` }));
+const heartOut = bezierPath([[[0, -22], [-6, -16], [-22, -6], [-22, 6]], [[-22, 6], [-22, 16], [-12, 21], [-6, 19]], [[-6, 19], [-3, 18], [-1, 15], [0, 13]], [[0, 13], [1, 15], [3, 18], [6, 19]], [[6, 19], [12, 21], [22, 16], [22, 6]], [[22, 6], [22, -6], [6, -16], [0, -22]]]);
+SYMBOLS["o-heart"] = solo(plate(heartOut, { front: "#ff5a5f", top: "#ff9497", side: "#c42d33", ink: "#6b1216", extra: (at) => streak(at, [-17, 9], [.6, 1], 4, "#ffc7c9") }));
+const MEDALS = { bronze: ["#e39a5b", "#f2bd8c", "#a95f22", "#5c2f0c", "#f9d5b3"], silver: ["#dfe6ef", "#f6f9fc", "#8f9db1", "#3f4a5c", "#ffffff"], gold: ["#ffcc2e", "#ffe17a", "#d18f00", "#6e4b00", "#fff1a8"] };
+for (const [tier, [front, top, side, ink, lit]] of Object.entries(MEDALS)) {
+  const floor = -27 * S - FLOAT_LIFT;
+  const rib = { top: "#8789ff", side: "#3a3ab8", ink: "#1d1d66", depth: 2.6, floor };
+  const left = plate([[-13, -4], [-4, -4], [-9, -27], [-12, -22], [-17, -24]], { ...rib, front: "#5d5ff0" });
+  const right = plate([[4, -4], [13, -4], [17, -24], [12, -22], [9, -27]], { ...rib, front: "#4a4cd9" });
+  const coin = plate(circle(0, 7, 17, 48), { front, top, side, ink, depth: 5, floor, extra: (at) =>
+    `<polygon points="${onFront(at, circle(0, 7, 12.5))}" fill="none" stroke="${lit}" stroke-width="1.4"/>
+     <polygon points="${onFront(at, Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? 4 : 9, t = Math.PI / 2 + i * Math.PI / 5; return [r * Math.cos(t), 7 + r * Math.sin(t)]; }))}" fill="${lit}" stroke="${ink}" stroke-width="1" stroke-linejoin="round"/>
+     ${streak(at, [-14.5, 10], [.5, 1], 2.5, lit, 1.8)}` });
+  SYMBOLS[`o-medal-${tier}`] = group(left, right, coin);
+}
+const handle = (s) => { const c = [s * 14, 12], o = [], i = [];
+  for (let k = 0; k <= 12; k++) { const t = -Math.PI / 2 + k * Math.PI / 12; o.push([c[0] + s * 8 * Math.cos(t), c[1] + 7.5 * Math.sin(t)]); i.push([c[0] + s * 4 * Math.cos(t), c[1] + 3.6 * Math.sin(t)]); }
+  return [...o, ...i.reverse()]; };
+const gold = { front: "#ffcc2e", top: "#ffe17a", side: "#d18f00", ink: "#6e4b00", floor: -20 * S - FLOAT_LIFT };
+SYMBOLS["o-trophy"] = group(plate(handle(-1), { ...gold, depth: 4.2 }), plate(handle(1), { ...gold, depth: 4.2 }),
+  plate([[-14, 22], [14, 22], [14, 12], [11, 2], [4, -4], [4, -12], [11, -12], [11, -20], [-11, -20], [-11, -12], [-4, -12], [-4, -4], [-11, 2], [-14, 12]],
+    { ...gold, extra: (at) => `<polygon points="${onFront(at, [[-11, -14], [11, -14], [11, -20], [-11, -20]])}" fill="#a86a12" stroke="#6e4b00" stroke-width="1"/>
+      <polygon points="${onFront(at, [[-4, -15.5], [4, -15.5], [4, -18.5], [-4, -18.5]])}" fill="#ffe17a" stroke="#6e4b00" stroke-width=".9"/>${streak(at, [-10, 18], [1, 0], 4, "#fff4bf")}` }));
+const flaskOut = [[-4.5, 27], [4.5, 27], [4.5, 14], ...bezierPath([[[4.5, 14], [14, 10], [18, 2], [18, -6]], [[18, -6], [18, -18], [10, -24], [0, -24]], [[0, -24], [-10, -24], [-18, -18], [-18, -6]], [[-18, -6], [-18, 2], [-14, 10], [-4.5, 14]]], 10)];
+SYMBOLS["o-flask"] = solo(plate(flaskOut, { front: "#efe2ff", top: "#ffffff", side: "#b79be0", ink: "#4a2a7a", extra: (at) =>
+  `<polygon points="${onFront(at, [[-17, -4], [17, -4], ...bezierPath([[[17, -4], [16, -16], [9, -23], [0, -23]], [[0, -23], [-9, -23], [-16, -16], [-17, -4]]], 10)])}" fill="#b45cf6" stroke="#4a2a7a" stroke-width="1" stroke-linejoin="round"/>
+   <polygon points="${onFront(at, [[-7, 31], [7, 31], [7, 26], [-7, 26]])}" fill="#c8945a" stroke="#4a2a7a" stroke-width="1"/>
+   <polygon points="${onFront(at, circle(6, -13, 2.4, 14))}" fill="#d9a4ff"/><polygon points="${onFront(at, circle(-4, -17, 1.6, 12))}" fill="#d9a4ff"/>
+   ${streak(at, [-13, 8], [.55, 1], 4, "#ffffff")}` }));
+const rr = (w, h, r) => { const o = []; const corner = (cx, cy, a0) => { for (let i = 0; i <= 6; i++) { const t = a0 + i * Math.PI / 12; o.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); } };
+  corner(w / 2 - r, h / 2 - r, 0); corner(-w / 2 + r, h / 2 - r, Math.PI / 2); corner(-w / 2 + r, -h / 2 + r, Math.PI); corner(w / 2 - r, -h / 2 + r, 1.5 * Math.PI); return o; };
+SYMBOLS["o-kubo"] = solo(plate(rr(38, 36, 10), { front: "#5d5ff0", top: "#8a8cff", side: "#3a3ab8", ink: "#1d1d66", depth: 22, extra: (at) => {
+  const dot = (u, v, r, fill) => `<polygon points="${onFront(at, circle(u, v, r, 18))}" fill="${fill}"/>`;
+  return `${dot(-7.5, 3, 4.4, "#fff")}${dot(7.5, 3, 4.4, "#fff")}${dot(-6.8, 2.3, 2.2, "#191a4d")}${dot(8.2, 2.3, 2.2, "#191a4d")}${dot(-12.5, -4, 2.4, "#ff8fc0")}${dot(12.5, -4, 2.4, "#ff8fc0")}
+    <polyline points="${onFront(at, [[-5, -6], [-2.5, -8.5], [2.5, -8.5], [5, -6]])}" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>${streak(at, [-13, 13], [1, 0], 5, "#b3b6ff")}`; } }));
+
+// Chest, open chest and ice stand on the floor (z = 0), so their shadows touch their base.
+{
+  const o = [0, 0], W = 30, D = 18, H = 15, L = 9, ink = "#5c2f0c";
+  const wood = ["#e9a352", "#d4873a", "#9a5718"], lidWood = ["#f6bf78", "#e3954a", "#a96222"];
+  const body = solidBox(o, W, D, 0, H, wood, ink), lid = solidBox(o, W, D, H, L, lidWood, ink);
+  const onBody = (list, col, sw = 1) => `<polygon points="${body.q(list)}" fill="${col}" stroke="${ink}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+  const band = (z0, z1, x0, x1, col) => onBody([[x0, 0, z0], [x1, 0, z0], [x1, 0, z1], [x0, 0, z1]], col);
+  const bandR = (z0, z1, col) => onBody([[W, 0, z0], [W, D, z0], [W, D, z1], [W, 0, z1]], col);
+  const bandT = (x0, x1, col) => onBody([[x0, 0, H + L], [x1, 0, H + L], [x1, D, H + L], [x0, D, H + L]], col);
+  const silo = `<polygon points="${pts(hull([...body.corners, ...lid.corners].map((c) => body.P(...c))))}" fill="${ink}" stroke="${ink}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  const contact = body.P(W, 0, 0)[1];
+  SYMBOLS["o-chest"] = { contact, shadow: castBox(o, [...body.corners, ...lid.corners]), body: silo
+    + body.faces.front + body.faces.right + lid.faces.top + lid.faces.front + lid.faces.right
+    + band(H - 1.6, H + 1.6, 0, W, "#ffd23f") + bandR(H - 1.6, H + 1.6, "#d9a800") + bandT(W / 2 - 2.5, W / 2 + 2.5, "#ffe27a")
+    + band(H - 1.6, H + L, W / 2 - 2.5, W / 2 + 2.5, "#ffd23f") + band(H - 7.5, H + 2.5, W / 2 - 4, W / 2 + 4, "#ffd23f") + band(H - 5, H - 2, W / 2 - 1, W / 2 + 1, ink)
+    + streak((u, v) => body.P(u, 0, v), [3, H + L - 3], [1, 0], 5, "#ffe0b8") };
+
+  const lidO = solidBox(o, W, L, H, D, ["#a96222", "#c4772f", "#8a4c17"], ink, D);
+  const rim = 2.2, IN = "#4a2408", FLOORZ = 4;
+  const P = body.P, q = body.q;
+  const innerFace = (list) => `<polygon points="${q(list)}" fill="${IN}" stroke="${ink}" stroke-width=".9" stroke-linejoin="round"/>`;
+  const interior = innerFace([[rim, rim, H], [W - rim, rim, H], [W - rim, D - rim, H], [rim, D - rim, H]])
+    + innerFace([[rim, D - rim, FLOORZ], [W - rim, D - rim, FLOORZ], [W - rim, D - rim, H], [rim, D - rim, H]])
+    + innerFace([[rim, rim, FLOORZ], [rim, D - rim, FLOORZ], [rim, D - rim, H], [rim, rim, H]]);
+  const disc = (x, y, z, fill) => { const top = circle(0, 0, 3.4, 24).map(([a, b]) => P(x + a, y + b, z)), bot = circle(0, 0, 3.4, 24).map(([a, b]) => P(x + a, y + b, z - 1.3));
+    return `<polygon points="${pts(hull([...top, ...bot]))}" fill="#c99400" stroke="#6e4b00" stroke-width=".8" stroke-linejoin="round"/><polygon points="${pts(top)}" fill="${fill}" stroke="#6e4b00" stroke-width=".8"/>`; };
+  const stack = (x, y, z0, k) => Array.from({ length: k }, (_, i) => disc(x, y, z0 + 1.3 * (i + 1), i === k - 1 ? "#ffe27a" : "#ffd23f")).join("");
+  const coins = [disc(8, 12, H - 1, "#ffd23f"), disc(23, 13, H - 1.2, "#ffd23f"), stack(21.5, 10, H - 2.5, 5), disc(14, 9, H - .6, "#ffe27a"), stack(9, 6.5, H - 3.5, 6), disc(24, 5.5, H - .8, "#ffd23f"), disc(16, 4.8, H - .5, "#ffe27a")].join("");
+  const lip = onBody([[0, 0, H], [W, 0, H], [W, rim, H], [0, rim, H]], wood[0], 1.2) + onBody([[W - rim, rim, H], [W, rim, H], [W, D - rim, H], [W - rim, D - rim, H]], wood[0], 1.2)
+    + onBody([[0, rim, H], [rim, rim, H], [rim, D - rim, H], [0, D - rim, H]], wood[0], 1.2) + onBody([[0, D - rim, H], [W, D - rim, H], [W, D, H], [0, D, H]], wood[0], 1.2);
+  SYMBOLS["o-chest-open"] = { contact, shadow: castBox(o, lidO.corners) + castBox(o, body.corners), body: lidO.silhouette + body.silhouette
+    + lidO.faces.top + lidO.faces.front + lidO.faces.right
+    + `<polygon points="${q([[W / 2 - 2.5, D, H + 3], [W / 2 + 2.5, D, H + 3], [W / 2 + 2.5, D, H + D], [W / 2 - 2.5, D, H + D]])}" fill="#d9a800" stroke="${ink}" stroke-width="1"/>`
+    + interior + coins + lip + body.faces.front + body.faces.right
+    + band(H - 3.2, H, 0, W, "#ffd23f") + bandR(H - 3.2, H, "#d9a800") + band(H - 8, H - 1.5, W / 2 - 3.5, W / 2 + 3.5, "#ffd23f") + band(H - 6, H - 3.5, W / 2 - 1, W / 2 + 1, ink)
+    + streak((u, v) => P(u, 0, v), [3, H - 6], [1, 0], 5, "#ffe0b8") };
+
+  const Si = 22, iceInk = "#14567d";
+  const cube = solidBox(o, Si, Si, 0, Si, ["#e3f7ff", "#8fdcff", "#3faee6"], iceInk);
+  const onF = (list) => pts(list.map(([x, z]) => cube.P(x, 0, z)));
+  const c = [Si / 2 + .5, Si / 2 - 1];
+  const ray = (t, r) => [c[0] + r * Math.cos(t), c[1] + r * Math.sin(t)];
+  const flake = Array.from({ length: 6 }, (_, k) => `<polyline points="${onF([c, ray(k * Math.PI / 3 + Math.PI / 2, 6.5)])}" fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round"/>`).join("")
+    + [0, 2, 4].map((k) => { const t = k * Math.PI / 3 + Math.PI / 2, m = ray(t, 4);
+      return [1, -1].map((s) => `<polyline points="${onF([m, [m[0] + 2.2 * Math.cos(t + s * .8), m[1] + 2.2 * Math.sin(t + s * .8)]])}" fill="none" stroke="#ffffff" stroke-width=".9" stroke-linecap="round"/>`).join(""); }).join("");
+  const crack = `<polyline points="${pts([[Si, 5, 4], [Si, 10, 9], [Si, 8, 15]].map((p) => cube.P(...p)))}" fill="none" stroke="#a8e2ff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>`;
+  SYMBOLS["o-ice"] = { contact: cube.P(Si, 0, 0)[1], shadow: castBox(o, cube.corners), body: cube.svg + flake + crack + streak((u, v) => cube.P(u, 0, v), [2.5, Si - 3], [1, 0], 4.5, "#ffffff") };
+}
+
+// Frame every symbol on one shared scale: measure body and shadow, put each floor contact on a common
+// baseline, centre the body, pad by 4 units. Body-only variants (id-b) are framed tight for the toolbar.
+{
+  const mg = document.getElementById("mg"), M = {};
+  const bb = (svg) => { mg.innerHTML = svg; const b = mg.getBBox(); return { x: b.x, y: b.y, r: b.x + b.width, b: b.y + b.height, w: b.width, h: b.height }; };
+  for (const [id, s] of Object.entries(SYMBOLS)) M[id] = { body: bb(s.body), all: bb(s.shadow + s.body), contact: s.contact };
+  mg.innerHTML = "";
+  let above = 0, below = 0, half = 0;
+  for (const m of Object.values(M)) {
+    m.cx = (m.body.x + m.body.r) / 2;
+    above = Math.max(above, m.contact - m.all.y); below = Math.max(below, m.all.b - m.contact);
+    half = Math.max(half, m.cx - m.all.x, m.all.r - m.cx);
+  }
+  const PAD = 4, V = Math.max(above + below, 2 * half) + 2 * PAD, extraTop = (V - 2 * PAD - above - below) / 2;
+  document.getElementById("symbols").innerHTML = Object.entries(SYMBOLS).map(([id, s]) => { const m = M[id];
+    const full = `<symbol id="${id}" viewBox="${f2(m.cx - V / 2)} ${f2(m.contact - above - PAD - extraTop)} ${f2(V)} ${f2(V)}">${s.shadow}${s.body}</symbol>`;
+    const side = Math.max(m.body.w, m.body.h) + 3, cy = (m.body.y + m.body.b) / 2;
+    return full + `<symbol id="${id}-b" viewBox="${f2(m.cx - side / 2)} ${f2(cy - side / 2)} ${f2(side)} ${f2(side)}">${s.body}</symbol>`; }).join("");
+}
+
+/* ---------------- Lesson nodes ----------------
+   The puck is a short cylinder resting on the ground. Its shadow is the base ellipse swept along the same
+   light as the objects. The current node carries a 1.5-unit ring inset 3 units on its face; an outer ring
+   is kept free for keyboard focus. */
 const GLYPHS = {
-  check: '<path d="m-9 0 6 6 12 -12" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
-  play: '<rect x="-10" y="-1" width="5" height="9" rx="2" fill="#fff"/><rect x="-2.5" y="-7" width="5" height="15" rx="2" fill="#fff"/><rect x="5" y="-11" width="5" height="19" rx="2" fill="#fff" opacity=".75"/>',
-  book: '<path d="M-10 -9 h12 a6 6 0 0 1 6 6 v14 h-12 a6 6 0 0 1 -6 -6 z" fill="#fff"/><path d="M-10 5 a6 6 0 0 1 6 -6 h12 v12 h-12 a6 6 0 0 1 -6 -6z" fill="#fff" opacity=".55"/>',
-  code: '<path d="m-5 -8 -8 8 8 8 M5 -8 l8 8 -8 8" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
-  star: '<polygon points="0,-12 3.5,-4 12,-3.7 5.5,2 7.4,10.5 0,6 -7.4,10.5 -5.5,2 -12,-3.7 -3.5,-4" fill="#fff"/>',
-  lock: '<rect x="-8" y="-2" width="16" height="12" rx="3" fill="#fff" opacity=".5"/><path d="M-5 -2 v-3 a5 5 0 0 1 10 0 v3" stroke="#fff" stroke-width="3" fill="none" opacity=".5"/>',
+  check: '<path d="m-9 0 6 6 12 -12" stroke="currentColor" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  play: '<rect x="-10" y="-1" width="5" height="9" rx="2" fill="currentColor"/><rect x="-2.5" y="-7" width="5" height="15" rx="2" fill="currentColor"/><rect x="5" y="-11" width="5" height="19" rx="2" fill="currentColor"/>',
+  book: '<path d="M-10 -9 h12 a6 6 0 0 1 6 6 v14 h-12 a6 6 0 0 1 -6 -6 z" fill="currentColor"/>',
+  code: '<path d="m-5 -8 -8 8 8 8 M5 -8 l8 8 -8 8" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  star: '<polygon points="0,-12 3.5,-4 12,-3.7 5.5,2 7.4,10.5 0,6 -7.4,10.5 -5.5,2 -12,-3.7 -3.5,-4" fill="currentColor"/>',
+  lock: '<rect x="-8" y="-2" width="16" height="12" rx="3" fill="currentColor"/><path d="M-5 -2 v-3 a5 5 0 0 1 10 0 v3" stroke="currentColor" stroke-width="3" fill="none"/>',
 };
-const NODE_STATES = [["Done", "#ffc21f", "#c98f00", "check"], ["Current", "var(--accent)", "var(--accent-lip)", "play"], ["Concept", "var(--overlay)", "var(--bg)", "book"], ["Code", "var(--overlay)", "var(--bg)", "code"], ["Unit test", "var(--overlay)", "var(--bg)", "star"], ["Locked", "var(--raised)", "var(--bg)", "lock"]];
-document.getElementById("nodes").innerHTML = NODE_STATES.map(([label, top, side, glyph]) => `
-  <div class="node"><svg viewBox="0 0 84 72" aria-hidden="true">
-    <ellipse cx="45" cy="57" rx="33" ry="8" fill="#000" opacity=".32"/>
-    <path d="M8 30 v12 a34 18 0 0 0 68 0 v-12 z" fill="${side}"/>
-    <ellipse cx="42" cy="30" rx="34" ry="18" fill="${top}"/>
-    <path d="M14 22 a34 18 0 0 1 32 -9" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".35"/>
-    <g transform="translate(42 30) scale(1 .62)">${GLYPHS[glyph]}</g>
-  </svg>${label}</div>`).join("");
+const RX = 34, RY = 24, LIP = 8, NODE_ELEV = Math.asin(RY / RX), BASE = 46, CX = 42;
+function puckShadow(lip) {
+  const h = lip / Math.cos(NODE_ELEV), t = LIGHT_DIR.map((d) => d * LIGHT_LEN * h);
+  const ring = circle(0, 0, 1, 72).map(([a, b]) => [CX + RX * a, BASE + RY * b]);
+  return `<polygon points="${pts(hull([...ring, ...ring.map(([x, y]) => [x + t[0], y + t[1]])]))}" style="fill:var(--node-shadow)"/>`;
+}
+const hiOf = (c, w) => `color-mix(in oklch, ${c} ${w}%, white)`;
+// [label, top, lip, glyph colour, highlight, glyph, pressed, ring]
+const NODE_STATES = [
+  ["Done", DONE, "#c98f00", "#5b3b00", "#ffe27a", "check"],
+  ["Current", "var(--cur-top)", "var(--cur-lip)", "var(--cur-glyph)", hiOf("var(--cur-top)", 55), "play", false, true],
+  ["Current, pressed", "var(--cur-top)", "var(--cur-lip)", "var(--cur-glyph)", hiOf("var(--cur-top)", 55), "play", true, true],
+  ["Concept", "var(--line-strong)", "var(--overlay)", "var(--ink)", hiOf("var(--line-strong)", 65), "book"],
+  ["Code", "var(--line-strong)", "var(--overlay)", "var(--ink)", hiOf("var(--line-strong)", 65), "code"],
+  ["Unit test", "var(--line-strong)", "var(--overlay)", "var(--ink)", hiOf("var(--line-strong)", 65), "star"],
+  ["Locked", "var(--overlay)", "var(--raised)", "var(--lock)", hiOf("var(--overlay)", 75), "lock"],
+];
+function nodeSvg([, top, lip, glyphC, hi, glyph, pressed, ring]) {
+  const lipH = pressed ? 2 : LIP, ty = BASE - lipH;
+  const ringEl = ring ? `<ellipse cx="${CX}" cy="${ty}" rx="${RX - 3}" ry="${RY - 3}" fill="none" style="stroke:var(--cur-ring)" stroke-width="1.5"/>` : "";
+  return `<svg viewBox="0 0 96 80" aria-hidden="true" style="color:${glyphC}">
+    ${puckShadow(lipH)}
+    <ellipse cx="${CX}" cy="${BASE}" rx="${RX}" ry="${RY}" style="fill:${lip}"/>
+    <rect x="${CX - RX}" y="${ty}" width="${2 * RX}" height="${lipH}" style="fill:${lip}"/>
+    <ellipse cx="${CX}" cy="${ty}" rx="${RX}" ry="${RY}" style="fill:${top}"/>
+    ${ringEl}
+    <line x1="23" y1="${ty - 12}" x2="29" y2="${ty - 15}" style="stroke:${hi}" stroke-width="2.6" stroke-linecap="round"/>
+    <line x1="32.5" y1="${ty - 16.4}" x2="35" y2="${ty - 17.1}" style="stroke:${hi}" stroke-width="2.6" stroke-linecap="round"/>
+    <g transform="translate(${CX} ${ty}) scale(1 .82)">${GLYPHS[glyph]}</g>
+  </svg>`;
+}
+document.getElementById("nodes").innerHTML = NODE_STATES.map((s) => `<div class="node">${nodeSvg(s)}${s[0]}</div>`).join("");
+document.getElementById("mini-nodes").innerHTML = [0, 1, 3, 6].map((i) => `<figure>${nodeSvg(NODE_STATES[i])}<figcaption>${NODE_STATES[i][0]}</figcaption></figure>`).join("");
+apply();
 </script>
 </body>
 </html>
