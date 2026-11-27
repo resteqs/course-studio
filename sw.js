@@ -1,10 +1,10 @@
 const scope = new URL(self.registration.scope);
 const CACHE_PREFIX = "delightful-learn-shell-" + scope.pathname + "-";
-const CACHE = CACHE_PREFIX + "v2";
+const CACHE = CACHE_PREFIX + "v3";
 const shell = new URL("./", scope);
 const assets = new Set([
   "index.html", "theme-init.js", "app-config.js", "style.css", "delight.js", "illustrations.js", "app.js", "favicon.svg",
-  "vendor/codemirror.bundle.mjs", "python-runner.html",
+  "vendor/codemirror.bundle.mjs", "python-runner.html", "python-runner.js",
 ].map((path) => new URL(path, scope).href));
 const localStudio = new URL(self.location.href).searchParams.has("studio");
 

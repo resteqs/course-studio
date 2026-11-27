@@ -22,6 +22,9 @@
     `<path d="M96 102h47m-23-68v68m-56-59h112m-97 0-16 30h32zm82 0-16 30h32z" ${fill}/><path d="M63 73q16 20 32 0m50 0q16 20 32 0" ${fill}/><circle cx="120" cy="43" r="6" ${paper}/><path d="M38 44c5 49 37 64 62 67h97" stroke-dasharray="3 5"/>${spark(120, 22, 5, .2)}${spark(186, 82, 3.5, 1.4)}`,
     `<g transform="translate(29 27)">${ramp}</g><path d="M95 19h-9v87h9m60-87h9v87h-9"/><text x="81" y="120" class="art-caption">1−ε</text><text x="153" y="120" class="art-caption">1+ε</text>${spark(206, 30, 4.5, .6)}`,
     `<path d="M35 71h117l23 39H20z" ${paper}/><path d="M43 71h23l-4 13H38zm46 0h23l4 13H88zm46 0h17l8 13h-19zM29 96h29l-4 14H20zm59 0h30l5 14H88zm58 0h21l8 14h-23z" ${fill}/><path d="M43 51c8-18 28-19 40-7m-8-1 8 1-1-8m64 18c17 9 36 1 40-11m-8 2 8-2 2 8M182 85v18m22-18v18m-22-9h22"/><g transform="translate(110 61)">${trophy}</g>${spark(110, 18, 5, 0)}${spark(140, 36, 3.5, 1.2)}${spark(84, 40, 3, 2.1)}`,
+    `<rect x="34" y="24" width="96" height="84" rx="8" ${paper}/><path d="M66 24v84M98 24v84M34 52h96M34 80h96"/><rect x="100" y="26" width="28" height="24" rx="4" ${fill}/><path d="M44 94h12m-4-4 4 4-4 4m18-32h14m-4-4 4 4-4 4m-14-4v-16m-4 4 4-4 4 4"/><circle cx="176" cy="70" r="24" ${fill}/><path d="M167 70h18m-5-5 5 5-5 5"/>${spark(152, 32, 4.5, .4)}${spark(196, 40, 3.5, 1.5)}`,
+    `<path d="M32 104h164M46 104V46h40v58m-40-29h40m-20-29v58" ${fill}/><path d="M108 94c18-52 44-58 76-22" stroke-width="2.6"/><circle cx="136" cy="54" r="10" ${paper}/><circle cx="176" cy="64" r="16" ${fill}/><g transform="translate(176 64) scale(.75)">${lock}</g>${spark(118, 30, 5, .2)}${spark(196, 34, 3.5, 1.3)}`,
+    `<polygon points="120,26 62,108 178,108" ${fill}/><circle cx="120" cy="26" r="10" ${paper}/><circle cx="62" cy="108" r="10" ${paper}/><circle cx="178" cy="108" r="10" ${paper}/><path d="M120 76c14-14 20 8 0 18-20-10-14-32 0-18z" stroke-dasharray="2 4"/><circle cx="120" cy="78" r="5" ${paper}/>${spark(154, 42, 4.5, .5)}${spark(84, 48, 3.5, 1.6)}`,
   ];
 
   const wheel = Array.from({ length: 50 }, (_, i) => `<path transform="rotate(${i * 7.2})" d="M0-53v${i % 7 === 0 ? 13 : 7}" ${i % 7 === 0 ? 'opacity=".25"' : ""}/>`).join("");
@@ -32,15 +35,18 @@
     `<rect x="154" y="24" width="212" height="100" rx="8" ${fill}/><path d="M260 24v100M166 62h188m-188 39h188" stroke-dasharray="2 5" opacity=".42"/><path d="M196 70h24m-12 0v-18m0 18-17 17m17-17 17 17m60-3 18-17 11 8 20-24m-49 41h56"/><circle cx="208" cy="52" r="6" ${paper}/><text x="208" y="112" class="art-caption">Actor</text><text x="312" y="112" class="art-caption">Critic</text>`,
     `<g transform="translate(154 18) scale(1.2)">${ramp}</g><text x="233" y="121" class="art-caption">1−ε</text><text x="305" y="121" class="art-caption">1+ε</text>`,
     `<path d="M184 43h17v34a19 19 0 0 0 38 0V43h17v34a36 36 0 0 1-72 0z" ${fill}/><path d="M184 57h17m38 0h17m11 15q24-19 51-9m-51 22q24 14 50 3" stroke-dasharray="3 5"/><path d="M309 103h62l-11 13h-51zM349 102l18-53m-44 48 14-22 22 12-8 15" ${fill}/><circle cx="343" cy="90" r="5" ${paper}/><path d="m363 50 8 3"/>${spark(220, 28, 5.5, 0)}${spark(262, 36, 3.5, 1.3)}`,
+    `<rect x="166" y="24" width="112" height="96" rx="8" ${paper}/><path d="M203 24v96M241 24v96M166 56h112M166 88h112"/><rect x="243" y="26" width="33" height="28" rx="4" ${fill}/><path d="M178 104h14m-4-4 4 4-4 4m20-32h14m-4-4 4 4-4 4m-14-4V50m-4 4 4-4 4 4"/><path d="M294 72h56m-10-8 10 8-10 8" stroke-dasharray="3 5"/><g transform="translate(356 44)"><rect width="48" height="56" rx="8" ${fill}/><path d="M12 20h24M12 34h16"/></g>${spark(332, 32, 4.5, .4)}`,
+    `<rect x="150" y="34" width="68" height="72" rx="8" ${fill}/><path d="M184 34v72M150 70h68"/><path d="M232 70h32m-8-7 8 7-8 7"/><path d="M276 104c18-58 46-66 84-26" stroke-width="2.8"/><circle cx="310" cy="54" r="10" ${paper}/><g transform="translate(362 70) scale(.85)">${lock}</g><text x="184" y="124" class="art-caption">Table</text><text x="320" y="124" class="art-caption">Neural Net</text>`,
+    `<polygon points="260,26 196,112 324,112" ${fill}/><circle cx="260" cy="26" r="12" ${paper}/><circle cx="196" cy="112" r="12" ${paper}/><circle cx="324" cy="112" r="12" ${paper}/><circle cx="260" cy="82" r="9" fill="var(--surface)"/><text x="260" y="130" class="art-caption">2P → 4P Pool</text>${spark(342, 44, 5, .3)}${spark(178, 48, 3.5, 1.4)}`,
   ];
 
   function unitMotifSvg(unitId) {
-    if (!/^M[0-5]$/.test(unitId)) return "";
+    if (!/^M[0-8]$/.test(unitId)) return "";
     return svg("0 0 240 136", dots(186, 17) + motifs[Number(unitId[1])], 'class="unit-motif"');
   }
 
   function lessonSceneSvg(stepId, kind) {
-    const anchor = /^m([0-5])_(bet|s[01])$/.exec(stepId);
+    const anchor = /^m([0-8])_(bet|s[01])$/.exec(stepId);
     if (!anchor) return "";
     const [, unit, step] = anchor;
     if (step === "bet" ? kind !== "bet" : step !== (unit === "2" ? "s0" : "s1")) return "";

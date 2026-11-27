@@ -41,7 +41,7 @@ function userScope() {
 }
 
 function clearUserStorage(purgeUserId = null) {
-  ["achievements", "reviewed_cards", "mascot_color", "mascot_accessory", "mascot_shape"].forEach(prefRemove);
+  ["achievements", "reviewed_cards", "mascot_color", "mascot_accessory", "mascot_shape", "mascot_effect"].forEach(prefRemove);
   if (!purgeUserId) return;
   const scope = "u_" + encodeURIComponent(purgeUserId) + "_";
   try {
@@ -140,6 +140,9 @@ const MASCOT_PALETTES = [
   { id: "gold", name: "Gold", body: "#EAB308", shade: "#A16207", hi: "#FEF08A" },
   { id: "crimson", name: "Crimson", body: "#DC2626", shade: "#991B1B", hi: "#FECACA" },
   { id: "obsidian", name: "Obsidian", body: "#334155", shade: "#0F172A", hi: "#94A3B8" },
+  { id: "glacier", name: "Glacier", body: "#38BDF8", shade: "#0284C7", hi: "#E0F2FE" },
+  { id: "sakura", name: "Sakura", body: "#F472B6", shade: "#DB2777", hi: "#FCE7F3" },
+  { id: "aurora", name: "Aurora", body: "#2DD4BF", shade: "#0D9488", hi: "#CCFBF1" },
 ];
 
 // Fallback rank rewards, mirroring dopamine.LEVEL_REWARDS (the local server sends the same list).
@@ -154,10 +157,29 @@ const DEFAULT_LEVEL_REWARDS = [
   { level: 8, threshold: 980, accessory: "wizard", shapes: ["diamond"], colors: ["crimson"], label: "Wizard Hat, Diamond shape & Crimson" },
   { level: 9, threshold: 1200, accessory: "aura", shapes: [], colors: ["obsidian"], label: "Golden Sparkle Aura & Obsidian" },
   { level: 10, threshold: 1450, accessory: "crown", shapes: [], colors: [], label: "Royal Crown" },
+  { level: 11, threshold: 1750, accessory: "frost_scarf", shapes: [], colors: [], label: "Frost Scarf" },
+  { level: 12, threshold: 2100, accessory: "none", shapes: ["star"], colors: ["glacier"], label: "Star shape & Glacier" },
+  { level: 13, threshold: 2500, accessory: "detective", shapes: [], colors: [], effects: ["sparkle"], label: "Detective Hat & Sparkle" },
+  { level: 14, threshold: 2950, accessory: "chef_hat", shapes: [], colors: ["sakura"], label: "Chef Hat & Sakura" },
+  { level: 15, threshold: 3450, accessory: "none", shapes: ["shield"], colors: [], effects: ["frost"], label: "Shield shape & Frost" },
+  { level: 16, threshold: 4000, accessory: "halo", shapes: [], colors: [], label: "Halo" },
+  { level: 17, threshold: 4600, accessory: "none", shapes: ["capsule"], colors: [], effects: ["flame"], label: "Capsule shape & Flame" },
+  { level: 18, threshold: 5200, accessory: "astronaut", shapes: [], colors: ["aurora"], label: "Astronaut Helmet & Aurora" },
+  { level: 19, threshold: 5850, accessory: "none", shapes: [], colors: [], effects: ["orbit"], label: "Orbit" },
+  { level: 20, threshold: 6500, accessory: "flame_crown", shapes: [], colors: [], effects: ["rainbow"], label: "Flame Crown & Rainbow" },
+];
+// Rank names mirror dopamine.LEVELS.
+const RANK_NAMES = [
+  "Random Policy", "Bellman Explorer", "Gradient Tamer", "Advantage Hunter", "Critic Whisperer",
+  "Mask Architect", "Trust Region Pilot", "PPO Tactician", "Self-Play Strategist", "Grandmaster",
+  "Tabular Master", "Dyna Architect", "Deadly Triad Tamer", "DQN Pioneer", "Entropy Whisperer",
+  "Alignment Sage", "Self-Play Titan", "League Champion", "Deep RL Virtuoso", "RL Legend",
 ];
 const ACCESSORY_NAMES = {
   none: "Classic", headphones: "Headphones", glasses: "Cool Glasses", beanie: "Cozy Beanie", gradcap: "Grad Cap",
   bowtie: "Bow Tie", visor: "Cyber Visor", wizard: "Wizard Hat", aura: "Sparkle Aura", crown: "Royal Crown",
+  frost_scarf: "Frost Scarf", astronaut: "Astronaut Helmet", chef_hat: "Chef Hat", detective: "Detective Hat",
+  halo: "Halo", flame_crown: "Flame Crown",
 };
 const MASCOT_SHAPES = [
   { id: "cube", name: "Cube" },
@@ -165,13 +187,44 @@ const MASCOT_SHAPES = [
   { id: "prism", name: "Prism" },
   { id: "hexagon", name: "Hexagon" },
   { id: "diamond", name: "Diamond" },
+  { id: "star", name: "Star" },
+  { id: "shield", name: "Shield" },
+  { id: "capsule", name: "Capsule" },
 ];
+const MASCOT_EFFECTS = [
+  { id: "none", name: "No aura" },
+  { id: "sparkle", name: "Sparkle" },
+  { id: "frost", name: "Frost" },
+  { id: "flame", name: "Flame" },
+  { id: "orbit", name: "Orbit" },
+  { id: "rainbow", name: "Rainbow" },
+];
+// Mirrors dopamine.SHOP_ITEMS, DAILY_GOALS and the streak milestones exactly.
+const SHOP_ITEMS = {
+  streak_freeze: { cost: 40, label: "Streak Freeze" },
+  xp_boost_15m: { cost: 35, label: "15-minute 2× XP Booster" },
+  frost_scarf: { cost: 50, label: "Frost Scarf" },
+  chef_hat: { cost: 60, label: "Chef Hat" },
+  astronaut: { cost: 80, label: "Astronaut Helmet" },
+  flame_crown: { cost: 120, label: "Flame Crown" },
+  effect_frost: { cost: 65, label: "Frost Effect" },
+  effect_flame: { cost: 75, label: "Flame Effect" },
+  effect_rainbow: { cost: 110, label: "Rainbow Effect" },
+};
+const DAILY_GOALS = [30, 50, 100, 150];
+// Invite codes use generate_invite_code's alphabet: no 0/O or 1/I, so "INVALID" never parses.
+const INVITE_CODE_RE = /^[A-HJ-NP-Z2-9]{6,8}$/;
+const STREAK_MILESTONES = [3, 7, 14, 30];
+const MAX_STREAK_FREEZES = 5;
+const MAX_BOOST_TOKENS = 10;
+const BOOST_MINUTES = 15;
+const PENDING_LINKS_KEY = "dl_pending_links";
 
 const DEMO_SQUAD = [
-  { id: "demo-1", username: "lena", display_name: "Lena", mascot_color: "#10B981", mascot_accessory: "headphones", xp: 145, streak_days: 4, current_step_id: "" },
-  { id: "demo-2", username: "max", display_name: "Max", mascot_color: "#F43F5E", xp: 95, streak_days: 3, current_step_id: "" },
-  { id: "demo-3", username: "jonas", display_name: "Jonas", mascot_color: "#F59E0B", mascot_accessory: "glasses", xp: 260, streak_days: 6, current_step_id: "" },
-  { id: "demo-4", username: "sofia", display_name: "Sofia", mascot_color: "#0EA5E9", xp: 40, streak_days: 2, current_step_id: "" },
+  { id: "demo-1", username: "lena", display_name: "Lena", mascot_color: "#10B981", mascot_accessory: "headphones", mascot_shape: "orb", mascot_effect: "sparkle", xp: 145, weekly_xp: 95, streak_days: 4, streak_on_ice: false, current_step_id: "" },
+  { id: "demo-2", username: "max", display_name: "Max", mascot_color: "#F43F5E", mascot_shape: "star", xp: 95, weekly_xp: 60, streak_days: 3, streak_on_ice: true, current_step_id: "" },
+  { id: "demo-3", username: "jonas", display_name: "Jonas", mascot_color: "#F59E0B", mascot_accessory: "glasses", mascot_shape: "hexagon", mascot_effect: "flame", xp: 260, weekly_xp: 120, streak_days: 6, streak_on_ice: false, current_step_id: "" },
+  { id: "demo-4", username: "sofia", display_name: "Sofia", mascot_color: "#38BDF8", mascot_accessory: "frost_scarf", mascot_shape: "capsule", mascot_effect: "frost", xp: 40, weekly_xp: 40, streak_days: 2, streak_on_ice: false, current_step_id: "" },
 ];
 
 const state = {
@@ -201,6 +254,7 @@ const state = {
   mascotColor: prefGet("mascot_color") || "#4F46E5",
   mascotAccessory: prefGet("mascot_accessory") || "none",
   mascotShape: prefGet("mascot_shape") || "cube",
+  mascotEffect: prefGet("mascot_effect") || "none",
   achievements: loadAchievements(),
   timer: { mode: "focus", total: 1500, left: 1500, running: false, interval: null, popoverOpen: false, cycle: 0 },
   sbClient: null,
@@ -216,6 +270,8 @@ const state = {
   course: null,
   courses: [],
   progress: null,
+  pendingLinks: null,
+  leaderboard: { timeframe: "week", scope: "course", entries: null, loading: false },
 };
 
 const ACHIEVEMENT_DEFS = [
@@ -229,8 +285,16 @@ const ACHIEVEMENT_DEFS = [
   { id: "style_icon", title: "Style Icon", desc: "Customize your Kubo's look", icon: "gift", xp: 15 },
   { id: "district_clear", title: "Unit Complete", desc: "Complete all steps in a unit", icon: "crown", xp: 40 },
   { id: "halfway_hero", title: "Halfway Hero", desc: "Complete half of the course", icon: "target", xp: 50 },
-  { id: "ppo_boss", title: "PPO Master", desc: "Complete Unit 5 (PPO Deep Dive)", icon: "bolt", xp: 75 },
+  { id: "ppo_boss", title: "PPO Master", desc: "Complete Unit 6 (PPO Deep Dive)", icon: "bolt", xp: 75 },
   { id: "full_mastery", title: "Full Mastery", desc: "Complete every step in the course", icon: "check", xp: 100 },
+  { id: "streak_3", title: "Warming Up", desc: "Reach a 3-day streak", icon: "flame", xp: 25 },
+  { id: "streak_7", title: "Week Warrior", desc: "Reach a 7-day streak", icon: "flame", xp: 50 },
+  { id: "ice_saver", title: "Saved on Ice", desc: "Let a Streak Freeze protect your streak", icon: "snow", xp: 30 },
+  { id: "booster_pro", title: "Booster Pro", desc: "Activate a 2× XP Boost", icon: "bolt", xp: 30 },
+  { id: "social_butterfly", title: "Social Butterfly", desc: "Connect with a friend", icon: "users", xp: 25 },
+  { id: "classical_scholar", title: "Classical Scholar", desc: "Complete the Classical RL unit", icon: "book", xp: 50 },
+  { id: "beyond_ppo", title: "Beyond PPO", desc: "Complete the Deep RL Evolution unit", icon: "target", xp: 60 },
+  { id: "monopoly_scaler", title: "Monopoly Scaler", desc: "Complete the Scaling Monopoly unit", icon: "crown", xp: 75 },
 ];
 
 function paletteForColor(hex) {
@@ -249,31 +313,43 @@ applyUserMascotColor(state.mascotColor);
 if (state.theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
 else document.documentElement.removeAttribute("data-theme");
 
-// Rank Rewards: Levels Unlock Kubo Customizations
+// Rank Rewards: Levels Unlock Kubo Customizations (Gems can unlock shop cosmetics early)
 function levelRewards() {
   const g = state.data && state.data.gamification;
-  return g?.level_rewards?.filter((r) => Object.hasOwn(ACCESSORY_NAMES, r.accessory)) || DEFAULT_LEVEL_REWARDS;
+  const served = g?.level_rewards?.filter((r) => Object.hasOwn(ACCESSORY_NAMES, r.accessory));
+  return served?.length >= DEFAULT_LEVEL_REWARDS.length ? served : DEFAULT_LEVEL_REWARDS;
 }
 
 function currentXp() {
   return (state.data && state.data.gamification.xp) || 0;
 }
 
+function ownedCosmetics() {
+  const owned = state.data?.gamification?.unlocked_cosmetics;
+  return new Set(Array.isArray(owned) ? owned : []);
+}
+
+function rewardFor(kind, id) {
+  return levelRewards().find((r) => (kind === "accessory" ? r.accessory === id : (r[kind] || []).includes(id))) || null;
+}
+
 function isAccessoryUnlocked(acc) {
   if (!Object.hasOwn(ACCESSORY_NAMES, acc)) return false;
   if (acc === "none") return true;
-  const r = levelRewards().find((x) => x.accessory === acc);
+  if (ownedCosmetics().has(acc)) return true;
+  const r = rewardFor("accessory", acc);
   return Boolean(r && currentXp() >= r.threshold);
 }
 
 function isShapeUnlocked(shapeId) {
   if (!MASCOT_SHAPES.some((x) => x.id === shapeId)) return false;
-  const r = levelRewards().find((x) => (x.shapes || []).includes(shapeId));
+  if (ownedCosmetics().has(shapeId) || ownedCosmetics().has(`shape_${shapeId}`)) return true;
+  const r = rewardFor("shapes", shapeId);
   return !r || currentXp() >= r.threshold;
 }
 
 function shapeUnlockReward(shapeId) {
-  return levelRewards().find((x) => (x.shapes || []).includes(shapeId)) || levelRewards()[0];
+  return rewardFor("shapes", shapeId) || levelRewards()[0];
 }
 
 function equippedShape() {
@@ -286,13 +362,40 @@ function applyUserShape(shape) {
 }
 
 function isColorUnlocked(paletteId) {
-  const r = levelRewards().find((x) => (x.colors || []).includes(paletteId));
+  if (ownedCosmetics().has(paletteId) || ownedCosmetics().has(`color_${paletteId}`)) return true;
+  const r = rewardFor("colors", paletteId);
   return !r || currentXp() >= r.threshold;
 }
 
 function colorUnlockLevel(paletteId) {
-  const r = levelRewards().find((x) => (x.colors || []).includes(paletteId));
+  const r = rewardFor("colors", paletteId);
   return r ? r.level : 1;
+}
+
+function isEffectUnlocked(effectId) {
+  if (!MASCOT_EFFECTS.some((x) => x.id === effectId)) return false;
+  if (effectId === "none" || ownedCosmetics().has(`effect_${effectId}`) || ownedCosmetics().has(effectId)) return true;
+  const r = rewardFor("effects", effectId);
+  return Boolean(r && currentXp() >= r.threshold);
+}
+
+function effectUnlockReward(effectId) {
+  return rewardFor("effects", effectId);
+}
+
+function equippedEffect() {
+  return isEffectUnlocked(state.mascotEffect) ? state.mascotEffect : "none";
+}
+
+function applyUserEffect(effect) {
+  state.mascotEffect = MASCOT_EFFECTS.some((x) => x.id === effect) ? effect : "none";
+  prefSet("mascot_effect", state.mascotEffect);
+}
+
+// Every accessory once, in rank order, with the rank that unlocks it.
+function accessoryCatalog() {
+  const seen = new Set();
+  return levelRewards().filter((r) => !seen.has(r.accessory) && seen.add(r.accessory));
 }
 
 function nextUnlock() {
@@ -343,6 +446,10 @@ const ICONS = {
   info: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.7v.2"/></svg>`,
   checkCircle: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 4.9-5.3"/></svg>`,
   chevronDown: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`,
+  snow: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M4.3 6.5l15.4 11M4.3 17.5l15.4-11"/><path d="m9.5 3.5 2.5 2 2.5-2M9.5 20.5l2.5-2 2.5 2M3.6 10.2l3 .6-.9 3M20.4 13.8l-3-.6.9-3M3.6 13.8l3-.6-.9-3M20.4 10.2l-3 .6.9 3"/></svg>`,
+  trophy: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8M9.5 18h5"/></svg>`,
+  gem: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5h11L22 9l-10 11.5L2 9l4.5-5.5Z"/><path d="M2 9h20M9.5 3.5 8 9l4 11.5L16 9l-1.5-5.5"/></svg>`,
+  link: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4.5 4.5 0 0 0 6.4.4l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10.5a4.5 4.5 0 0 0-6.4-.4l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>`,
   chevronRight: `<svg class="unlock-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>`,
 };
 
@@ -440,7 +547,116 @@ function accessoryLayers(acc) {
       head: true,
     };
   }
+  if (acc === "frost_scarf") {
+    return {
+      back: "",
+      front: `<g class="kubo-scarf">
+          <path d="M11.5 42.6c12.4 5.4 28.6 5.4 41 0v5.8c-12.4 5.4-28.6 5.4-41 0Z" fill="#38BDF8" stroke="#0369A1" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M18 46.2v3.4M24 47.6v3.4M30 48.2v3.4M36 48.2v3.4M42 47.6v3.4M48 46.2v3.4" stroke="#E0F2FE" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>
+          <path d="M40.5 48.6 43.4 58h5.4l-2.6-10.4Z" fill="#0EA5E9" stroke="#0369A1" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M44.6 58v1.6M47.4 58v1.6" stroke="#0369A1" stroke-width="1.1" stroke-linecap="round"/>
+        </g>`,
+      head: false,
+    };
+  }
+  if (acc === "astronaut") {
+    return {
+      back: `<rect x="14.5" y="49" width="35" height="6.4" rx="3.2" fill="#CBD5E1" stroke="#64748B" stroke-width="1.2"/>`,
+      front: `<g class="kubo-helmet">
+          <circle cx="32" cy="29.5" r="27.5" fill="#BAE6FD" fill-opacity="0.16" stroke="#E2E8F0" stroke-width="2.6"/>
+          <circle cx="32" cy="29.5" r="27.5" stroke="#64748B" stroke-width="0.8" opacity="0.55"/>
+          <path d="M13.6 19.6C17.4 12 24 7.8 31.5 7.2" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" fill="none" opacity="0.8"/>
+          <path d="M51.4 37.6c-1 2.8-2.6 5.2-4.6 7.2" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.55"/>
+          <circle cx="50.5" cy="12.5" r="2.1" fill="#F43F5E"/>
+        </g>`,
+      head: false,
+    };
+  }
+  if (acc === "chef_hat") {
+    return {
+      back: "",
+      front: `<rect x="19.5" y="9.6" width="25" height="5.6" rx="1.6" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.2"/>
+        <path d="M21 10.4c-5.6-.4-7.2-7.8-1.8-9.6 1.4-4.4 7.6-5 9.6-1.4 2.2-3.8 6.8-3.8 9 0 2.6-3.2 8.4-2 9 2.6 4.6 2.6 2.6 8.8-1.8 8.4Z" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.2" stroke-linejoin="round"/>
+        <path d="M27 5.8v4.2M32 4.6v5.4M37 5.8v4.2" stroke="#CBD5E1" stroke-width="1.2" stroke-linecap="round"/>`,
+      head: true,
+    };
+  }
+  if (acc === "detective") {
+    return {
+      back: "",
+      front: `<path d="M16 14.6C16 3.2 48 3.2 48 14.6Z" fill="#92400E" stroke="#78350F" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M20.5 9.6h23M27 6v8.4M37 6v8.4" stroke="#F59E0B" stroke-width="1" opacity="0.65"/>
+        <path d="M9.5 15.6c4.4-2.8 10.4-2.4 14.6-.4M54.5 15.6c-4.4-2.8-10.4-2.4-14.6-.4" stroke="#78350F" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <path d="M19.4 14 17 22.6M44.6 14 47 22.6" stroke="#92400E" stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="32" cy="3.8" r="1.9" fill="#78350F"/>`,
+      head: true,
+    };
+  }
+  if (acc === "halo") {
+    return {
+      back: "",
+      front: `<g class="kubo-halo">
+          <ellipse cx="32" cy="1.6" rx="13.5" ry="3.8" stroke="#F59E0B" stroke-width="3" fill="none"/>
+          <ellipse cx="32" cy="1.6" rx="13.5" ry="3.8" stroke="#FEF3C7" stroke-width="1" fill="none"/>
+        </g>`,
+      head: true,
+    };
+  }
+  if (acc === "flame_crown") {
+    const flame = (x, y, fill) => `<path d="M${x} ${y}c-2.4-2.6-1.6-5.6.6-7.6.2 2.2 1.9 3.1 1.7 5.3-.2 1.5-1.2 2.3-2.3 2.3Z" fill="${fill}"/>`;
+    return {
+      back: "",
+      front: `<path d="M19 14.2 20.8 5.6 26 9.6 29.4 2.6 32.6 8.4 35.8 2.6 39 9.6 43.2 5.6 45 14.2Z" fill="#F97316" stroke="#C2410C" stroke-width="1.4" stroke-linejoin="round"/>
+        ${flame(20.2, 5.4, "#FDE047")}${flame(29, 2.6, "#FBBF24")}${flame(35.4, 2.6, "#FBBF24")}${flame(42.6, 5.4, "#FDE047")}
+        <rect x="19" y="11.8" width="26" height="3" rx="1.5" fill="#C2410C"/>
+        <circle cx="32" cy="10.6" r="1.6" fill="#FDE047"/>`,
+      head: true,
+    };
+  }
   return { back: "", front: "", head: false };
+}
+
+// Auras: decorative layers whose motion is transform/opacity only (paused under reduced motion in CSS).
+function effectLayers(effect) {
+  if (effect === "sparkle") {
+    const star = (cls, x, y, r) => `<path class="fx-twinkle ${cls}" d="M${x} ${y - r}l${r * 0.28} ${r * 0.72} ${r * 0.72} ${r * 0.28}-${r * 0.72} ${r * 0.28}-${r * 0.28} ${r * 0.72}-${r * 0.28}-${r * 0.72}-${r * 0.72}-${r * 0.28} ${r * 0.72}-${r * 0.28}Z" fill="#FDE047"/>`;
+    return { back: "", front: `<g class="kubo-fx fx-sparkle">${star("t1", 4, 10, 3.6)}${star("t2", 60, 8, 3)}${star("t3", 61, 40, 2.6)}${star("t4", 3, 42, 3)}</g>` };
+  }
+  if (effect === "frost") {
+    const flake = (cls, x, y, r) => `<g class="fx-flake ${cls}" transform="translate(${x} ${y})"><path d="M0 -${r}V${r}M-${r * 0.87} -${r / 2} ${r * 0.87} ${r / 2}M-${r * 0.87} ${r / 2} ${r * 0.87} -${r / 2}" stroke="#7DD3FC" stroke-width="1.3" stroke-linecap="round"/></g>`;
+    return {
+      back: `<ellipse class="fx-frost-glow" cx="32" cy="31" rx="30" ry="27" fill="#7DD3FC" opacity="0.14"/>`,
+      front: `<g class="kubo-fx fx-frost">${flake("f1", 5, 16, 3.4)}${flake("f2", 59, 12, 2.8)}${flake("f3", 60, 42, 3.2)}${flake("f4", 4, 46, 2.6)}</g>`,
+    };
+  }
+  if (effect === "flame") {
+    const ember = (cls, x, y, s) => `<path class="fx-ember ${cls}" d="M${x} ${y}c-${s} -${s * 1.2}-${s * 0.7}-${s * 2.6} 0-${s * 3.4} ${s * 0.7} ${s * 0.8} ${s} ${s * 2.2} 0 ${s * 3.4}Z" fill="#FB923C"/>`;
+    // Bold tongues behind the body keep the aura legible at 26-36px avatar sizes.
+    const tongue = (cls, x, y, w, h, fill) => `<path class="fx-tongue ${cls}" d="M${x} ${y}c-${w * 0.6} 0-${w * 0.7}-${h * 0.5} 0-${h}c${w * 0.7} ${h * 0.5} ${w * 0.6} ${h} 0 ${h}Z" fill="${fill}"/>`;
+    return {
+      back: `<g class="kubo-fx fx-flame-back">
+          <ellipse class="fx-flame-glow" cx="32" cy="46" rx="29" ry="14" fill="#F97316" opacity="0.32"/>
+          ${tongue("k1", 9, 54, 9, 26, "#F97316")}${tongue("k2", 53, 54, 9, 26, "#F97316")}
+          ${tongue("k3", 14, 52, 6, 17, "#FBBF24")}${tongue("k4", 49, 52, 6, 17, "#FBBF24")}
+        </g>`,
+      front: `<g class="kubo-fx fx-flame">${ember("e1", 6, 50, 3)}${ember("e2", 58, 48, 2.8)}${ember("e3", 10, 32, 2.4)}${ember("e4", 55, 28, 2.4)}</g>`,
+    };
+  }
+  if (effect === "orbit") {
+    return {
+      back: `<g transform="translate(32 42) rotate(-14) scale(1 0.34)"><g class="fx-orbit-spin">
+          <circle r="29" stroke="#A5B4FC" stroke-width="3.2" stroke-dasharray="5 7" fill="none"/>
+          <circle cx="29" cy="0" r="7" fill="#818CF8"/>
+        </g></g>`,
+      front: `<path class="kubo-fx" d="M3.6 48.4c4 6 18.6 8.6 33.4 5.6 12.2-2.4 21.4-7.6 23.6-13.6" stroke="#A5B4FC" stroke-width="1.3" stroke-linecap="round" fill="none" opacity="0.85"/>`,
+    };
+  }
+  if (effect === "rainbow") {
+    const colors = ["#F43F5E", "#F59E0B", "#FDE047", "#22C55E", "#38BDF8", "#8B5CF6"];
+    const arcs = colors.map((c, i) => `<circle r="29.5" stroke="${c}" stroke-width="3.4" stroke-dasharray="30.9 154.4" stroke-dashoffset="${(-30.9 * i).toFixed(1)}" fill="none"/>`).join("");
+    return { back: `<g transform="translate(32 31)"><g class="fx-rainbow-spin" opacity="0.7">${arcs}</g></g>`, front: "" };
+  }
+  return { back: "", front: "" };
 }
 
 // Each shape: body path, its 3D shade (same path, lower), a specular highlight, and offsets
@@ -471,15 +687,34 @@ const SHAPE_GEOMETRY = {
     hi: "M25.5 13.6c3-3.4 10-3.4 13 0",
     face: 1, head: -3,
   },
+  star: {
+    body: (fill, dy) => `<path d="${[[32, 8], [40.5, 20.3], [54.8, 24.6], [45.8, 36.5], [46.1, 51.4], [32, 46.5], [17.9, 51.4], [18.2, 36.5], [9.2, 24.6], [23.5, 20.3]]
+      .map(([x, y], i) => `${i ? "L" : "M"}${x} ${(y + dy).toFixed(1)}`).join(" ")}Z" fill="${fill}" stroke="${fill}" stroke-width="6" stroke-linejoin="round"/>`,
+    hi: "M28.6 15.2c2-2.6 4.8-2.6 6.8 0",
+    face: 2, head: -3,
+  },
+  shield: {
+    body: (fill, dy) => `<path d="M32 ${8 + dy} 52.5 ${14 + dy}V${28 + dy}C52.5 ${40 + dy} 44 ${48 + dy} 32 ${52 + dy}C20 ${48 + dy} 11.5 ${40 + dy} 11.5 ${28 + dy}V${14 + dy}Z" fill="${fill}" stroke="${fill}" stroke-width="4" stroke-linejoin="round"/>`,
+    hi: "M20 16.4 32 12.6l12 3.8",
+    face: 0, head: -2,
+  },
+  capsule: {
+    body: (fill, dy) => `<rect x="13.5" y="${6 + dy}" width="37" height="46" rx="18.5" fill="${fill}"/>`,
+    hi: "M22.5 12.6c4.4-3 14.6-3 19 0",
+    face: 0, head: -4,
+  },
 };
 
-function mascotHtml(mood = "idle", size = 56, customColor = null, speaking = false, idAttr = "", accessory = null, shape = null) {
+function mascotHtml(mood = "idle", size = 56, customColor = null, speaking = false, idAttr = "", accessory = null, shape = null, effect = null) {
   const pal = customColor ? paletteForColor(customColor) : null;
   const colorVars = pal ? `style="--kb:${pal.body}; --ks:${pal.shade}; --kh:${pal.hi};"` : "";
   const acc = accessory !== null ? accessory : (customColor ? "none" : equippedAccessory());
   const layers = accessoryLayers(Object.hasOwn(ACCESSORY_NAMES, acc) ? acc : "none");
   const shapeId = shape !== null ? shape : (customColor ? "cube" : equippedShape());
   const geo = SHAPE_GEOMETRY[shapeId] || SHAPE_GEOMETRY.cube;
+  const effectRaw = effect !== null ? effect : (customColor ? "none" : equippedEffect());
+  const effectId = MASCOT_EFFECTS.some((x) => x.id === effectRaw) ? effectRaw : "none";
+  const fx = effectLayers(effectId);
 
   const crown = mood === "proud" && !layers.head
     ? `<path d="M21 14 24 6l8 5 8-5 3 8H21Z" fill="#F59E0B" stroke="#B45309" stroke-width="1.6" stroke-linejoin="round"/>`
@@ -515,11 +750,12 @@ function mascotHtml(mood = "idle", size = 56, customColor = null, speaking = fal
   </g>`;
 
   return `
-    <span ${idAttr ? `id="${idAttr}"` : ""} class="kubo-wrap mood-${mood} acc-${acc} shape-${shapeId} ${speaking ? "speaking" : ""}" ${colorVars} aria-hidden="true">
+    <span ${idAttr ? `id="${idAttr}"` : ""} class="kubo-wrap mood-${mood} acc-${acc} shape-${shapeId} fx-${effectId} ${speaking ? "speaking" : ""}" ${colorVars} aria-hidden="true">
       <svg class="kubo-svg" viewBox="0 0 64 60" width="${size}" height="${Math.round(size * 0.94)}" fill="none">
         <g class="kubo-body-group">
           <ellipse class="kubo-shadow" cx="32" cy="56" rx="18" ry="3.5" fill="currentColor" opacity="0.12"/>
           <g class="kubo-actor"><g class="kubo-breath">
+          ${fx.back}
           ${layers.back}
           ${geo.body("var(--kubo-shade)", 3)}
           ${geo.body("var(--kubo-body)", 0)}
@@ -532,6 +768,7 @@ function mascotHtml(mood = "idle", size = 56, customColor = null, speaking = fal
           </g>
           <g transform="translate(0 ${layers.head ? geo.head : geo.face})">${layers.front}</g>
           ${crown ? `<g transform="translate(0 ${geo.head})">${crown}</g>` : ""}
+          ${fx.front}
           </g></g>
         </g>
       </svg>
@@ -937,8 +1174,17 @@ function checkProgressAchievements() {
   if (state.combo >= 3) unlockAchievement("combo_3");
   if (state.combo >= 5) unlockAchievement("combo_5");
   if (state.data.districts.some((d) => d.steps.every((s) => isStepDone(s.id)))) unlockAchievement("district_clear");
-  const ppo = state.data.districts.find((d) => d.id === "M4") || state.data.districts[4];
-  if (ppo && ppo.steps.every((s) => isStepDone(s.id))) unlockAchievement("ppo_boss");
+  const unitDone = (id) => {
+    const unit = state.data.districts.find((d) => d.id === id);
+    return Boolean(unit && unit.steps.every((s) => isStepDone(s.id)));
+  };
+  if (unitDone("M4")) unlockAchievement("ppo_boss");
+  if (unitDone("M6")) unlockAchievement("classical_scholar");
+  if (unitDone("M7")) unlockAchievement("beyond_ppo");
+  if (unitDone("M8")) unlockAchievement("monopoly_scaler");
+  const streak = Number(state.data.gamification.streak_days) || 0;
+  if (streak >= 3) unlockAchievement("streak_3");
+  if (streak >= 7) unlockAchievement("streak_7");
   if (total && done * 2 >= total) unlockAchievement("halfway_hero");
   if (total && done === total) unlockAchievement("full_mastery");
 }
@@ -947,6 +1193,216 @@ function countCardReview() {
   state.reviewedCards += 1;
   prefSet("reviewed_cards", String(state.reviewedCards));
   if (state.reviewedCards >= 10) unlockAchievement("card_shark");
+}
+
+// Economy: gems, 2× XP boosters, streak freezes, daily goal (mirrors dopamine.award_xp exactly)
+function dayGap(from, to) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from || "")) return 0;
+  return Math.round((new Date(to + "T12:00:00") - new Date(from + "T12:00:00")) / 86400000);
+}
+
+function weekStart(today = day()) {
+  const weekday = (new Date(today + "T12:00:00").getDay() + 6) % 7;
+  return day(-weekday, today);
+}
+
+function defaultWallet() {
+  return {
+    gems: 50, weekly_xp: 0, weekly_xp_reset_date: "", streak_freezes: 1, streak_frozen_dates: [],
+    last_active_date: "", xp_boost_until: "", xp_boost_mult: 1, xp_boost_tokens: 1,
+    daily_xp: 0, daily_xp_date: "", daily_goal: 50, daily_goal_claimed_date: "",
+    unlocked_cosmetics: [], unit_rewards: [],
+  };
+}
+
+function normalizeWallet(raw) {
+  const w = defaultWallet();
+  const src = raw && typeof raw === "object" ? raw : {};
+  const int = (value, lo, hi, fallback) => (Number.isInteger(value) ? Math.min(hi, Math.max(lo, value)) : fallback);
+  const date = (value) => (/^\d{4}-\d{2}-\d{2}$/.test(value || "") ? value : "");
+  const list = (value, ok) => (Array.isArray(value) ? [...new Set(value.filter(ok))] : []);
+  w.gems = int(src.gems, 0, 1e9, w.gems);
+  w.weekly_xp = int(src.weekly_xp, 0, 1e9, 0);
+  w.weekly_xp_reset_date = date(src.weekly_xp_reset_date);
+  w.streak_freezes = int(src.streak_freezes, 0, MAX_STREAK_FREEZES, w.streak_freezes);
+  w.streak_frozen_dates = list(src.streak_frozen_dates, (d) => Boolean(date(d))).slice(-30);
+  w.last_active_date = date(src.last_active_date);
+  w.xp_boost_until = typeof src.xp_boost_until === "string" && Number.isFinite(Date.parse(src.xp_boost_until)) ? src.xp_boost_until : "";
+  w.xp_boost_mult = int(src.xp_boost_mult, 1, 3, 1);
+  w.xp_boost_tokens = int(src.xp_boost_tokens, 0, MAX_BOOST_TOKENS, w.xp_boost_tokens);
+  w.daily_xp = int(src.daily_xp, 0, 1e9, 0);
+  w.daily_xp_date = date(src.daily_xp_date);
+  w.daily_goal = DAILY_GOALS.includes(src.daily_goal) ? src.daily_goal : 50;
+  // daily_goal_reward_date is the legacy name of the same field.
+  w.daily_goal_claimed_date = date(src.daily_goal_claimed_date) || date(src.daily_goal_reward_date);
+  w.unlocked_cosmetics = list(src.unlocked_cosmetics, (id) => typeof id === "string" && Object.hasOwn(SHOP_ITEMS, id));
+  w.unit_rewards = list(src.unit_rewards, (id) => typeof id === "string");
+  return w;
+}
+
+// Profile columns are the account-wide source of truth; course meta keeps the rest.
+function walletFromProfile(prof) {
+  if (!prof || typeof prof.gems !== "number") return {};
+  return {
+    gems: prof.gems, weekly_xp: prof.weekly_xp,
+    weekly_xp_reset_date: typeof prof.weekly_xp_reset_at === "string" ? weekStart(prof.weekly_xp_reset_at.slice(0, 10)) : "",
+    streak_freezes: prof.streak_freezes, streak_frozen_dates: prof.streak_frozen_dates,
+    last_active_date: prof.last_active_date, xp_boost_until: prof.xp_boost_until || "",
+    xp_boost_mult: prof.xp_boost_mult, xp_boost_tokens: prof.xp_boost_tokens,
+    daily_xp: prof.daily_xp, daily_xp_date: prof.daily_xp_date, daily_goal: prof.daily_goal,
+    unlocked_cosmetics: prof.unlocked_cosmetics,
+  };
+}
+
+function boostRemaining(g = state.data?.gamification, now = Date.now()) {
+  const until = Date.parse(g?.xp_boost_until || "");
+  return Number.isFinite(until) ? Math.max(0, Math.ceil((until - now) / 1000)) : 0;
+}
+
+function boostMultiplier(g = state.data?.gamification, now = Date.now()) {
+  if (!boostRemaining(g, now)) return 1;
+  const mult = Number(g.xp_boost_mult);
+  return Number.isInteger(mult) && mult > 1 ? Math.min(3, mult) : 2;
+}
+
+// Same-day keeps the streak, the next day extends it, and each missed day spends one freeze
+// (mirrors dopamine.award_xp). Too few freezes for the gap resets the streak.
+function applyDailyActivity(w, progress, today = day()) {
+  const result = { streak_saved_on_ice: false, freeze_earned: false };
+  if (w.last_active_date === today) return result;
+  const gap = dayGap(w.last_active_date, today);
+  const missed = gap - 1;
+  if (gap === 1) progress.streak_days += 1;
+  else if (missed >= 1 && missed <= w.streak_freezes) {
+    w.streak_freezes -= missed;
+    const iced = Array.from({ length: missed }, (_, i) => day(i + 1, w.last_active_date));
+    w.streak_frozen_dates = [...new Set([...w.streak_frozen_dates, ...iced])].slice(-30);
+    progress.streak_days += 1;
+    result.streak_saved_on_ice = true;
+  } else progress.streak_days = 1;
+  w.last_active_date = today;
+  if (STREAK_MILESTONES.includes(progress.streak_days) && w.streak_freezes < MAX_STREAK_FREEZES) {
+    w.streak_freezes += 1;
+    result.freeze_earned = true;
+  }
+  return result;
+}
+
+// The daily goal pays +25 gems and one boost token once per day, whether XP reaches it
+// or a lowered goal drops below XP already earned today (dopamine._claim_daily_goal).
+function claimWalletDailyGoal(w, today = day()) {
+  if (w.daily_xp_date !== today || w.daily_xp < w.daily_goal || w.daily_goal_claimed_date === today) return false;
+  w.gems += 25;
+  w.xp_boost_tokens = Math.min(MAX_BOOST_TOKENS, w.xp_boost_tokens + 1);
+  w.daily_goal_claimed_date = today;
+  return true;
+}
+
+// A combo of 3+ correct answers adds +5 before the boost multiplier, like dopamine.award_xp.
+function earnWalletXp(w, points, today = day(), now = Date.now(), combo = 0) {
+  const monday = weekStart(today);
+  if (w.weekly_xp_reset_date !== monday) { w.weekly_xp = 0; w.weekly_xp_reset_date = monday; }
+  if (w.daily_xp_date !== today) { w.daily_xp = 0; w.daily_xp_date = today; }
+  const mult = boostMultiplier(w, now);
+  const bonus = combo >= 3 ? 5 : 0;
+  const gained = (points + bonus) * mult;
+  w.weekly_xp += gained;
+  w.daily_xp += gained;
+  w.gems += 5;
+  const daily_goal_reached = claimWalletDailyGoal(w, today);
+  return { gained, mult, bonus, daily_goal_reached };
+}
+
+function activateWalletBoost(w, now = Date.now(), minutes = BOOST_MINUTES, mult = 2) {
+  if (boostRemaining(w, now)) throw new Error("An XP booster is already active");
+  if (w.xp_boost_tokens < 1) throw new Error("No XP booster tokens available");
+  w.xp_boost_until = new Date(now + minutes * 60000).toISOString();
+  w.xp_boost_mult = mult;
+  w.xp_boost_tokens -= 1;
+  return w;
+}
+
+function cosmeticRankUnlocked(itemId, xp) {
+  const effect = itemId.startsWith("effect_") ? itemId.slice(7) : null;
+  const reward = DEFAULT_LEVEL_REWARDS.find((r) => (effect ? (r.effects || []).includes(effect) : r.accessory === itemId));
+  return Boolean(reward && xp >= reward.threshold);
+}
+
+function buyWalletItem(w, itemId, xp = 0) {
+  const item = Object.hasOwn(SHOP_ITEMS, itemId) ? SHOP_ITEMS[itemId] : null;
+  if (!item) throw new Error("Unknown shop item");
+  if (w.gems < item.cost) throw new Error("Insufficient gems");
+  if (itemId === "streak_freeze") {
+    if (w.streak_freezes >= MAX_STREAK_FREEZES) throw new Error("Streak freeze stock is full");
+    w.streak_freezes += 1;
+  } else if (itemId === "xp_boost_15m") {
+    if (w.xp_boost_tokens >= MAX_BOOST_TOKENS) throw new Error("XP booster stock is full");
+    w.xp_boost_tokens += 1;
+  } else {
+    if (w.unlocked_cosmetics.includes(itemId) || cosmeticRankUnlocked(itemId, xp)) throw new Error("Cosmetic is already unlocked");
+    w.unlocked_cosmetics = [...w.unlocked_cosmetics, itemId];
+  }
+  w.gems -= item.cost;
+  return w;
+}
+
+function setWalletGoal(w, goal, today = day()) {
+  if (!DAILY_GOALS.includes(goal)) throw new Error("Daily goal must be 30, 50, 100, or 150 XP");
+  w.daily_goal = goal;
+  return claimWalletDailyGoal(w, today);
+}
+
+// A streak survives while the freezes in stock can still cover every missed day.
+function streakAlive(w, today = day()) {
+  if (!w.last_active_date) return false;
+  return dayGap(w.last_active_date, today) <= w.streak_freezes + 1;
+}
+
+// What the UI reads: stale daily/weekly counters read as zero, a streak the freezes can no
+// longer cover reads as zero, and a freeze covering yesterday (or about to) shows as ice.
+function walletView(meta, today = day(), streakDays) {
+  const w = normalizeWallet(meta);
+  const alive = streakAlive(w, today);
+  const view = {
+    ...w,
+    weekly_xp: w.weekly_xp_reset_date === weekStart(today) ? w.weekly_xp : 0,
+    daily_xp: w.daily_xp_date === today ? w.daily_xp : 0,
+    streak_on_ice: w.streak_frozen_dates.includes(day(-1, today)) || (alive && dayGap(w.last_active_date, today) >= 2),
+    shop_items: SHOP_ITEMS,
+  };
+  if (Number.isInteger(streakDays)) {
+    view.last_streak_days = streakDays;
+    view.streak_days = alive ? streakDays : 0;
+  }
+  return view;
+}
+
+function rankLevel(xp) {
+  return Math.max(1, DEFAULT_LEVEL_REWARDS.filter((r) => xp >= r.threshold).length);
+}
+
+function rankName(level) {
+  return `Lv.${level} ${RANK_NAMES[level - 1] || RANK_NAMES[0]}`;
+}
+
+// Rebuilds the visible week: the last active day and the run of active days before it (frozen
+// days inside the run read as ice), every frozen date as ice, and every other past day as missed.
+// The run is history, so it shows even before today's freeze fires or after the streak broke.
+function streakWeek(g, today = day()) {
+  const frozen = new Set(Array.isArray(g?.streak_frozen_dates) ? g.streak_frozen_dates : []);
+  const active = new Set();
+  let cursor = /^\d{4}-\d{2}-\d{2}$/.test(g?.last_active_date || "") && g.last_active_date <= today ? g.last_active_date : "";
+  let left = cursor ? Math.max(1, Number(g.last_streak_days ?? g.streak_days) || 0) : 0;
+  for (let guard = 0; cursor && left > 0 && guard < 400; guard++) {
+    if (!frozen.has(cursor)) { active.add(cursor); left--; }
+    cursor = day(-1, cursor);
+  }
+  const monday = weekStart(today);
+  return ["M", "T", "W", "T", "F", "S", "S"].map((label, i) => {
+    const date = day(i, monday);
+    const status = active.has(date) ? "done" : frozen.has(date) ? "iced" : date === today ? "today" : date > today ? "upcoming" : "missed";
+    return { date, label, status, isToday: date === today };
+  });
 }
 
 // Supabase Client, Auth & Friends
@@ -1030,6 +1486,7 @@ async function loadCloudProfileAndFriends() {
     applyUserMascotColor(prof.mascot_color || "#4F46E5");
     applyUserAccessory(prof.mascot_accessory || "none");
     applyUserShape(prof.mascot_shape || "cube");
+    applyUserEffect(prof.mascot_effect || "none");
     state.achievements = Array.isArray(prof.achievements) ? [...prof.achievements] : [];
     prefSet("achievements", JSON.stringify(state.achievements));
   }
@@ -1042,9 +1499,16 @@ async function loadCloudProfileAndFriends() {
   if (friendIds.length) {
     const { data: fProfs } = await state.sbClient
       .from("profiles")
-      .select("id, username, display_name, mascot_color, mascot_accessory, mascot_shape, xp, streak_days, current_step_id")
+      .select("*")
       .in("id", friendIds);
-    state.friends = fProfs || [];
+    const yesterday = day(-1);
+    state.friends = (fProfs || []).map((f) => ({
+      id: f.id, username: f.username, display_name: f.display_name, mascot_color: f.mascot_color,
+      mascot_accessory: f.mascot_accessory, mascot_shape: f.mascot_shape, mascot_effect: f.mascot_effect || "none",
+      xp: f.xp || 0, streak_days: f.streak_days || 0, current_step_id: f.current_step_id,
+      weekly_xp: typeof f.weekly_xp_reset_at === "string" && weekStart(f.weekly_xp_reset_at.slice(0, 10)) === weekStart() ? f.weekly_xp || 0 : 0,
+      streak_on_ice: Array.isArray(f.streak_frozen_dates) && f.streak_frozen_dates.includes(yesterday),
+    }));
   } else {
     state.friends = [];
   }
@@ -1055,21 +1519,42 @@ async function syncProgressToSupabase() {
   const g = state.data.gamification;
   const next = findNextLesson()?.lesson.step_ids.find((id) => !isStepDone(id)) ?? null;
   const completedSteps = g.completed_events.filter((e) => e.startsWith("step-")).map((e) => e.slice(5));
+  const base = {
+    mascot_color: state.mascotColor,
+    mascot_accessory: state.mascotAccessory,
+    mascot_shape: state.mascotShape,
+    xp: g.xp,
+    streak_days: g.streak_days,
+    current_step_id: next,
+    completed_steps: completedSteps,
+    achievements: state.achievements,
+  };
+  const extended = typeof g.gems === "number" ? { ...base, ...profileWalletPayload(g) } : base;
   try {
-    await state.sbClient
-      .from("profiles")
-      .update({
-        mascot_color: state.mascotColor,
-        mascot_accessory: state.mascotAccessory,
-        mascot_shape: state.mascotShape,
-        xp: g.xp,
-        streak_days: g.streak_days,
-        current_step_id: next,
-        completed_steps: completedSteps,
-        achievements: state.achievements,
-      })
-      .eq("id", state.sbUser.id);
+    const res = await state.sbClient.from("profiles").update(extended).eq("id", state.sbUser.id);
+    // A database without the economy columns still keeps XP and looks in sync.
+    if (res?.error && extended !== base) await state.sbClient.from("profiles").update(base).eq("id", state.sbUser.id);
   } catch (_) {}
+}
+
+function profileWalletPayload(g) {
+  const w = normalizeWallet(g);
+  return {
+    mascot_effect: state.mascotEffect,
+    gems: w.gems,
+    weekly_xp: w.weekly_xp,
+    ...(w.weekly_xp_reset_date ? { weekly_xp_reset_at: w.weekly_xp_reset_date + "T00:00:00Z" } : {}),
+    streak_freezes: w.streak_freezes,
+    streak_frozen_dates: w.streak_frozen_dates,
+    last_active_date: w.last_active_date,
+    xp_boost_until: w.xp_boost_until || null,
+    xp_boost_mult: w.xp_boost_mult,
+    xp_boost_tokens: w.xp_boost_tokens,
+    daily_xp: w.daily_xp,
+    daily_xp_date: w.daily_xp_date,
+    daily_goal: w.daily_goal,
+    unlocked_cosmetics: w.unlocked_cosmetics,
+  };
 }
 
 function activeSquadList() {
@@ -1375,13 +1860,31 @@ function handleXp(xp, anchorEl = null, soundKind = "correct") {
   } else if (xp && xp.gained > 0) {
     if (soundKind) playSound(soundKind, state.combo);
     spawnSparkles(anchorEl, 14);
-    spawnXpFloat(state.combo >= 2 ? `+${xp.gained} XP (${state.combo}×)` : `+${xp.gained} XP`, anchorEl);
+    spawnXpFloat(xpGainLabel(xp), anchorEl);
   } else {
     if (soundKind) playSound(soundKind, state.combo);
     spawnSparkles(anchorEl, 10);
   }
   checkProgressAchievements();
   syncProgressToSupabase();
+}
+
+function xpGainLabel(xp) {
+  const boosted = xp?.boosted || (xp?.gained > 0 && boostMultiplier() > 1);
+  const mult = xp?.mult > 1 ? xp.mult : boostMultiplier();
+  return `+${numberFormat.format(xp?.gained || 0)} XP${boosted ? ` (${mult}× Boost)` : ""}`;
+}
+
+// Side effects every XP award can carry: streak rescues, daily goal bonuses, and free booster tokens.
+function noteXpRewards(xp) {
+  if (!xp) return;
+  if (xp.streak_saved_on_ice) {
+    toast("Streak saved on ice! A Streak Freeze protected your streak while you were away.");
+    window.Delight.playFrostChime?.();
+    unlockAchievement("ice_saver");
+  }
+  if (xp.daily_goal_reached) toast("Daily goal reached! +25 Gems and a free 2× XP Boost.");
+  if (xp.unit_token) toast("Unit complete! You earned a free 2× XP Boost.");
 }
 
 // Pomodoro focus timer
@@ -1688,7 +2191,8 @@ function renderTopbar() {
         </div>
         <div class="lesson-topbar-right">
           ${state.lesson.correctChecks >= 2 ? `<span class="lesson-combo" role="status">${state.lesson.correctChecks} in a row!</span>` : ""}
-          <span class="lesson-stat" title="Day streak"><span class="lesson-stat-icon warn ${streakIncreased ? "streak-lit" : ""}">${ICONS.flame}</span><span class="tabular">${esc(g.streak_days)}</span><span class="sr-only"> day streak</span></span>
+          ${boostPillHtml("compact")}
+          <span class="lesson-stat ${g.streak_on_ice ? "iced" : ""}" title="Day streak"><span class="lesson-stat-icon warn ${streakIncreased ? "streak-lit" : ""}">${g.streak_on_ice ? ICONS.snow : ICONS.flame}</span><span class="tabular">${esc(g.streak_days)}</span><span class="sr-only"> day streak</span></span>
           <span class="lesson-stat" title="Total XP" data-xp-total><span class="lesson-stat-icon accent">${ICONS.bolt}</span><span class="tabular">${numberFormat.format(g.xp)}</span><span class="sr-only"> XP</span></span>
           ${timerWidgetHtml()}
           ${soundButton}
@@ -1697,6 +2201,7 @@ function renderTopbar() {
     document.getElementById("btn-exit-lesson").onclick = leaveLesson;
     document.getElementById("btn-sound").onclick = toggleSound;
     bindTimerControls();
+    syncBoostTicker();
     return;
   }
 
@@ -1713,6 +2218,8 @@ function renderTopbar() {
         </nav>
       </div>
       <div class="topbar-right">
+        ${boostPillHtml()}
+        ${streakButtonHtml("btn-streak-top", "topbar-streak")}
         ${timerWidgetHtml()}
         <button id="btn-theme" class="icon-ghost" aria-label="${themeLabel}">${themeIcon}</button>
         ${soundButton}
@@ -1730,7 +2237,72 @@ function renderTopbar() {
   document.getElementById("btn-account").onclick = (event) => { playSound("tap"); openSettingsModal("account", event.currentTarget); };
   document.getElementById("btn-theme").onclick = toggleTheme;
   document.getElementById("btn-sound").onclick = toggleSound;
+  bindStreakButtons(bar);
   bindTimerControls();
+  syncBoostTicker();
+}
+
+function streakButtonHtml(id, extraClass = "") {
+  const g = state.data.gamification;
+  const iced = Boolean(g.streak_on_ice);
+  const days = Number(g.streak_days) || 0;
+  return `<button type="button" id="${id}" class="streak-btn ${extraClass} ${iced ? "iced" : ""}" data-open-streak aria-haspopup="dialog"
+      aria-label="${numberFormat.format(days)}-day streak${iced ? ", protected on ice" : ""}. Open streak details">
+    <span class="streak-btn-icon" aria-hidden="true">${iced ? ICONS.snow : ICONS.flame}</span><span class="tabular">${numberFormat.format(days)}</span></button>`;
+}
+
+function bindStreakButtons(root) {
+  root.querySelectorAll("[data-open-streak]").forEach((button) => {
+    button.onclick = () => { playSound("tap"); openStreakModal(button); };
+  });
+}
+
+// 2× XP Boost countdown: one interval for every visible pill, torn down when the boost ends.
+let boostTicker = null;
+
+function boostPillHtml(extraClass = "") {
+  const left = boostRemaining();
+  if (!left) return "";
+  const mult = boostMultiplier();
+  return `<span class="boost-pill ${extraClass}" role="timer" data-boost-mult="${mult}" aria-label="${boostSpokenLabel(mult, left)}">
+    <span class="boost-pill-icon" aria-hidden="true">${ICONS.bolt}</span><span class="boost-pill-label">${mult}× XP</span>
+    <span class="tabular" data-boost-countdown aria-hidden="true">${formatTime(left)}</span></span>`;
+}
+
+// Spoken form of the countdown. role="timer" is aria-live="off", so refreshing the label each
+// tick is announced only when assistive tech reads the pill, never as a stream of updates.
+function boostSpokenLabel(mult, left) {
+  const minutes = Math.floor(left / 60), seconds = left % 60;
+  const unit = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const parts = [minutes ? unit(minutes, "minute") : "", seconds || !minutes ? unit(seconds, "second") : ""].filter(Boolean);
+  return `${mult}x XP boost active, ${parts.join(" ")} remaining`;
+}
+
+function stopBoostTicker() {
+  clearInterval(boostTicker);
+  boostTicker = null;
+}
+
+function syncBoostTicker() {
+  const active = boostRemaining() > 0;
+  document.body?.classList?.toggle("xp-boosted", active);
+  if (!active) return stopBoostTicker();
+  if (!boostTicker) boostTicker = setInterval(tickBoost, 1000);
+}
+
+function tickBoost() {
+  const left = boostRemaining();
+  document.querySelectorAll("[data-boost-countdown]").forEach((el) => { el.textContent = formatTime(left); });
+  document.querySelectorAll("[data-boost-mult]").forEach((el) => {
+    el.setAttribute?.("aria-label", boostSpokenLabel(Number(el.dataset?.boostMult) || 2, left));
+  });
+  if (left > 0) return;
+  stopBoostTicker();
+  document.body?.classList?.remove("xp-boosted");
+  if (!state.data || state.view === "courses" || (state.sbClient && !state.sbUser)) return;
+  toast("Your 2× XP Boost has ended. Nice sprint!");
+  renderTopbar();
+  if (state.view === "map") renderMap();
 }
 
 async function toggleSound() {
@@ -1805,24 +2377,112 @@ function refreshAfterLookChange() {
   if (state.view === "map" && state.data) renderMap();
 }
 
-// Kubo Rewards Workshop: look customization only
-function openRewardsModal(trigger) {
-  const xp = currentXp();
-  const n = nextUnlock();
-  const level = state.data?.gamification.level || "Rank 1";
-  const lockNote = (r) => `Lv.${numberFormat.format(r.level)}, ${numberFormat.format(r.threshold)} XP`;
+// Wallet actions go through api(): FastAPI in Local Studio, the synced course wallet in the cloud.
+async function walletAction(path, body = {}) {
+  const res = await api(path, body);
+  if (!cloudCourse() && res?.gamification && state.data) {
+    state.data = { ...state.data, gamification: { ...state.data.gamification, ...res.gamification } };
+  }
+  syncProgressToSupabase();
+  refreshAfterLookChange();
+  syncBoostTicker();
+  return res;
+}
 
+async function activateBoost() {
+  await walletAction("/api/booster/activate");
+  playSound("combo");
+  toast(`2× XP Boost is on for ${BOOST_MINUTES} minutes. Every win counts double!`);
+  unlockAchievement("booster_pro");
+}
+
+async function buyShopItem(itemId) {
+  const item = SHOP_ITEMS[itemId];
+  await walletAction("/api/shop/buy", { item_id: itemId });
+  playSound("correct");
+  toast(shopToast(itemId));
+}
+
+// Consumables stack in stock; cosmetics unlock for good.
+function shopToast(itemId) {
+  const item = SHOP_ITEMS[itemId];
+  if (itemId === "streak_freeze") return `Added Streak Freeze (-${item.cost} Gems)`;
+  if (itemId === "xp_boost_15m") return `Added 2x XP Boost (-${item.cost} Gems)`;
+  return `Unlocked ${item.label} (-${item.cost} Gems)`;
+}
+
+async function setDailyGoal(goal) {
+  const res = await walletAction("/api/daily-goal", { daily_goal: goal });
+  playSound("tap");
+  if (res?.daily_goal_reached) toast("Daily goal reached! +25 Gems and a free 2× XP Boost.");
+}
+
+function gemsHtml(extraClass = "") {
+  const gems = Number(state.data?.gamification?.gems) || 0;
+  return `<span class="gem-count ${extraClass}"><span class="gem-icon" aria-hidden="true">${ICONS.gem}</span><span class="tabular">${numberFormat.format(gems)}</span><span class="sr-only"> Gems</span></span>`;
+}
+
+function shopButtonHtml(itemId, attrs = "") {
+  const item = SHOP_ITEMS[itemId];
+  const afford = (Number(state.data?.gamification?.gems) || 0) >= item.cost;
+  return `<button type="button" class="gem-buy" data-buy="${itemId}" ${afford ? "" : 'aria-disabled="true"'} ${attrs}>
+    ${ICONS.gem}<span class="tabular">${item.cost}</span><span class="sr-only"> Gems to unlock ${esc(item.label)}</span></button>`;
+}
+
+function bindShopButtons(root, after) {
+  root.querySelectorAll("[data-buy]").forEach((button) => {
+    button.onclick = (event) => {
+      event.stopPropagation();
+      const item = SHOP_ITEMS[button.dataset.buy];
+      if (!item) return;
+      if ((Number(state.data?.gamification?.gems) || 0) < item.cost) {
+        toast(`You need ${item.cost} Gems for ${item.label}. Earn 5 Gems per new win.`);
+        return;
+      }
+      guarded(button, async () => { await buyShopItem(button.dataset.buy); after?.(); });
+    };
+  });
+}
+
+function goalPickerHtml(idPrefix = "goal") {
+  const goal = Number(state.data?.gamification?.daily_goal) || 50;
+  return `<div class="goal-picker" role="group" aria-label="Daily XP goal">
+    ${DAILY_GOALS.map((x) => `<button type="button" class="goal-chip" id="${idPrefix}-${x}" data-goal="${x}" aria-pressed="${goal === x}"><span class="tabular">${x}</span> XP</button>`).join("")}
+  </div>`;
+}
+
+function bindGoalPicker(root, after) {
+  root.querySelectorAll("[data-goal]").forEach((button) => {
+    button.onclick = () => {
+      const goal = Number(button.dataset.goal);
+      if (goal === Number(state.data?.gamification?.daily_goal)) return;
+      guarded(button, async () => { await setDailyGoal(goal); after?.(); });
+    };
+  });
+}
+
+function lookTileHtml({ attr, id, name, unlocked, pressed, lockNote, level, buyId, art }) {
+  const buyable = !unlocked && buyId && Object.hasOwn(SHOP_ITEMS, buyId);
+  return `<div class="look-cell">
+    <button type="button" class="look-tile ${unlocked ? "" : "locked"}" ${attr}="${esc(id)}" aria-pressed="${pressed}" ${unlocked ? "" : "disabled"}
+        aria-label="${esc(name)}${unlocked ? "" : `, unlocks at ${lockNote}`}">
+      ${art}
+      <span class="look-tile-name">${esc(name)}</span>
+      <span class="look-tile-lvl">${unlocked ? `Lv.${level}` : `${ICONS.lock} ${lockNote}`}</span>
+    </button>
+    ${buyable ? shopButtonHtml(buyId) : ""}
+  </div>`;
+}
+
+function wardrobePanelHtml() {
+  const lockNote = (r) => (r ? `Lv.${numberFormat.format(r.level)}, ${numberFormat.format(r.threshold)} XP` : "Lv.1");
   const shapes = MASCOT_SHAPES.map((sh) => {
-    const unlocked = isShapeUnlocked(sh.id);
     const reward = shapeUnlockReward(sh.id);
-    return `<button type="button" class="look-tile ${unlocked ? "" : "locked"}" data-shape="${sh.id}" aria-pressed="${equippedShape() === sh.id}" ${unlocked ? "" : "disabled"}
-        aria-label="${sh.name}${unlocked ? "" : `, unlocks at ${lockNote(reward)}`}">
-      ${mascotHtml("idle", 36, null, false, "", "none", sh.id)}
-      <span class="look-tile-name">${sh.name}</span>
-      <span class="look-tile-lvl">${unlocked ? `Lv.${reward.level}` : `${ICONS.lock} ${lockNote(reward)}`}</span>
-    </button>`;
+    return lookTileHtml({
+      attr: "data-shape", id: sh.id, name: sh.name, unlocked: isShapeUnlocked(sh.id), pressed: equippedShape() === sh.id,
+      lockNote: lockNote(reward), level: reward.level, art: mascotHtml("idle", 36, null, false, "", "none", sh.id, "none"),
+    });
   }).join("");
-
   const swatches = MASCOT_PALETTES.map((p) => {
     const unlocked = isColorUnlocked(p.id);
     const active = state.mascotColor.toLowerCase() === p.body.toLowerCase();
@@ -1830,25 +2490,79 @@ function openRewardsModal(trigger) {
         aria-label="${p.name}${unlocked ? "" : `, unlocks at Level ${colorUnlockLevel(p.id)}`}" title="${p.name}"
         style="background:${p.body}; box-shadow:0 3px 0 ${p.shade};">${unlocked ? "" : ICONS.lock}</button>`;
   }).join("");
-
-  const accTiles = levelRewards().map((r) => {
-    const unlocked = xp >= r.threshold;
-    return `<button type="button" class="look-tile ${unlocked ? "" : "locked"}" data-acc="${esc(r.accessory)}" aria-pressed="${equippedAccessory() === r.accessory}" ${unlocked ? "" : "disabled"}
-        aria-label="${esc(ACCESSORY_NAMES[r.accessory])}${unlocked ? "" : `, unlocks at ${lockNote(r)}`}">
-      ${mascotHtml("idle", 36, null, false, "", r.accessory)}
-      <span class="look-tile-name">${esc(ACCESSORY_NAMES[r.accessory])}</span>
-      <span class="look-tile-lvl">${unlocked ? `Lv.${r.level}` : `${ICONS.lock} ${lockNote(r)}`}</span>
-    </button>`;
+  const accessories = accessoryCatalog().map((r) => lookTileHtml({
+    attr: "data-acc", id: r.accessory, name: ACCESSORY_NAMES[r.accessory], unlocked: isAccessoryUnlocked(r.accessory),
+    pressed: equippedAccessory() === r.accessory, lockNote: lockNote(r), level: r.level, buyId: r.accessory,
+    art: mascotHtml("idle", 36, null, false, "", r.accessory, null, "none"),
+  })).join("");
+  const effects = MASCOT_EFFECTS.map((fx) => {
+    const reward = effectUnlockReward(fx.id);
+    return lookTileHtml({
+      attr: "data-effect", id: fx.id, name: fx.name, unlocked: isEffectUnlocked(fx.id), pressed: equippedEffect() === fx.id,
+      lockNote: lockNote(reward), level: reward?.level || 1, buyId: `effect_${fx.id}`,
+      art: mascotHtml("idle", 36, null, false, "", "none", null, fx.id),
+    });
   }).join("");
+  return `<section class="modal-section"><h3 class="modal-label">Shape</h3><div class="look-grid shapes">${shapes}</div></section>
+    <section class="modal-section"><h3 class="modal-label">Color</h3><div class="color-swatches">${swatches}</div></section>
+    <section class="modal-section"><h3 class="modal-label">Accessories</h3><div class="look-grid">${accessories}</div></section>
+    <section class="modal-section"><h3 class="modal-label">Auras</h3><div class="look-grid">${effects}</div></section>`;
+}
 
-  const ranks = levelRewards().map((r) => `
+function boostsPanelHtml() {
+  const g = state.data?.gamification || {};
+  const tokens = Number(g.xp_boost_tokens) || 0;
+  const freezes = Number(g.streak_freezes) || 0;
+  const left = boostRemaining(g);
+  const boostCopy = left
+    ? `<p class="shop-copy">Your boost is running. Every new win earns ${boostMultiplier(g)}× XP.</p>${boostPillHtml("large")}`
+    : `<p class="shop-copy">Start a ${BOOST_MINUTES}-minute sprint where every new win earns double XP.</p>
+       <button type="button" id="shop-activate-boost" class="btn-tactile go pill" ${tokens ? "" : 'aria-disabled="true"'}>${ICONS.bolt} Activate 2× Boost <span class="tabular">(${tokens})</span></button>`;
+  return `<div class="shop-grid">
+    <article class="shop-card boost">
+      <div class="shop-card-head"><span class="shop-card-icon boost" aria-hidden="true">${ICONS.bolt}</span>
+        <div><h3>2× XP Boost</h3><p class="shop-meta tabular">${numberFormat.format(tokens)} / ${MAX_BOOST_TOKENS} ready</p></div></div>
+      ${boostCopy}
+      <div class="shop-row"><span>Extra booster</span>${shopButtonHtml("xp_boost_15m")}</div>
+    </article>
+    <article class="shop-card ice">
+      <div class="shop-card-head"><span class="shop-card-icon ice" aria-hidden="true">${ICONS.snow}</span>
+        <div><h3>Streak Freeze</h3><p class="shop-meta tabular">${numberFormat.format(freezes)} / ${MAX_STREAK_FREEZES} in stock</p></div></div>
+      <p class="shop-copy">Automatically protects your streak if you miss a day.</p>
+      <div class="shop-row"><span>Get one more</span>${shopButtonHtml("streak_freeze")}</div>
+    </article>
+    <article class="shop-card goal">
+      <div class="shop-card-head"><span class="shop-card-icon goal" aria-hidden="true">${ICONS.target}</span>
+        <div><h3>Daily goal</h3><p class="shop-meta tabular">Today: ${numberFormat.format(Number(g.daily_xp) || 0)} / ${numberFormat.format(Number(g.daily_goal) || 50)} XP</p></div></div>
+      <p class="shop-copy">Hit it for +25 Gems and a free 2× XP Boost.</p>
+      ${goalPickerHtml("shop-goal")}
+    </article>
+  </div>`;
+}
+
+function ranksPanelHtml() {
+  const xp = currentXp();
+  return `<ol class="rank-list">${levelRewards().map((r) => `
     <li class="rank-row ${xp >= r.threshold ? "unlocked" : ""}">
       <span class="rank-row-lvl">Lv.${r.level}</span>
-      <span class="rank-row-label">${esc(r.label)}</span>
+      <span class="rank-row-label"><strong>${esc(RANK_NAMES[r.level - 1] || "")}</strong><span>${esc(r.label)}</span></span>
       <span class="rank-row-xp tabular">${xp >= r.threshold ? ICONS.check : `${numberFormat.format(r.threshold)} XP`}</span>
-    </li>`).join("");
+    </li>`).join("")}</ol>`;
+}
 
-  const dialog = showDialog("Kubo Rewards", `
+const STUDIO_TABS = [
+  { id: "wardrobe", label: "Wardrobe" },
+  { id: "boosts", label: "Boosts & Ice" },
+  { id: "ranks", label: "Ranks (1–20)" },
+];
+
+// Kubo Studio & Shop: wardrobe, boosters and streak freezes, and the 20-rank ladder.
+function openRewardsModal(trigger, initialTab = "wardrobe") {
+  const xp = currentXp();
+  const n = nextUnlock();
+  const level = state.data?.gamification.level || rankName(1);
+  let tab = STUDIO_TABS.some((t) => t.id === initialTab) ? initialTab : "wardrobe";
+  const dialog = showDialog("Kubo Studio & Shop", `
     <div class="rewards-hero">
       <div id="rewards-preview" class="rewards-preview">${mascotHtml("happy", 84)}</div>
       <div class="rewards-hero-copy">
@@ -1856,24 +2570,359 @@ function openRewardsModal(trigger) {
         <div class="rewards-xp tabular">${numberFormat.format(xp)} XP</div>
         <p class="rewards-next">${n ? `Next: ${esc(n.label)} at ${numberFormat.format(n.threshold)} XP` : "Every reward is unlocked."}</p>
       </div>
+      <div class="rewards-wallet" id="studio-gems">${gemsHtml("large")}</div>
     </div>
-    <section class="modal-section"><h3 class="modal-label">Shape</h3><div class="look-grid shapes">${shapes}</div></section>
-    <section class="modal-section"><h3 class="modal-label">Color</h3><div class="color-swatches">${swatches}</div></section>
-    <section class="modal-section"><h3 class="modal-label">Accessories</h3><div class="look-grid">${accTiles}</div></section>
-    <section class="modal-section"><h3 class="modal-label">Rank rewards</h3><ol class="rank-list">${ranks}</ol></section>`, trigger, "wide");
+    <div class="settings-tabs studio-tabs" role="tablist" aria-label="Kubo Studio sections">
+      ${STUDIO_TABS.map((t) => `<button type="button" role="tab" id="ktab-${t.id}" class="settings-tab" aria-selected="${t.id === tab}" aria-controls="kpanel" tabindex="${t.id === tab ? 0 : -1}">${t.label}</button>`).join("")}
+    </div>
+    <section id="kpanel" class="studio-panel" role="tabpanel" aria-labelledby="ktab-${tab}"></section>`, trigger, "wide studio-dialog");
+  const panel = dialog.querySelector("#kpanel");
 
-  const patch = () => {
+  const paint = () => {
+    panel.setAttribute("aria-labelledby", `ktab-${tab}`);
+    panel.innerHTML = tab === "wardrobe" ? wardrobePanelHtml() : tab === "boosts" ? boostsPanelHtml() : ranksPanelHtml();
+    dialog.querySelector("#studio-gems").innerHTML = gemsHtml("large");
+    bindPanel();
+  };
+  const patchLook = () => {
     dialog.querySelector("#rewards-preview").innerHTML = mascotHtml("happy", 84);
-    dialog.querySelectorAll("[data-shape]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.shape === equippedShape())));
-    dialog.querySelectorAll("[data-acc]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.acc === equippedAccessory())));
-    dialog.querySelectorAll("[data-color]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.color === state.mascotColor)));
+    panel.querySelectorAll("[data-shape]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.shape === equippedShape())));
+    panel.querySelectorAll("[data-acc]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.acc === equippedAccessory())));
+    panel.querySelectorAll("[data-color]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.color === state.mascotColor)));
+    panel.querySelectorAll("[data-effect]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.effect === equippedEffect())));
     refreshAfterLookChange();
     unlockAchievement("style_icon");
     syncProgressToSupabase();
   };
-  dialog.querySelectorAll("[data-shape]").forEach((b) => { b.onclick = () => { playSound("tap"); applyUserShape(b.dataset.shape); patch(); }; });
-  dialog.querySelectorAll("[data-acc]").forEach((b) => { b.onclick = () => { playSound("tap"); applyUserAccessory(b.dataset.acc); patch(); }; });
-  dialog.querySelectorAll("[data-color]").forEach((b) => { b.onclick = () => { playSound("tap"); applyUserMascotColor(b.dataset.color); patch(); }; });
+  const bindPanel = () => {
+    panel.querySelectorAll("[data-shape]").forEach((b) => { b.onclick = () => { playSound("tap"); applyUserShape(b.dataset.shape); patchLook(); }; });
+    panel.querySelectorAll("[data-acc]").forEach((b) => { b.onclick = () => { playSound("tap"); applyUserAccessory(b.dataset.acc); patchLook(); }; });
+    panel.querySelectorAll("[data-color]").forEach((b) => { b.onclick = () => { playSound("tap"); applyUserMascotColor(b.dataset.color); patchLook(); }; });
+    panel.querySelectorAll("[data-effect]").forEach((b) => { b.onclick = () => { playSound("tap"); applyUserEffect(b.dataset.effect); patchLook(); }; });
+    bindShopButtons(panel, paint);
+    bindGoalPicker(panel, paint);
+    const activate = panel.querySelector("#shop-activate-boost");
+    if (activate) activate.onclick = () => {
+      if (!(Number(state.data?.gamification?.xp_boost_tokens) > 0)) return toast("No boosters left. Hit your daily goal or buy one for 35 Gems.");
+      guarded(activate, async () => { await activateBoost(); paint(); });
+    };
+  };
+  const tabs = [...dialog.querySelectorAll(".studio-tabs .settings-tab")];
+  const select = (id, focus = false) => {
+    tab = id;
+    tabs.forEach((b) => {
+      const on = b.id === `ktab-${id}`;
+      b.setAttribute("aria-selected", String(on));
+      b.tabIndex = on ? 0 : -1;
+      if (on && focus) b.focus();
+    });
+    paint();
+  };
+  tabs.forEach((b, i) => {
+    b.onclick = () => select(b.id.slice(5));
+    b.onkeydown = (event) => {
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+      if (!step) return;
+      event.preventDefault();
+      select(tabs[(i + step + tabs.length) % tabs.length].id.slice(5), true);
+    };
+  });
+  paint();
+  return dialog;
+}
+
+// Streak & Ice: flame or frost hero, this week's strip, and the freeze stock.
+function openStreakModal(trigger) {
+  const dialog = showDialog("Streak", `<div id="streak-body"></div>`, trigger, "streak-dialog");
+  const body = dialog.querySelector("#streak-body");
+  const paint = () => {
+    const g = state.data.gamification;
+    const days = Number(g.streak_days) || 0;
+    const iced = Boolean(g.streak_on_ice);
+    const freezes = Number(g.streak_freezes) || 0;
+    const week = streakWeek(g);
+    const glyph = { done: ICONS.flame, iced: ICONS.snow, today: "", upcoming: "", missed: "" };
+    const statusText = { done: "streak day", iced: "protected by a Streak Freeze", today: "today, not yet practiced", upcoming: "upcoming", missed: "missed" };
+    body.innerHTML = `
+      <div class="streak-hero ${iced ? "iced" : ""}">
+        <span class="streak-hero-icon" aria-hidden="true">${iced ? ICONS.snow : ICONS.flame}</span>
+        <div><div class="streak-hero-days tabular">${numberFormat.format(days)} day${days === 1 ? "" : "s"}</div>
+          <p class="streak-hero-copy">${iced ? "Your streak is on ice. A Streak Freeze covered yesterday, so keep going today." : days ? "Practice every day to keep the flame alive." : "Finish a lesson step today to light your first flame."}</p></div>
+      </div>
+      <ol class="streak-week" aria-label="This week">
+        ${week.map((d) => `<li class="streak-day ${d.status} ${d.isToday ? "is-today" : ""}">
+          <span class="streak-day-label" aria-hidden="true">${d.label}</span>
+          <span class="streak-day-dot" aria-hidden="true">${glyph[d.status]}</span>
+          <span class="sr-only">${new Date(d.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "long" })}, ${statusText[d.status]}</span>
+        </li>`).join("")}
+      </ol>
+      <div class="ice-stock">
+        <span class="shop-card-icon ice" aria-hidden="true">${ICONS.snow}</span>
+        <div class="ice-stock-copy"><strong class="tabular">${freezes} / ${MAX_STREAK_FREEZES} Streak Freezes</strong>
+          <span>Automatically protects your streak if you miss a day.</span></div>
+      </div>
+      <div class="streak-actions">
+        ${freezes >= MAX_STREAK_FREEZES
+          ? '<p class="shop-copy">Your freeze stock is full.</p>'
+          : `<button type="button" id="streak-buy-freeze" class="btn-tactile secondary pill">${ICONS.snow} Get Freeze (40 Gems)</button>`}
+        ${gemsHtml()}
+      </div>
+      <p class="shop-copy">Earn a free freeze at 3, 7, 14 and 30-day streaks.</p>`;
+    const buy = body.querySelector("#streak-buy-freeze");
+    if (buy) buy.onclick = () => {
+      if ((Number(state.data.gamification.gems) || 0) < SHOP_ITEMS.streak_freeze.cost) return toast("You need 40 Gems for a Streak Freeze. Earn 5 Gems per new win.");
+      guarded(buy, async () => { await buyShopItem("streak_freeze"); paint(); });
+    };
+  };
+  paint();
+  return dialog;
+}
+
+// Share links: clean URLs from this page, without any auth or other parameters.
+function shareLinkUrl({ invite = "", friend = "" } = {}) {
+  const params = new URLSearchParams();
+  if (invite) params.set("invite", invite);
+  if (friend) params.set("friend", friend);
+  const query = params.toString();
+  return window.location.origin + window.location.pathname + (query ? "?" + query : "");
+}
+
+function myUsername() {
+  return state.sbUser && /^[a-z0-9_]{2,24}$/.test(state.sbProfile?.username || "") ? state.sbProfile.username : "";
+}
+
+function myCourseCode() {
+  const code = String(state.course?.invite_code || "").toUpperCase();
+  return INVITE_CODE_RE.test(code) ? code : "";
+}
+
+async function copyText(text, button) {
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    copied = true;
+  } catch (_) {}
+  if (!copied) {
+    toast(`Copy this link: ${text}`);
+    return false;
+  }
+  if (button?.isConnected) {
+    const label = button.querySelector(".copy-label");
+    const original = button.dataset.label || label?.textContent || "";
+    button.dataset.label = original;
+    if (label) label.textContent = "Copied!";
+    button.classList.add("copied");
+    clearTimeout(button.copyTimer);
+    button.copyTimer = setTimeout(() => {
+      if (label) label.textContent = original;
+      button.classList.remove("copied");
+    }, 1800);
+  }
+  const live = document.getElementById("copy-live");
+  if (live) live.textContent = "Link copied to clipboard.";
+  playSound("tap");
+  return true;
+}
+
+function shareBarHtml({ course = true, invite: inviteFor = null } = {}) {
+  const friend = myUsername();
+  const override = String(inviteFor || "").toUpperCase();
+  const invite = inviteFor !== null ? (INVITE_CODE_RE.test(override) ? override : "") : course ? myCourseCode() : "";
+  if (!friend && !invite) {
+    return `<p class="share-empty">${state.sbUser ? "Invite links appear here once your course shares its code." : "Sign in to share invite links with friends."}</p>`;
+  }
+  const button = (kind, label, url, primary = false) => `<button type="button" class="share-btn ${primary ? "primary" : ""}" data-copy-link="${kind}" data-url="${esc(url)}">${ICONS.link}<span class="copy-label">${label}</span></button>`;
+  return `<div class="share-bar" role="group" aria-label="Share invite links">
+    ${invite && friend ? button("combo", "Copy Course + Friend Link", shareLinkUrl({ invite, friend }), true) : ""}
+    ${friend ? button("friend", "Copy Friend Link", shareLinkUrl({ friend }), !invite) : ""}
+    ${invite ? button("course", "Copy Course Link", shareLinkUrl({ invite })) : ""}
+    <span id="copy-live" class="sr-only" aria-live="polite"></span>
+  </div>`;
+}
+
+function bindShareBar(root) {
+  root.querySelectorAll("[data-copy-link]").forEach((button) => {
+    button.onclick = () => copyText(button.dataset.url, button);
+  });
+}
+
+function friendLinkError(err, username) {
+  const msg = String(err?.message || "");
+  if (err?.code === "P0002" || /not found/i.test(msg)) return `We couldn't find @${username}.`;
+  if (/yourself/i.test(msg)) return "That's your own friend link.";
+  if (err?.code === "22023" || /invalid username/i.test(msg)) return "That friend link isn't valid.";
+  return "That friend link couldn't be accepted. Try again in a moment.";
+}
+
+// profiles SELECT is limited to yourself, friends and course mates, so a new teammate is found
+// through the find_user_by_username RPC. Older backends without it fall back to a profiles query.
+async function findUserByUsername(username) {
+  try {
+    return (await rpc("find_user_by_username", { p_username: username })) || null;
+  } catch (err) {
+    const missing = err?.code === "PGRST202" || err?.code === "42883" || /could not find the function/i.test(String(err?.message || ""));
+    if (!missing) throw err;
+  }
+  const { data, error } = await state.sbClient.from("profiles").select("id, username, display_name").eq("username", username).maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+// One code path for the Leaderboard form, Settings, and friend links: the RPC makes the friendship mutual.
+async function addFriendByUsername(raw) {
+  const username = String(raw || "").trim().toLowerCase().replace(/^@/, "");
+  if (!/^[a-z0-9_]{2,24}$/.test(username)) return { ok: false, message: "Enter a valid username." };
+  if (!state.sbClient || !state.sbUser) return { ok: false, message: "Sign in to add friends." };
+  if (username === state.sbProfile?.username) return { ok: false, message: "That's your own friend link." };
+  let res;
+  try {
+    if (!(await findUserByUsername(username))) return { ok: false, message: `We couldn't find @${username}.` };
+    res = await rpc("accept_friend_invite", { p_username: username });
+  } catch (err) {
+    return { ok: false, message: friendLinkError(err, username) };
+  }
+  await loadCloudProfileAndFriends();
+  state.leaderboard.entries = null;
+  unlockAchievement("social_butterfly");
+  return {
+    ok: true, already: Boolean(res?.already_friends),
+    message: res?.already_friends ? `You and @${username} are already friends.` : `You and @${username} are now friends!`,
+  };
+}
+
+// Leaderboard: weekly or all-time XP, across the course or just friends.
+function leaderboardMe() {
+  const g = state.data.gamification;
+  const next = findNextLesson();
+  return {
+    // Local Studio has no handle: the row reads "You" once, with "Local Studio" as its meta line.
+    id: state.sbUser?.id || "me", username: myUsername(),
+    display_name: state.sbProfile?.display_name || "You",
+    mascot_color: state.mascotColor, mascot_accessory: equippedAccessory(), mascot_shape: equippedShape(), mascot_effect: equippedEffect(),
+    xp: g.xp || 0, weekly_xp: Number(g.weekly_xp) || 0, streak_days: Number(g.streak_days) || 0,
+    streak_on_ice: Boolean(g.streak_on_ice), current_step_id: next?.lesson.step_ids.find((id) => !isStepDone(id)) || "", is_me: true,
+  };
+}
+
+function demoLeaderboard() {
+  const units = state.data.districts;
+  return DEMO_SQUAD.map((profile, index) => ({
+    ...profile, current_step_id: units[index % units.length]?.steps[0]?.id || "", is_friend: true, demo: true,
+  }));
+}
+
+// The RPC ranks on the server, so it needs the timeframe: "weekly" or "all_time".
+async function fetchLeaderboard(scope, timeframe = state.leaderboard?.timeframe) {
+  if (cloudCourse() && state.sbClient && state.sbUser) {
+    const p_timeframe = timeframe === "all" || timeframe === "all_time" ? "all_time" : "weekly";
+    const rows = await rpc("get_course_leaderboard", { p_course_id: state.course.id, p_scope: scope, p_timeframe });
+    const mine = leaderboardMe();
+    // The local wallet is newer than the last profile sync, so the learner's own row uses it.
+    return (Array.isArray(rows) ? rows : []).map((row) => (row.is_me ? { ...row, ...mine, display_name: row.display_name || mine.display_name, username: row.username || mine.username } : row));
+  }
+  const friends = state.sbUser && state.friends.length ? state.friends.map((f) => ({ ...f, is_friend: true })) : demoLeaderboard();
+  return [...friends, leaderboardMe()];
+}
+
+function sortLeaderboard(entries, timeframe) {
+  const key = timeframe === "week" ? "weekly_xp" : "xp";
+  return [...entries].sort((a, b) => (Number(b[key]) || 0) - (Number(a[key]) || 0)
+    || (Number(b.xp) || 0) - (Number(a.xp) || 0) || String(a.username).localeCompare(String(b.username)));
+}
+
+function leaderboardRowHtml(entry, rank, timeframe) {
+  const medal = rank <= 3 ? ["gold", "silver", "bronze"][rank - 1] : "";
+  const xp = timeframe === "week" ? entry.weekly_xp : entry.xp;
+  const days = Number(entry.streak_days) || 0;
+  const name = entry.display_name || entry.username || (entry.is_me ? "You" : "Learner");
+  const handle = entry.username ? "@" + entry.username : entry.is_me ? "Local Studio" : "";
+  return `<li class="lb-row ${entry.is_me ? "is-me" : ""}">
+    <span class="lb-rank ${medal}"><span class="sr-only">Rank ${rank}</span><span class="${rank <= 3 ? "lb-medal" : "tabular"}" aria-hidden="true">${rank}</span></span>
+    ${mascotHtml("idle", 32, entry.mascot_color || "#4F46E5", false, "", entry.mascot_accessory || "none", entry.mascot_shape || "cube", entry.mascot_effect || "none")}
+    <span class="lb-info">
+      <span class="lb-name">${esc(name)}${entry.is_me && name !== "You" ? ' <span class="you-pill">You</span>' : ""}</span>
+      <span class="lb-meta">${[handle, stepNameById(entry.current_step_id)].filter(Boolean).map(esc).join(", ")}</span>
+    </span>
+    <span class="lb-streak ${entry.streak_on_ice ? "iced" : ""}" title="${days}-day streak${entry.streak_on_ice ? ", on ice" : ""}">
+      <span aria-hidden="true">${entry.streak_on_ice ? ICONS.snow : ICONS.flame}</span><span class="tabular">${days}d</span><span class="sr-only"> streak${entry.streak_on_ice ? " on ice" : ""}</span></span>
+    <span class="lb-xp tabular">${numberFormat.format(Number(xp) || 0)}<span class="lb-xp-unit"> XP</span></span>
+  </li>`;
+}
+
+function myLeaderboardRank(entries = null, timeframe = "week") {
+  const list = sortLeaderboard(entries || [...activeSquadList(), leaderboardMe()], timeframe);
+  return Math.max(1, list.findIndex((entry) => entry.is_me || entry.isMe) + 1);
+}
+
+function openLeaderboardModal(trigger) {
+  const lb = state.leaderboard;
+  const dialog = showDialog("Leaderboard", `
+    <div class="lb-controls">
+      <div class="segmented" role="group" aria-label="Timeframe">
+        <button type="button" data-lb-time="week" aria-pressed="${lb.timeframe === "week"}">This Week</button>
+        <button type="button" data-lb-time="all" aria-pressed="${lb.timeframe === "all"}">All Time</button>
+      </div>
+      <div class="segmented" role="group" aria-label="Scope">
+        <button type="button" data-lb-scope="course" aria-pressed="${lb.scope === "course"}">Course</button>
+        <button type="button" data-lb-scope="friends" aria-pressed="${lb.scope === "friends"}">Friends</button>
+      </div>
+    </div>
+    <div id="lb-body" class="lb-body" aria-live="polite"></div>
+    <section class="lb-share">
+      <h3 class="modal-label">Invite your squad</h3>
+      ${shareBarHtml()}
+      ${state.sbUser ? `<form id="lb-add-friend" class="form-row add-friend">
+        <label class="sr-only" for="lb-add-input">Friend username</label>
+        <input id="lb-add-input" class="text-field" placeholder="Add @username" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button type="submit" class="btn-tactile go">Add</button>
+      </form>
+      <div class="modal-msg" role="status"></div>` : ""}
+    </section>`, trigger, "wide leaderboard-dialog");
+  const body = dialog.querySelector("#lb-body");
+  let request = 0;
+  const paint = async () => {
+    const ticket = ++request;
+    dialog.querySelectorAll("[data-lb-time]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lbTime === lb.timeframe)));
+    dialog.querySelectorAll("[data-lb-scope]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lbScope === lb.scope)));
+    body.setAttribute("aria-busy", "true");
+    let entries;
+    try {
+      entries = await fetchLeaderboard(lb.scope, lb.timeframe);
+    } catch (err) {
+      if (ticket !== request) return;
+      body.removeAttribute("aria-busy");
+      body.innerHTML = `<p class="lb-empty">The leaderboard couldn't load. ${esc(err?.message || "Try again in a moment.")}</p>`;
+      return;
+    }
+    if (ticket !== request || !dialog.isConnected) return;
+    const scoped = lb.scope === "friends" ? entries.filter((e) => e.is_me || e.is_friend) : entries;
+    lb.entries = scoped;
+    const sorted = sortLeaderboard(scoped, lb.timeframe);
+    body.removeAttribute("aria-busy");
+    const demo = scoped.some((e) => e.demo);
+    body.innerHTML = `${demo ? '<p class="lb-note">Demo teammates shown. Add friends to see real rivals here.</p>' : ""}
+      ${sorted.length > 1 || demo ? "" : `<p class="lb-empty">${lb.scope === "friends" ? "No friends yet. Share your friend link to start a rivalry." : "You're the first one here. Share the course link to invite classmates."}</p>`}
+      <ol class="lb-list">${sorted.map((entry, i) => leaderboardRowHtml(entry, i + 1, lb.timeframe)).join("")}</ol>`;
+  };
+  dialog.querySelectorAll("[data-lb-time]").forEach((b) => { b.onclick = () => { playSound("tap"); lb.timeframe = b.dataset.lbTime; paint(); }; });
+  dialog.querySelectorAll("[data-lb-scope]").forEach((b) => { b.onclick = () => { playSound("tap"); lb.scope = b.dataset.lbScope; paint(); }; });
+  bindShareBar(dialog);
+  const form = dialog.querySelector("#lb-add-friend");
+  if (form) form.onsubmit = (event) => {
+    event.preventDefault();
+    guarded(form.querySelector("button"), async () => {
+      const res = await addFriendByUsername(form.querySelector("input").value);
+      const say = panelMessage(dialog.querySelector(".lb-share"));
+      say(res.message, !res.ok);
+      if (!res.ok) return;
+      form.querySelector("input").value = "";
+      playSound("correct");
+      if (state.view === "map") renderMap();
+      paint();
+    });
+  };
+  paint();
+  return dialog;
 }
 
 // Settings: Account | Friends | Anki Sync | Preferences
@@ -2011,10 +3060,10 @@ function renderAccountPanel(panel) {
 
 function friendRowHtml(f, removable) {
   return `<div class="squad-row">
-    ${mascotHtml("idle", 26, f.mascot_color, false, "", f.mascot_accessory || "none", f.mascot_shape || "cube")}
+    ${mascotHtml("idle", 26, f.mascot_color, false, "", f.mascot_accessory || "none", f.mascot_shape || "cube", f.mascot_effect || "none")}
     <div class="squad-info">
       <div class="squad-name">${esc(f.display_name)} <span class="squad-handle">@${esc(f.username)}</span></div>
-      <div class="squad-meta">${numberFormat.format(f.xp)} XP, ${esc(f.streak_days)}-day streak</div>
+      <div class="squad-meta">${numberFormat.format(f.xp)} XP, ${esc(f.streak_days)}-day streak${f.streak_on_ice ? ", on ice" : ""}</div>
     </div>
     ${removable ? `<button type="button" class="btn-ghost small" data-remove="${esc(f.id)}" aria-label="Remove ${esc(f.display_name)}">Remove</button>` : ""}
   </div>`;
@@ -2035,6 +3084,10 @@ function renderFriendsPanel(panel) {
     return;
   }
   panel.innerHTML = `
+    <div class="settings-block share-block">
+      <h3 class="modal-label">Share your links</h3>
+      ${shareBarHtml()}
+    </div>
     <form id="add-friend" class="form-row add-friend">
       <label class="sr-only" for="add-friend-input">Teammate username</label>
       <input id="add-friend-input" class="text-field" placeholder="@username" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -2049,22 +3102,15 @@ function renderFriendsPanel(panel) {
   form.onsubmit = (event) => {
     event.preventDefault();
     guarded(form.querySelector("button"), async () => {
-      const uname = form.querySelector("input").value.trim().toLowerCase().replace(/^@/, "");
-      if (!/^[a-z0-9_]{2,24}$/.test(uname)) return say("Enter a valid teammate username.", true);
-      const { data: target, error: findError } = await state.sbClient.from("profiles").select("id, username").eq("username", uname).maybeSingle();
-      if (findError) throw findError;
-      if (!target) return say(`No user @${uname} found.`, true);
-      if (target.id === state.sbUser.id) return say("That's your own account.", true);
-      if (state.friends.some((f) => f.id === target.id)) return say(`@${uname} is already on your squad.`, true);
-      const { error } = await state.sbClient.from("friendships").insert({ user_id: state.sbUser.id, friend_id: target.id });
-      if (error) throw error;
-      await loadCloudProfileAndFriends();
+      const res = await addFriendByUsername(form.querySelector("input").value);
+      if (!res.ok) return say(res.message, true);
       playSound("correct");
       if (state.view === "map") renderMap();
       renderFriendsPanel(panel);
-      panelMessage(panel)(`Added @${uname}.`);
+      panelMessage(panel)(res.message);
     });
   };
+  bindShareBar(panel);
   panel.querySelectorAll("[data-remove]").forEach((button) => {
     button.onclick = () => guarded(button, async () => {
       const me = state.sbUser.id, them = button.dataset.remove;
@@ -2393,10 +3439,21 @@ function achievementProgress(id) {
     case "district_clear": return [0, 1, "unit"];
     case "halfway_hero": return [stepCounts().done, Math.ceil(steps.length / 2), "steps"];
     case "ppo_boss": {
-      const unit = districts.find((district) => district.id === "M4") || districts[4];
+      const unit = districts.find((district) => district.id === "M4");
       return unit ? [unit.steps.filter((step) => isStepDone(step.id)).length, unit.steps.length, "steps"] : null;
     }
     case "full_mastery": return [done, lessons.length, "lessons"];
+    case "streak_3": return [Math.min(3, Number(state.data.gamification.streak_days) || 0), 3, "days"];
+    case "streak_7": return [Math.min(7, Number(state.data.gamification.streak_days) || 0), 7, "days"];
+    case "ice_saver": return [0, 1, "rescue"];
+    case "booster_pro": return [0, 1, "boost"];
+    case "social_butterfly": return [Math.min(1, state.friends.length), 1, "friend"];
+    case "classical_scholar":
+    case "beyond_ppo":
+    case "monopoly_scaler": {
+      const unit = districts.find((district) => district.id === { classical_scholar: "M6", beyond_ppo: "M7", monopoly_scaler: "M8" }[id]);
+      return unit ? [unit.steps.filter((step) => isStepDone(step.id)).length, unit.steps.length, "steps"] : null;
+    }
   }
 }
 
@@ -2567,28 +3624,34 @@ function renderMap({ sheen = false } = {}) {
       </section>`;
   }).join("");
 
-  const me = {
-    id: "me",
-    display_name: state.sbProfile ? `${state.sbProfile.display_name} (You)` : "You",
-    mascot_color: state.mascotColor,
-    mascot_accessory: equippedAccessory(),
-    mascot_shape: equippedShape(),
-    xp: g.xp,
-    current_step_id: next?.lesson.step_ids.find((id) => !isStepDone(id)),
-    isMe: true,
-  };
+  const me = leaderboardMe();
+  const board = sortLeaderboard([...squad, me], "week");
+  const myRank = Math.max(1, board.findIndex((m) => m.is_me) + 1);
+  const podium = board.slice(0, 3);
+  if (!podium.some((m) => m.is_me)) podium.push(me);
   const squadHtml = squad.length
-    ? [...squad, me].sort((a, b) => b.xp - a.xp).map((m) => `
-        <div class="squad-row ${m.isMe ? "is-me" : ""}">
-          ${mascotHtml("idle", 26, m.mascot_color, false, "", m.mascot_accessory || "none", m.mascot_shape || "cube")}
+    ? `<ol class="rail-board">${podium.map((m) => {
+        const rank = board.indexOf(m) + 1;
+        return `<li class="squad-row ${m.is_me ? "is-me" : ""}">
+          <span class="lb-rank small ${rank <= 3 ? ["gold", "silver", "bronze"][rank - 1] : ""}"><span class="sr-only">Rank ${rank}</span><span aria-hidden="true">${rank}</span></span>
+          ${mascotHtml("idle", 26, m.mascot_color, false, "", m.mascot_accessory || "none", m.mascot_shape || "cube", m.mascot_effect || "none")}
           <div class="squad-info">
-            <div class="squad-name">${esc(m.display_name)}</div>
+            <div class="squad-name">${esc(m.is_me ? "You" : m.display_name)}</div>
             <div class="squad-meta">${esc(stepNameById(m.current_step_id))}</div>
           </div>
-          <span class="squad-xp">${numberFormat.format(m.xp)} XP</span>
-        </div>`).join("")
-    : `<p class="squad-empty">Add a teammate to see their progress next to yours.</p>
-       <button id="btn-open-squad" class="btn-tactile secondary full small">${ICONS.users} Add a teammate</button>`;
+          <span class="squad-xp">${numberFormat.format(Number(m.weekly_xp) || 0)} XP</span>
+        </li>`;
+      }).join("")}</ol>`
+    : `<p class="squad-empty">Add a friend to race them on the weekly XP board.</p>
+       <button id="btn-open-squad" class="btn-tactile secondary full small" data-open-squad>${ICONS.trophy} Open leaderboard</button>`;
+  const dailyGoal = Number(g.daily_goal) || 50;
+  const dailyXp = Number(g.daily_xp) || 0;
+  const tokens = Number(g.xp_boost_tokens) || 0;
+  const boostHtml = boostRemaining(g)
+    ? boostPillHtml("wide")
+    : tokens > 0
+      ? `<button type="button" id="btn-boost-ready" class="boost-ready">${ICONS.bolt}<span>2× Boost ready <span class="tabular">(${tokens})</span></span></button>`
+      : "";
 
   const pops = jumpPopoversHtml();
   renderPreserving(root, `
@@ -2596,7 +3659,7 @@ function renderMap({ sheen = false } = {}) {
       <aside class="path-sidebar" aria-label="Course overview">
         <div class="path-quick-actions" aria-label="Squad and achievements">
           <button type="button" class="stat-pill" id="quick-achievements" aria-haspopup="dialog">${ICONS.star} Achievements <span class="tabular">${state.achievements.length} / ${ACHIEVEMENT_DEFS.length}</span></button>
-          <button type="button" class="stat-pill" id="quick-squad" aria-haspopup="dialog">${ICONS.users} Squad</button>
+          <button type="button" class="stat-pill" id="quick-squad" data-open-squad aria-haspopup="dialog">${ICONS.trophy} Leaderboard <span class="tabular">#${myRank}</span></button>
         </div>
         <div class="sidebar-panel">
           <section class="sidebar-section">
@@ -2623,15 +3686,28 @@ function renderMap({ sheen = false } = {}) {
           </section>
 
           <section class="sidebar-section">
-            <div class="rank-stats-row">
-              <div class="rank-stat-box">
-                <span class="rank-stat-icon warn">${ICONS.flame}</span>
-                <div><div class="rank-stat-val">${esc(g.streak_days)}d</div><div class="rank-stat-lbl">Streak</div></div>
-              </div>
+            <div class="rank-stats-row three">
+              <button type="button" class="rank-stat-box stat-btn ${g.streak_on_ice ? "iced" : ""}" id="btn-streak" data-open-streak aria-haspopup="dialog">
+                <span class="rank-stat-icon warn">${g.streak_on_ice ? ICONS.snow : ICONS.flame}</span>
+                <span><span class="rank-stat-val">${esc(Number(g.streak_days) || 0)}d</span><span class="rank-stat-lbl">${g.streak_on_ice ? "On ice" : "Streak"}</span></span>
+              </button>
+              <button type="button" class="rank-stat-box stat-btn" id="btn-gems" aria-haspopup="dialog">
+                <span class="rank-stat-icon gem">${ICONS.gem}</span>
+                <span><span class="rank-stat-val">${numberFormat.format(Number(g.gems) || 0)}</span><span class="rank-stat-lbl">Gems</span></span>
+              </button>
               <div class="rank-stat-box">
                 <span class="rank-stat-icon accent">${ICONS.bolt}</span>
                 <div><div class="rank-stat-val">${numberFormat.format(g.xp)}</div><div class="rank-stat-lbl">Total XP</div></div>
               </div>
+            </div>
+            <div class="daily-goal">
+              <div class="daily-goal-head">
+                <span class="daily-goal-label">Today: <span class="tabular">${numberFormat.format(dailyXp)} / ${numberFormat.format(dailyGoal)} XP</span></span>
+                ${dailyXp >= dailyGoal ? `<span class="daily-goal-done">${ICONS.check} Goal met</span>` : ""}
+              </div>
+              ${progressBarHtml(Math.min(dailyXp, dailyGoal), dailyGoal, "Daily XP goal")}
+              ${goalPickerHtml("side-goal")}
+              ${boostHtml}
             </div>
             <div class="rank-header">
               <span class="rank-name">${esc(g.level)}</span>
@@ -2652,8 +3728,8 @@ function renderMap({ sheen = false } = {}) {
       <aside class="path-right-rail" aria-label="Squad and achievements">
         <div class="squad-card">
           <div class="rail-head">
-            <h2>Squad</h2>
-            <button id="btn-manage-squad" class="rail-link">${state.sbUser ? "Add friend" : "Manage"}</button>
+            <h2>Leaderboard <span class="rail-count tabular">#${myRank}</span></h2>
+            <button id="btn-manage-squad" class="rail-link" data-open-squad aria-haspopup="dialog">View all</button>
           </div>
           <div class="squad-list">${squadHtml}</div>
         </div>
@@ -2686,11 +3762,15 @@ function renderMap({ sheen = false } = {}) {
   document.getElementById("pill-cards").onclick = () => { playSound("tap"); startDrillSession(); };
   document.getElementById("btn-sidebar-start").onclick = () => openLesson(next?.di ?? 0, next?.li ?? 0);
   document.getElementById("btn-rank-reward").onclick = (event) => { playSound("tap"); openRewardsModal(event.currentTarget); };
-  const ms = document.getElementById("btn-manage-squad");
-  ms.onclick = () => { playSound("tap"); openSettingsModal("friends", ms); };
-  const os = document.getElementById("btn-open-squad");
-  if (os) os.onclick = () => { playSound("tap"); openSettingsModal("friends", os); };
-  document.getElementById("quick-squad").onclick = (event) => { playSound("tap"); openSettingsModal("friends", event.currentTarget); };
+  root.querySelectorAll("#btn-squad, [data-open-squad]").forEach((button) => {
+    button.onclick = () => { playSound("tap"); openLeaderboardModal(button); };
+  });
+  bindStreakButtons(root);
+  document.getElementById("btn-gems").onclick = (event) => { playSound("tap"); openRewardsModal(event.currentTarget, "boosts"); };
+  bindGoalPicker(root, () => renderMap());
+  const boostReady = document.getElementById("btn-boost-ready");
+  if (boostReady) boostReady.onclick = () => guarded(boostReady, async () => { await activateBoost(); renderMap(); });
+  syncBoostTicker();
   root.querySelectorAll("#btn-ach-all, #quick-achievements, .ach-list button").forEach((button) => {
     button.onclick = () => openAchievementsModal(button);
   });
@@ -3266,8 +4346,481 @@ function setVizInsight(container, message) {
   if (insight.textContent !== message) insight.textContent = message;
 }
 
+function mountDpIteration(container) {
+  const TERMINAL = { 2: 1.0, 5: -1.0 }; // (0,2) Goal +1.0, (1,2) Trap -1.0
+  const DIRS = [[-1, 0, "↑", "Up"], [0, 1, "→", "Right"], [1, 0, "↓", "Down"], [0, -1, "←", "Left"]];
+  const GAMMA = 0.9;
+  const STEP_R = -0.04;
+  const INIT_PI = [2, 2, 0, 1, 1, 0, 1, 1, 3]; // Non-cyclic initial policy (1,1) walks into Trap
+
+  let mode = "pi"; // "pi" | "vi"
+  let V = Array(9).fill(0);
+  let pi = [...INIT_PI];
+  let changedV = Array(9).fill(false);
+  let changedPi = Array(9).fill(false);
+  let selected = 4; // Start focused on (1, 1) next to Trap
+  let sweeps = 0;
+  let flips = 0;
+  let lastDelta = 0;
+
+  const stepNext = (idx, a) => {
+    const r = Math.floor(idx / 3), c = idx % 3;
+    const nr = Math.max(0, Math.min(2, r + DIRS[a][0]));
+    const nc = Math.max(0, Math.min(2, c + DIRS[a][1]));
+    const nIdx = nr * 3 + nc;
+    const reward = Object.hasOwn(TERMINAL, nIdx) ? TERMINAL[nIdx] : STEP_R;
+    const nextV = Object.hasOwn(TERMINAL, nIdx) ? 0 : V[nIdx];
+    return { nIdx, reward, q: reward + GAMMA * nextV };
+  };
+
+  container.innerHTML = `
+    <div class="viz-stage">
+      <div class="viz-pills-row">
+        <div class="viz-actions viz-seg" role="group" aria-label="Dynamic Programming mode">
+          <button type="button" class="btn-ghost pill" data-dp-mode="pi" aria-pressed="true">Policy Iteration</button>
+          <button type="button" class="btn-ghost pill" data-dp-mode="vi" aria-pressed="false">Value Iteration</button>
+        </div>
+        <span class="viz-pill" data-dp-stats>Sweeps: 0 · Δmax: 0.000</span>
+      </div>
+      <div class="viz-actions">
+        <button type="button" class="btn-tactile secondary" data-dp-eval>Sweep V (1 Eval Step)</button>
+        <button type="button" class="btn-tactile secondary" data-dp-improve>Improve π (Greedy)</button>
+        <button type="button" class="btn-tactile go" data-dp-vi hidden>Optimality Step (max)</button>
+        <button type="button" class="btn-ghost pill" data-dp-reset>Reset</button>
+      </div>
+      <div class="dp-grid" role="grid" aria-label="3 by 3 gridworld"></div>
+      <div class="viz-pill" data-dp-readout style="justify-self:center; max-width:100%; white-space:normal; text-align:center;"></div>
+      <p class="viz-insight" role="status"></p>
+    </div>`;
+
+  const gridEl = container.querySelector(".dp-grid");
+  const statsEl = container.querySelector("[data-dp-stats]");
+  const readoutEl = container.querySelector("[data-dp-readout]");
+  const evalBtn = container.querySelector("[data-dp-eval]");
+  const impBtn = container.querySelector("[data-dp-improve]");
+  const viBtn = container.querySelector("[data-dp-vi]");
+
+  const render = () => {
+    container.querySelectorAll("[data-dp-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.dpMode === mode)));
+    evalBtn.hidden = mode !== "pi";
+    impBtn.hidden = mode !== "pi";
+    viBtn.hidden = mode !== "vi";
+    statsEl.textContent = `Sweeps: ${sweeps}${mode === "pi" ? ` · Flips: ${flips}` : ""} · Δmax: ${lastDelta.toFixed(3)}`;
+
+    gridEl.innerHTML = V.map((v, idx) => {
+      const r = Math.floor(idx / 3), c = idx % 3;
+      const isGoal = idx === 2, isTrap = idx === 5;
+      const cls = ["dp-tile", isGoal ? "is-goal" : isTrap ? "is-trap" : "", idx === selected ? "is-selected" : "", (changedV[idx] || changedPi[idx]) ? "is-changed" : ""].filter(Boolean).join(" ");
+      const arrow = isGoal ? "Goal +1" : isTrap ? "Trap −1" : DIRS[pi[idx]][2];
+      const valText = (isGoal || isTrap) ? "Terminal" : v.toFixed(2);
+      return `<button type="button" class="${cls}" data-dp-tile="${idx}" aria-label="Row ${r} column ${c}">
+        <span class="dp-tile-coord">(${r},${c})</span>
+        <span class="dp-tile-arrow">${arrow}</span>
+        <span class="dp-tile-val">${valText}</span>
+      </button>`;
+    }).join("");
+
+    gridEl.querySelectorAll("[data-dp-tile]").forEach((btn) => {
+      btn.onclick = () => { selected = Number(btn.dataset.dpTile); changedV.fill(false); changedPi.fill(false); render(); };
+    });
+
+    if (Object.hasOwn(TERMINAL, selected)) {
+      readoutEl.textContent = selected === 2 ? "Goal (0,2): entering gives +1.00 and ends the episode." : "Trap (1,2): entering gives −1.00 and ends the episode.";
+    } else {
+      const sr = Math.floor(selected / 3), sc = selected % 3;
+      const opts = DIRS.map((d, a) => `${d[2]} ${stepNext(selected, a).q.toFixed(2)}`).join("  |  ");
+      readoutEl.textContent = `(${sr},${sc}) lookahead r + γV(s'):  ${opts}`;
+    }
+
+    if (sweeps === 0 && flips === 0) {
+      setVizInsight(container, mode === "pi" ? "Notice (1,1) points straight into Trap −1. Click Sweep V (1 Eval Step) to evaluate the arrows, then Improve π to flip them." : "In Value Iteration, each Optimality Step takes max over all 4 actions at once without waiting for full evaluation.");
+    } else if (lastDelta < 1e-4 && !changedPi.some(Boolean) && sweeps > 0) {
+      setVizInsight(container, mode === "vi" ? "Value Iteration converged: both V(s) and the greedy arrows settled." : "Policy evaluation step reached Δmax < 0.001; click Improve π to verify no arrows flip.");
+    } else if (mode === "pi" && changedPi.some(Boolean)) {
+      setVizInsight(container, "Arrows flipped toward higher neighbor values. Run Sweep V (1 Eval Step) again to propagate the improved path.");
+    } else {
+      setVizInsight(container, sweeps === 0 ? "Arrows changed while V is still zero. Run Sweep V (1 Eval Step) to evaluate the updated policy." : `Updated values (Δmax = ${lastDelta.toFixed(3)}). Click any tile to inspect its four action lookaheads.`);
+    }
+  };
+
+  evalBtn.onclick = () => {
+    const nextV = [...V];
+    let dmax = 0;
+    changedV = Array(9).fill(false);
+    changedPi = Array(9).fill(false);
+    for (let i = 0; i < 9; i++) {
+      if (Object.hasOwn(TERMINAL, i)) continue;
+      nextV[i] = stepNext(i, pi[i]).q;
+      const diff = Math.abs(nextV[i] - V[i]);
+      if (diff > 1e-4) changedV[i] = true;
+      if (diff > dmax) dmax = diff;
+    }
+    V = nextV; sweeps++; lastDelta = dmax; render();
+  };
+
+  impBtn.onclick = () => {
+    const nextPi = [...pi];
+    changedV = Array(9).fill(false);
+    changedPi = Array(9).fill(false);
+    let flipped = false;
+    for (let i = 0; i < 9; i++) {
+      if (Object.hasOwn(TERMINAL, i)) continue;
+      let bestA = pi[i], bestQ = stepNext(i, pi[i]).q;
+      for (let a = 0; a < 4; a++) {
+        const q = stepNext(i, a).q;
+        if (q > bestQ + 1e-6) { bestQ = q; bestA = a; }
+      }
+      if (bestA !== pi[i]) { nextPi[i] = bestA; changedPi[i] = true; flipped = true; }
+    }
+    pi = nextPi; if (flipped) flips++; render();
+  };
+
+  viBtn.onclick = () => {
+    const nextV = [...V], nextPi = [...pi];
+    let dmax = 0;
+    changedV = Array(9).fill(false);
+    changedPi = Array(9).fill(false);
+    for (let i = 0; i < 9; i++) {
+      if (Object.hasOwn(TERMINAL, i)) continue;
+      let bestA = 0, bestQ = -Infinity;
+      for (let a = 0; a < 4; a++) {
+        const q = stepNext(i, a).q;
+        if (q > bestQ + 1e-9) { bestQ = q; bestA = a; }
+      }
+      nextV[i] = bestQ;
+      const diff = Math.abs(bestQ - V[i]);
+      if (diff > 1e-4) changedV[i] = true;
+      if (bestA !== pi[i]) changedPi[i] = true;
+      if (diff > dmax) dmax = diff;
+      nextPi[i] = bestA;
+    }
+    V = nextV; pi = nextPi; sweeps++; lastDelta = dmax; render();
+  };
+
+  container.querySelectorAll("[data-dp-mode]").forEach((b) => {
+    b.onclick = () => {
+      mode = b.dataset.dpMode;
+      V = Array(9).fill(0); pi = [...INIT_PI]; sweeps = 0; flips = 0; lastDelta = 0;
+      changedV.fill(false); changedPi.fill(false); render();
+    };
+  });
+  container.querySelector("[data-dp-reset]").onclick = () => {
+    V = Array(9).fill(0); pi = [...INIT_PI]; sweeps = 0; flips = 0; lastDelta = 0;
+    changedV.fill(false); changedPi.fill(false); render();
+  };
+  render();
+}
+
+function mountSarsaVsQ(container) {
+  const H = 4, W = 10, START = 30, GOAL = 39;
+  const DIRS = [[-1, 0], [0, 1], [1, 0], [0, -1]];
+  const isCliff = (r, c) => r === 3 && c >= 1 && c <= 8;
+  const stepGrid = (idx, a) => {
+    const r = Math.floor(idx / W), c = idx % W;
+    const nr = Math.max(0, Math.min(H - 1, r + DIRS[a][0]));
+    const nc = Math.max(0, Math.min(W - 1, c + DIRS[a][1]));
+    if (isCliff(nr, nc)) return { next: START, rew: -100, done: false, fell: true };
+    const nIdx = nr * W + nc;
+    return { next: nIdx, rew: -1, done: nIdx === GOAL, fell: false };
+  };
+  const cache = new Map();
+  const solveForEps = (eps) => {
+    const key = Math.round(eps * 100);
+    if (cache.has(key)) return cache.get(key);
+    const Qs = Array.from({ length: 40 }, () => [0, 0, 0, 0]);
+    const Qq = Array.from({ length: 40 }, () => [0, 0, 0, 0]);
+    for (let it = 0; it < 260; it++) {
+      for (let s = 0; s < 40; s++) {
+        const r = Math.floor(s / W), c = s % W;
+        if (s === GOAL || isCliff(r, c)) continue;
+        for (let a = 0; a < 4; a++) {
+          const tr = stepGrid(s, a);
+          if (tr.done) { Qs[s][a] = tr.rew; Qq[s][a] = tr.rew; continue; }
+          let best = 0;
+          for (let k = 1; k < 4; k++) if (Qs[tr.next][k] > Qs[tr.next][best]) best = k;
+          let expS = 0;
+          for (let k = 0; k < 4; k++) expS += ((k === best ? 1 - eps : 0) + eps / 4) * Qs[tr.next][k];
+          Qs[s][a] = tr.rew + expS;
+          Qq[s][a] = tr.rew + Math.max(...Qq[tr.next]);
+        }
+      }
+    }
+    const greedyPath = (Q) => {
+      let cur = START;
+      const seen = new Set([cur]), path = [cur];
+      for (let t = 0; t < 24; t++) {
+        let best = 0;
+        for (let k = 1; k < 4; k++) if (Q[cur][k] > Q[cur][best]) best = k;
+        const tr = stepGrid(cur, best);
+        path.push(tr.next);
+        if (tr.done || seen.has(tr.next)) break;
+        seen.add(tr.next);
+        cur = tr.next;
+      }
+      return path;
+    };
+    const evalPolicy = (Q, evalEps) => {
+      let V = Array(40).fill(0), F = Array(40).fill(0);
+      for (let it = 0; it < 120; it++) {
+        const nV = [...V], nF = [...F];
+        for (let s = 0; s < 40; s++) {
+          const r = Math.floor(s / W), c = s % W;
+          if (s === GOAL || isCliff(r, c)) continue;
+          let best = 0;
+          for (let k = 1; k < 4; k++) if (Q[s][k] > Q[s][best]) best = k;
+          let vs = 0, fs = 0;
+          for (let a = 0; a < 4; a++) {
+            const p = (a === best ? 1 - evalEps : 0) + evalEps / 4;
+            const tr = stepGrid(s, a);
+            vs += p * (tr.rew + (tr.done ? 0 : V[tr.next]));
+            fs += p * (tr.fell ? 1 : (tr.done ? 0 : F[tr.next]));
+          }
+          nV[s] = vs; nF[s] = fs;
+        }
+        V = nV; F = nF;
+      }
+      return { avgReturn: V[START], fallProb: Math.min(1, F[START]) };
+    };
+    const out = {
+      pathS: greedyPath(Qs), pathQ: greedyPath(Qq),
+      evalTrainS: evalPolicy(Qs, eps), evalTrainQ: evalPolicy(Qq, eps),
+      evalTestS: evalPolicy(Qs, 0), evalTestQ: evalPolicy(Qq, 0),
+    };
+    cache.set(key, out);
+    return out;
+  };
+
+  let mode = "both"; // "sarsa" | "q" | "both"
+  let freezeEval = false;
+  container.innerHTML = `
+    <div class="viz-stage">
+      <div class="viz-pills-row">
+        <div class="viz-actions viz-seg" role="group" aria-label="Control algorithm">
+          <button type="button" class="btn-ghost pill" data-cliff-mode="sarsa" aria-pressed="false">Expected SARSA</button>
+          <button type="button" class="btn-ghost pill" data-cliff-mode="q" aria-pressed="false">Q-Learning</button>
+          <button type="button" class="btn-ghost pill" data-cliff-mode="both" aria-pressed="true">Compare Both</button>
+        </div>
+        <span class="viz-pill" data-cliff-pills></span>
+      </div>
+      <div class="viz-controls">
+        ${rangeHtml("cliff-eps", "Training exploration ε", 0, 0.3, 0.02, 0.1, 2)}
+        <label class="simplex-toggle"><input type="checkbox" data-cliff-freeze/> Freeze Q &amp; Test Greedy (ε_test = 0)</label>
+      </div>
+      <svg id="svg-cliff" viewBox="0 0 420 184" width="100%" role="img" aria-label="4 by 10 Cliff Walking grid"></svg>
+      <div class="viz-legend">
+        <span class="viz-legend-item"><svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="var(--go)" stroke-width="3"/></svg>Expected SARSA (on-policy)</span>
+        <span class="viz-legend-item"><svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="var(--danger)" stroke-width="3"/></svg>Q-Learning (off-policy)</span>
+      </div>
+      <p class="viz-insight" role="status"></p>
+    </div>`;
+
+  const pillsEl = container.querySelector("[data-cliff-pills]");
+  const freezeChk = container.querySelector("[data-cliff-freeze]");
+  const svgEl = container.querySelector(vizIdSelector("svg-cliff"));
+
+  const draw = () => {
+    container.querySelectorAll("[data-cliff-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cliffMode === mode)));
+    const eps = readRange(container, "cliff-eps", 2);
+    const sol = solveForEps(eps);
+    const evS = freezeEval ? sol.evalTestS : sol.evalTrainS;
+    const evQ = freezeEval ? sol.evalTestQ : sol.evalTrainQ;
+
+    const cellW = 38, cellH = 38, ox = 20, oy = 14;
+    let markup = "";
+    for (let r = 0; r < H; r++) {
+      for (let c = 0; c < W; c++) {
+        const idx = r * W + c;
+        const x = ox + c * cellW, y = oy + r * cellH;
+        const cliff = isCliff(r, c);
+        const fill = cliff ? "var(--danger-tint)" : idx === GOAL ? "var(--go-tint)" : idx === START ? "var(--accent-tint)" : "var(--surface)";
+        markup += `<rect x="${x}" y="${y}" width="${cellW - 2}" height="${cellH - 2}" rx="5" fill="${fill}" stroke="var(--line)"/>`;
+        if (idx === START) markup += `<text x="${x + 18}" y="${y + 23}" font-size="13" font-weight="800" fill="var(--accent)" text-anchor="middle">S</text>`;
+        else if (idx === GOAL) markup += `<text x="${x + 18}" y="${y + 23}" font-size="13" font-weight="800" fill="var(--go)" text-anchor="middle">G</text>`;
+        else if (cliff && c === 4) markup += `<text x="${x + 36}" y="${y + 22}" font-size="11" font-weight="700" fill="var(--danger)" text-anchor="middle">Cliff (−100)</text>`;
+      }
+    }
+
+    const poly = (path, dy, color, dashed = false) => {
+      const pts = path.map((idx) => {
+        const r = Math.floor(idx / W), c = idx % W;
+        return `${(ox + c * cellW + 18).toFixed(1)},${(oy + r * cellH + 18 + dy).toFixed(1)}`;
+      }).join(" ");
+      return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="${dashed ? 2.2 : 3.4}" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${dashed ? "5 4" : "none"}" opacity="${dashed ? ".65" : "1"}"/>`;
+    };
+    if (mode === "both" || mode === "q") markup += poly(sol.pathQ, mode === "both" ? 3 : 0, "var(--danger)", false);
+    else markup += poly(sol.pathQ, 3, "var(--danger)", true);
+    if (mode === "both" || mode === "sarsa") markup += poly(sol.pathS, mode === "both" ? -3 : 0, "var(--go)", false);
+    else markup += poly(sol.pathS, -3, "var(--go)", true);
+
+    const activeFall = mode === "sarsa" ? evS.fallProb : evQ.fallProb;
+    markup += `<text x="${ox + 4.5 * cellW}" y="${oy + 4 * cellH + 10}" font-size="11" font-weight="700" fill="var(--danger)" text-anchor="middle" visibility="${activeFall > 0.005 ? "visible" : "hidden"}">Episode fall risk: ${(activeFall * 100).toFixed(0)}%</text>`;
+
+    updateVizChart(svgEl, markup);
+    if (mode === "both") {
+      pillsEl.textContent = `SARSA ret: ${evS.avgReturn.toFixed(1)} | Q ret: ${evQ.avgReturn.toFixed(1)}`;
+    } else if (mode === "sarsa") {
+      pillsEl.textContent = `Avg return: ${evS.avgReturn.toFixed(1)} · Fall risk: ${(evS.fallProb * 100).toFixed(0)}%`;
+    } else {
+      pillsEl.textContent = `Avg return: ${evQ.avgReturn.toFixed(1)} · Fall risk: ${(evQ.fallProb * 100).toFixed(0)}%`;
+    }
+
+    const sTop = Math.min(...sol.pathS.map((idx) => Math.floor(idx / W)));
+    setVizInsight(container, eps === 0
+      ? (freezeEval ? "Trained at ε = 0.00 and tested greedily (ε_test = 0.00): both paths coincide along the cliff edge (−11.0)." : "At ε = 0.00 there are zero exploration slips, so both converged Expected SARSA and Q-Learning walk right along the cliff edge.")
+      : freezeEval
+        ? `Frozen at ε_train = ${eps.toFixed(2)} and tested greedily (ε_test = 0.00): Q-Learning takes the shorter edge (${evQ.avgReturn.toFixed(1)}) while Expected SARSA keeps its safe row-${sTop} detour (${evS.avgReturn.toFixed(1)}).`
+        : `At ε = ${eps.toFixed(2)}, converged Expected SARSA detours up to row ${sTop} (return ${evS.avgReturn.toFixed(1)}), while Q-Learning still targets the cliff edge and risks falling (return ${evQ.avgReturn.toFixed(1)}).`);
+  };
+
+  freezeChk.onchange = () => { freezeEval = freezeChk.checked; draw(); };
+  container.querySelectorAll("[data-cliff-mode]").forEach((b) => { b.onclick = () => { mode = b.dataset.cliffMode; draw(); }; });
+  bindVizInputs(container, draw);
+  draw();
+}
+
+function mountSelfPlayPool(container) {
+  const A = [[0, -0.45, 0.45], [0.45, 0, -0.45], [-0.45, 0.45, 0]];
+  const ANCHORS = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  const NAMES = ["Greedy", "Trap-Hunter", "Cautious"];
+  const V = [[190, 42], [68, 224], [312, 224]];
+  const toXY = (p) => [p[0] * V[0][0] + p[1] * V[1][0] + p[2] * V[2][0], p[0] * V[0][1] + p[1] * V[1][1] + p[2] * V[2][1]];
+  const matVec = (M, v) => M.map((row) => row.reduce((s, val, j) => s + val * v[j], 0));
+  const dot = (a, b) => a.reduce((s, val, i) => s + val * b[i], 0);
+
+  let poolOn = false, anchorOn = false;
+  let x = [0.58, 0.28, 0.14];
+  let pool = [[...x]];
+  let trail = [[...x]];
+  let updates = 0;
+
+  container.innerHTML = `
+    <div class="viz-stage">
+      <div class="viz-pills-row">
+        <div class="simplex-toggles">
+          <label class="simplex-toggle"><input type="checkbox" data-sp-pool/> Checkpoint Pool (FSP)</label>
+          <label class="simplex-toggle"><input type="checkbox" data-sp-anchor/> PFSP Anchor Bots</label>
+        </div>
+        <span class="viz-pill" data-sp-pills></span>
+      </div>
+      <div class="viz-actions">
+        <button type="button" class="btn-tactile go" data-sp-step>Train +10 Updates</button>
+        <button type="button" class="btn-ghost pill" data-sp-reset>Reset</button>
+        <span class="viz-pill" data-sp-upd>Updates: 0</span>
+      </div>
+      <svg id="svg-simplex" viewBox="0 0 380 264" width="100%" role="img" aria-label="Illustrative Rock Paper Scissors strategy simplex"></svg>
+      <p class="viz-insight" role="status"></p>
+    </div>`;
+
+  const poolChk = container.querySelector("[data-sp-pool]");
+  const anchorChk = container.querySelector("[data-sp-anchor]");
+  const pillsEl = container.querySelector("[data-sp-pills]");
+  const updEl = container.querySelector("[data-sp-upd]");
+  const svgEl = container.querySelector(vizIdSelector("svg-simplex"));
+
+  const pickOpp = (cur) => {
+    const opps = [], weights = [];
+    if (poolOn) {
+      pool.forEach((p) => { opps.push(p); weights.push(1 / pool.length); });
+    } else {
+      opps.push(cur); weights.push(1);
+    }
+    const baseOpp = [0, 1, 2].map((k) => opps.reduce((s, o, idx) => s + weights[idx] * o[k], 0));
+    if (!anchorOn) return { opp: baseOpp, anchorWeights: [0, 0, 0] };
+    const aw = ANCHORS.map((a) => {
+      const wp = 0.5 + dot(cur, matVec(A, a));
+      return (1 - wp) ** 2 + 0.05;
+    });
+    const awSum = aw.reduce((s, v) => s + v, 0);
+    const normAw = aw.map((v) => v / awSum);
+    const ancOpp = [0, 1, 2].map((k) => ANCHORS.reduce((s, a, idx) => s + normAw[idx] * a[k], 0));
+    return { opp: [0, 1, 2].map((k) => 0.5 * baseOpp[k] + 0.5 * ancOpp[k]), anchorWeights: normAw };
+  };
+
+  const stepUpdates = (n) => {
+    const lr = 0.30;
+    for (let i = 0; i < n; i++) {
+      const { opp } = pickOpp(x);
+      const grad = matVec(A, opp);
+      const raw = x.map((v, k) => v * Math.exp(lr * grad[k]));
+      const z = raw.reduce((s, v) => s + v, 0);
+      x = raw.map((v) => v / z);
+      pool.push([...x]);
+      trail.push([...x]);
+      if (trail.length > 45) trail.shift();
+      updates++;
+    }
+  };
+
+  const draw = () => {
+    const { opp, anchorWeights } = pickOpp(x);
+    const vs = [0, 1, 2].map((j) => 0.5 + dot(x, matVec(A, ANCHORS[j])));
+    const worst = Math.min(...vs);
+    const grad = matVec(A, opp);
+    const nextRaw = x.map((v, k) => v * Math.exp(0.30 * grad[k]));
+    const nextZ = nextRaw.reduce((s, v) => s + v, 0);
+    const nextX = nextRaw.map((v) => v / nextZ);
+    const [cx, cy] = toXY(x);
+    const [nx, ny] = toXY(nextX);
+
+    pillsEl.textContent = `Self-play win: 50% · Worst matchup: ${(worst * 100).toFixed(0)}%`;
+    updEl.textContent = `Updates: ${updates}`;
+
+    const trailPts = trail.map((p) => toXY(p).map((v) => v.toFixed(1)).join(",")).join(" ");
+    const recentPool = pool.slice(-18);
+    const poolDots = Array.from({ length: 18 }, (_, i) => {
+      const p = recentPool[i];
+      if (!poolOn || !p) return `<circle cx="190" cy="160" r="3.2" fill="var(--ink-3)" opacity="0" visibility="hidden"/>`;
+      const [px, py] = toXY(p);
+      return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3.2" fill="var(--ink-3)" opacity=".38" visibility="visible"/>`;
+    }).join("");
+    const anchorRings = ANCHORS.map((_, j) => {
+      const [vx, vy] = V[j];
+      const ring = `<circle cx="${vx}" cy="${vy}" r="${(10 + anchorWeights[j] * 14).toFixed(1)}" fill="none" stroke="var(--warn)" stroke-width="2" opacity=".7" visibility="${anchorOn ? "visible" : "hidden"}"/>`;
+      const ly = j === 0 ? vy - 18 : vy + 22;
+      const anchor = j === 0 ? "middle" : j === 1 ? "start" : "end";
+      const lx = j === 0 ? vx : j === 1 ? vx - 28 : vx + 28;
+      return `${ring}<circle cx="${vx}" cy="${vy}" r="7" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="2"/>
+        <text x="${lx}" y="${ly}" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="${anchor}">${NAMES[j]} (${(vs[j] * 100).toFixed(0)}%)</text>`;
+    }).join("");
+
+    updateVizChart(svgEl, `
+      <polygon points="${V.map((p) => p.join(",")).join(" ")}" fill="var(--accent-tint)" stroke="var(--line-strong)" stroke-width="1.8"/>
+      <circle cx="190" cy="${((42 + 224 + 224) / 3).toFixed(1)}" r="4" fill="var(--go)" opacity=".55"/>
+      ${poolDots}
+      <polyline points="${trailPts}" fill="none" stroke="var(--accent)" stroke-width="2.2" opacity=".75"/>
+      <line x1="${cx.toFixed(1)}" y1="${cy.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="var(--accent-solid)" stroke-width="2.4"/>
+      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="7" fill="var(--accent-solid)" stroke="var(--surface)" stroke-width="2"/>
+      ${anchorRings}`);
+
+    const worstPct = (worst * 100).toFixed(0);
+    setVizInsight(container, (!poolOn && !anchorOn)
+      ? `Illustrative fixed RPS payoff (±0.45): Latest-only self-play orbits the triangle (worst matchup ${worstPct}%) while self-play win rate stays 50%.`
+      : (poolOn && !anchorOn)
+        ? `Checkpoint Pool (FSP) averages past snapshots (worst matchup ${worstPct}%). Early pools clustered near one corner still overshoot slowly without diverse anchors.`
+        : `PFSP-weighted anchors${poolOn ? " + checkpoint pool" : ""} pull toward the balanced center (green dot), stabilizing worst matchup at ${worstPct}%.`);
+  };
+
+  poolChk.onchange = () => { poolOn = poolChk.checked; draw(); };
+  anchorChk.onchange = () => { anchorOn = anchorChk.checked; draw(); };
+  container.querySelector("[data-sp-step]").onclick = () => { stepUpdates(10); draw(); };
+  container.querySelector("[data-sp-reset]").onclick = () => {
+    x = [0.58, 0.28, 0.14]; pool = [[...x]]; trail = [[...x]]; updates = 0; draw();
+  };
+  draw();
+}
+
 function mountViz(vizType, container) {
-  const mounts = { agent_loop: mountAgentLoop, explore_exploit: mountExploreExploit, rl_landscape: mountRlLandscape, bellman_backup: mountBellmanBackup, policy_baseline: mountPolicyBaseline, reward_shaping: mountRewardShaping };
+  const mounts = {
+    agent_loop: mountAgentLoop,
+    explore_exploit: mountExploreExploit,
+    rl_landscape: mountRlLandscape,
+    bellman_backup: mountBellmanBackup,
+    policy_baseline: mountPolicyBaseline,
+    reward_shaping: mountRewardShaping,
+    dp_iteration: mountDpIteration,
+    sarsa_vs_q: mountSarsaVsQ,
+    self_play_pool: mountSelfPlayPool,
+  };
   if (Object.hasOwn(mounts, vizType)) return mounts[vizType](container);
   if (vizType === "gamma_horizon") {
     container.innerHTML = `
@@ -4376,7 +5929,7 @@ function applyLessonProgress(path, body, step) {
   const result = path === "/api/quiz" ? quizFeedback(step, body) : {};
   const points = path === "/api/quiz" ? ({ mcq: 20, numeric: 25, poe: 15 })[step.kind]
     : step.kind === "debrief" ? 30 : 10;
-  const gained = result.correct === false || isStepDone(step.id) ? 0 : points;
+  const gained = result.correct === false || isStepDone(step.id) ? 0 : points * boostMultiplier();
   if (gained) {
     const g = state.data.gamification;
     state.data = { ...state.data, gamification: {
@@ -4399,7 +5952,7 @@ function applyLessonProgress(path, body, step) {
   }).catch(() => {
     if (!cloudCourse() && userScope() === user) toast("Progress could not be saved. Try this step again after reconnecting.");
   }).finally(() => { localLessonWrites--; });
-  return { ...result, xp: { gained }, state: state.data };
+  return { ...result, xp: { gained, boosted: gained > 0 && boostMultiplier() > 1, mult: boostMultiplier() }, state: state.data };
 }
 
 function activeLessonBeat() {
@@ -4408,6 +5961,8 @@ function activeLessonBeat() {
 
 function recordLessonXp(xp) {
   state.lesson.gained += xp?.gained || 0;
+  if (xp?.gained > 0 && (xp.boosted || boostMultiplier() > 1)) state.lesson.boosted = true;
+  noteXpRewards(xp);
   checkProgressAchievements();
 }
 
@@ -4813,7 +6368,7 @@ function celebrateLesson(card, xp) {
     kuboJump(card.querySelector(".kubo-wrap"));
     if (xp <= 0 || reducedMotion) return;
     card.classList.add("is-celebrating");
-    window.Delight.flyXp(xpDisplay, document.querySelector("#topbar .lesson-stat[data-xp-total]"));
+    window.Delight.flyXp(xpDisplay, document.querySelector("#topbar .lesson-stat[data-xp-total]"), { golden: Boolean(state.lesson?.boosted) });
     spawnConfetti(card, 32);
     setTimeout(() => {
       if (xpDisplay.isConnected) countLessonXp(xpDisplay, xp);
@@ -4865,7 +6420,7 @@ function advanceLesson(isLast) {
       <h2 id="lesson-complete-title">Lesson complete</h2>
       <dl class="lesson-summary">
         ${state.lesson.gained > 0
-          ? `<div class="lesson-summary-tile"><dt>XP earned</dt><dd><span class="sr-only">${numberFormat.format(state.lesson.gained)} XP</span><span class="lesson-xp" aria-hidden="true">+${numberFormat.format(state.lesson.gained)} XP</span></dd></div>`
+          ? `<div class="lesson-summary-tile"><dt>XP earned</dt><dd><span class="sr-only">${numberFormat.format(state.lesson.gained)} XP</span><span class="lesson-xp" aria-hidden="true">+${numberFormat.format(state.lesson.gained)} XP</span>${state.lesson.boosted ? '<span class="boost-tag">2× Boost</span>' : ""}</dd></div>`
           : `<div class="lesson-summary-tile lesson-replay-tile"><dt>Status</dt><dd><span class="lesson-replay">Reviewed</span><span class="replay-badge">${ICONS.checkCircle}XP already earned</span></dd></div>`}
         <div class="lesson-summary-tile"><dt>Best combo</dt><dd>${numberFormat.format(state.lesson.bestCombo)}</dd></div>
         <div class="lesson-summary-tile lesson-review-tile">${lessonReviewSummaryHtml()}</div>
@@ -5267,7 +6822,8 @@ function renderDrill() {
         state.drillMood = state.drillCombo >= 3 ? "proud" : "happy";
         playSound("correct", state.drillCombo);
         spawnSparkles(b, 10);
-        if (gained > 0) spawnXpFloat(`+${gained} XP`, b);
+        if (gained > 0) spawnXpFloat(xpGainLabel(res.xp), b);
+        noteXpRewards(res.xp);
       } else {
         state.drillCombo = 0;
         state.drillMood = "oops";
@@ -5380,13 +6936,17 @@ function render() {
 
 async function init() {
   try {
+    capturePendingLinks();
     if (!STATIC_MODE) {
       state.data = await request("/api/state");
       state.combo = state.data.gamification.combo;
     }
     await initSupabase();
     if (state.sbUser && !state.passwordRecovery) await enterCloud();
-    else render();
+    else {
+      render();
+      if (!state.sbClient && !STATIC_MODE) processPendingInviteLinks();
+    }
   } catch (err) {
     document.getElementById("app-root").textContent = err.message || "Delightful Learn could not start.";
   }
@@ -5555,7 +7115,13 @@ async function openCourse(course, pendingLoader = null) {
     combo: data?.combo ?? 0,
     completed_events: data?.completed_events ?? [],
     srs_state: Object.assign(Object.create(null), data?.srs_state),
+    meta: courseWallet(data, state.sbProfile),
   };
+  if (state.sbProfile && typeof state.sbProfile.gems === "number"
+      && (state.sbProfile.last_active_date || "") >= state.progress.meta.last_active_date
+      && Number.isInteger(state.sbProfile.streak_days)) {
+    state.progress.streak_days = state.sbProfile.streak_days;
+  }
   state.combo = state.progress.combo;
   resetCourseView();
   state.data = cloudState(state.progress);
@@ -5564,6 +7130,19 @@ async function openCourse(course, pendingLoader = null) {
   render();
   syncProgressToSupabase();
   probeRunner();
+}
+
+// Merges course meta with the account-wide profile wallet. Older progress derives its last active day.
+function courseWallet(row, profile) {
+  const meta = row?.meta && typeof row.meta === "object" ? row.meta : {};
+  const wallet = normalizeWallet({ ...meta, ...walletFromProfile(profile) });
+  wallet.daily_goal_claimed_date = normalizeWallet(meta).daily_goal_claimed_date;
+  wallet.unit_rewards = normalizeWallet(meta).unit_rewards;
+  if (!wallet.last_active_date) {
+    const studied = (row?.completed_events || []).filter((e) => /^study-\d{4}-\d{2}-\d{2}$/.test(e)).map((e) => e.slice(6)).sort();
+    wallet.last_active_date = studied.at(-1) || "";
+  }
+  return wallet;
 }
 
 function resetCourseView() {
@@ -5650,7 +7229,9 @@ function cloudState(progress) {
     districts,
     gamification: {
       ...progress,
-      level: "Rank " + rank.level,
+      ...walletView(progress.meta, today, progress.streak_days),
+      level_rewards: DEFAULT_LEVEL_REWARDS,
+      level: rankName(rank.level),
       next_threshold: next?.threshold ?? rank.threshold,
       pct: next ? ((progress.xp - rank.threshold) / (next.threshold - rank.threshold)) * 100 : 100,
       sound_enabled: prefGet("sound") !== "off",
@@ -5715,18 +7296,19 @@ function applyLocalProgressMutation(path, body) {
   const progress = structuredClone(state.progress);
   progress.srs_state = Object.assign(Object.create(null), progress.srs_state);
   const today = day();
+  const wallet = progress.meta = normalizeWallet(progress.meta);
   const award = (event, points) => {
-    if (progress.completed_events.includes(event)) return { gained: 0 };
+    const activity = applyDailyActivity(wallet, progress, today);
+    if (progress.completed_events.includes(event)) return { gained: 0, ...activity };
     progress.completed_events.push(event);
-    const oldRank = DEFAULT_LEVEL_REWARDS.filter((r) => progress.xp >= r.threshold).length;
-    progress.xp += points;
-    const level = DEFAULT_LEVEL_REWARDS.filter((r) => progress.xp >= r.threshold).length;
-    const dayEvent = "study-" + today;
-    if (!progress.completed_events.includes(dayEvent)) {
-      progress.streak_days = progress.completed_events.includes("study-" + day(-1)) ? progress.streak_days + 1 : 1;
-      progress.completed_events.push(dayEvent);
-    }
-    return { gained: points, xp: progress.xp, level, leveled_up: level > oldRank };
+    const oldRank = rankLevel(progress.xp);
+    const earned = earnWalletXp(wallet, points, today, Date.now(), progress.combo);
+    progress.xp += earned.gained;
+    const level = rankLevel(progress.xp);
+    return {
+      gained: earned.gained, xp: progress.xp, level: rankName(level), leveled_up: level > oldRank,
+      mult: earned.mult, boosted: earned.mult > 1, daily_goal_reached: earned.daily_goal_reached, ...activity,
+    };
   };
   const unlock = (unit) => {
     for (const card of course.content.cards.filter((c) => c.module === unit)) {
@@ -5735,7 +7317,13 @@ function applyLocalProgressMutation(path, body) {
   };
 
   let result = {};
-  if (path === "/api/srs/rate") {
+  if (path === "/api/booster/activate") {
+    activateWalletBoost(wallet);
+  } else if (path === "/api/shop/buy") {
+    buyWalletItem(wallet, body?.item_id, progress.xp);
+  } else if (path === "/api/daily-goal") {
+    result.daily_goal_reached = setWalletGoal(wallet, body?.daily_goal, today);
+  } else if (path === "/api/srs/rate") {
     const card = course.content.cards.find((c) => c.card_id === body.card_id);
     if (!card || ![0, 3, 4, 5].includes(body.quality)) throw new Error("Invalid recall rating.");
     const prior = progress.srs_state[card.card_id] || {};
@@ -5760,12 +7348,20 @@ function applyLocalProgressMutation(path, body) {
       points = step.xp ?? 35;
       result = { passed: body.passed };
     }
-    unlock(district.id);
+    if (step.kind !== "bet") unlock(district.id);
     if (result.correct === false || result.passed === false) {
       progress.combo = 0;
     } else {
       if (result.correct || result.passed) progress.combo++;
       result.xp = award("step-" + step.id, points);
+      const unitDone = district.steps.every((s) => progress.completed_events.includes("step-" + s.id));
+      if (unitDone && result.xp.gained > 0 && !wallet.unit_rewards.includes(district.id)) {
+        wallet.unit_rewards = [...wallet.unit_rewards, district.id];
+        if (wallet.xp_boost_tokens < MAX_BOOST_TOKENS) {
+          wallet.xp_boost_tokens += 1;
+          result.xp.unit_token = true;
+        }
+      }
     }
   }
   state.progress = progress;
@@ -5825,6 +7421,145 @@ function authRedirectUrl() {
   let path = window.location.pathname;
   if (!path.endsWith("/") && !/\.[a-z0-9]+$/i.test(path.slice(path.lastIndexOf("/") + 1))) path += "/";
   return window.location.origin + path;
+}
+
+// Smart invite links: ?invite=CODE, ?friend=USERNAME, or both. They wait in localStorage across
+// sign-up, sign-in and email confirmation, and are accepted once a session exists.
+const PENDING_LINK_MAX_AGE = 14 * 86400000;
+
+function cleanInviteCode(value) {
+  const code = String(value || "").trim().toUpperCase();
+  return INVITE_CODE_RE.test(code) ? code : "";
+}
+
+function cleanFriendName(value) {
+  const name = String(value || "").trim().replace(/^@/, "").toLowerCase();
+  return /^[a-z0-9_]{2,24}$/.test(name) ? name : "";
+}
+
+function parsePendingLinkParams(search = window.location.search) {
+  const query = new URLSearchParams(search);
+  const invite = cleanInviteCode(query.get("invite") ?? query.get("course"));
+  const friend = cleanFriendName(query.get("friend") ?? query.get("add_friend"));
+  return invite || friend ? { invite, friend } : null;
+}
+
+function readPendingLinks(now = Date.now()) {
+  let stored = null;
+  try { stored = JSON.parse(localStorage.getItem(PENDING_LINKS_KEY) || "null"); } catch (_) {}
+  const source = stored && typeof stored === "object" ? stored : state.pendingLinks;
+  if (!source) return null;
+  const invite = cleanInviteCode(source.invite);
+  const friend = cleanFriendName(source.friend);
+  if ((!invite && !friend) || !(now - Number(source.savedAt || 0) < PENDING_LINK_MAX_AGE)) {
+    clearPendingLinks();
+    return null;
+  }
+  return { invite, friend, savedAt: Number(source.savedAt) };
+}
+
+function savePendingLinks(links) {
+  const entry = { invite: links.invite || "", friend: links.friend || "", savedAt: Date.now() };
+  state.pendingLinks = entry;
+  try {
+    localStorage.setItem(PENDING_LINKS_KEY, JSON.stringify(entry));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function clearPendingLinks() {
+  state.pendingLinks = null;
+  try { localStorage.removeItem(PENDING_LINKS_KEY); } catch (_) {}
+}
+
+// Runs at boot, before auth. Only the invite parameters leave the address bar; auth callbacks stay.
+function capturePendingLinks() {
+  const links = parsePendingLinkParams();
+  const query = new URLSearchParams(window.location.search);
+  const aliases = ["invite", "course", "friend", "add_friend"];
+  if (!aliases.some((key) => query.has(key))) return readPendingLinks();
+  if (links) {
+    const prior = readPendingLinks();
+    savePendingLinks({ invite: links.invite || prior?.invite || "", friend: links.friend || prior?.friend || "" });
+  }
+  aliases.forEach((key) => query.delete(key));
+  const rest = query.toString();
+  history.replaceState(null, "", window.location.origin + window.location.pathname + (rest ? "?" + rest : "") + window.location.hash);
+  return readPendingLinks();
+}
+
+// Email links carry the invite too when the redirect allow-list accepts query strings (a "**" entry).
+function authEmailRedirectUrl() {
+  const base = authRedirectUrl();
+  const pending = readPendingLinks();
+  const wildcard = CONFIG.redirectAllowsQuery === true || /\.github\.io$/i.test(window.location.hostname || "");
+  if (!pending || !wildcard) return base;
+  const params = new URLSearchParams();
+  if (pending.invite) params.set("invite", pending.invite);
+  if (pending.friend) params.set("friend", pending.friend);
+  return base + "?" + params.toString();
+}
+
+function inviteBannerText(links) {
+  if (!links) return "";
+  if (links.invite && links.friend) return `@${links.friend} invited you to join course ${links.invite} and connect as friends. Sign in or create a free account to accept.`;
+  if (links.invite) return `You have an invite to course ${links.invite}. Sign in or create a free account to join automatically.`;
+  return `@${links.friend} sent you a friend link. Sign in or create a free account to connect.`;
+}
+
+function inviteBannerHtml() {
+  const text = inviteBannerText(readPendingLinks());
+  return text ? `<div class="invite-banner" role="note">${mascotHtml("happy", 40)}<p>${esc(text)}</p></div>` : "";
+}
+
+let pendingLinksRun = null;
+
+// Accepts stored links once per session. The entry is cleared before any network call, so a failure never loops.
+function processPendingInviteLinks(options = {}) {
+  pendingLinksRun ??= acceptPendingLinks(options).finally(() => { pendingLinksRun = null; });
+  return pendingLinksRun;
+}
+
+async function acceptPendingLinks({ openJoined = true } = {}) {
+  const links = readPendingLinks();
+  const outcome = { courseId: null, friend: null };
+  if (!links) return outcome;
+  if (!state.sbClient) {
+    clearPendingLinks();
+    toast("Invite links need an online account, so this one was skipped in Local Studio.");
+    return outcome;
+  }
+  if (!state.sbUser || state.passwordRecovery) return outcome;
+  clearPendingLinks();
+  if (links.friend) {
+    const res = await addFriendByUsername(links.friend).catch(() => ({ ok: false, message: friendLinkError(null, links.friend) }));
+    toast(res.message);
+    if (res.ok) {
+      outcome.friend = links.friend;
+      playSound("correct");
+    }
+  }
+  if (links.invite) {
+    try {
+      const joined = await rpc("join_course_by_code", { p_code: links.invite });
+      await listCourses();
+      const course = state.courses.find((c) => c.id === joined?.id);
+      if (course) {
+        outcome.courseId = course.id;
+        prefSet("active_course_" + state.sbUser.id, course.id);
+        if (openJoined && state.course?.id !== course.id) await openCourse(course);
+        toast(`Joined ${course.title}!`);
+      }
+    } catch (err) {
+      toast(err?.code === "22023" || /invalid invite/i.test(err?.message || "")
+        ? `Invite code ${links.invite} isn't valid anymore. Ask for a fresh link.`
+        : "That course invite couldn't be accepted. Try again in a moment.");
+    }
+  }
+  if (state.view === "map" && state.data) renderMap();
+  return outcome;
 }
 
 function stopAuthTimer() {
@@ -5962,7 +7697,8 @@ function authViewHtml(ctx, mode) {
       ? `Choose a new password for <strong class="auth-email">${esc(state.sbUser.email)}</strong>.`
       : view.sub;
   const badge = mode === "check-email" ? `<span class="auth-badge${ctx.modal ? " solo" : ""}" aria-hidden="true">${ICONS.mail}</span>` : "";
-  const hero = `<div class="auth-hero">
+  const banner = !ctx.modal && ["sign-in", "sign-up"].includes(mode) ? inviteBannerHtml() : "";
+  const hero = `${banner}<div class="auth-hero">
       ${ctx.modal ? badge : `<div class="auth-kubo">${mascotHtml(view.mood, 68)}${badge}</div>`}
       <${heading} class="auth-title" tabindex="-1">${esc(view.title)}</${heading}>
       <p class="auth-sub">${sub}</p>
@@ -6217,6 +7953,7 @@ async function finishAuth(ctx, session) {
   state.sbUser = session.user;
   await loadCloudProfileAndFriends();
   await ctx.after();
+  await processPendingInviteLinks();
 }
 
 async function authSignIn(ctx, values) {
@@ -6233,7 +7970,7 @@ async function authSignUp(ctx, values) {
   const { data, error } = await state.sbClient.auth.signUp({
     email,
     password: values.password,
-    options: { emailRedirectTo: authRedirectUrl(), data: { username, display_name: username } },
+    options: { emailRedirectTo: authEmailRedirectUrl(), data: { username, display_name: username } },
   });
   if (error) throw error;
   if (data.session) return finishAuth(ctx, data.session);
@@ -6258,7 +7995,7 @@ async function resendAuthEmail(ctx, button) {
   const { kind, email } = ctx;
   const sent = await authBusy(ctx, button, "Sending…", async () => {
     const { error } = kind === "signup"
-      ? await state.sbClient.auth.resend({ type: "signup", email, options: { emailRedirectTo: authRedirectUrl() } })
+      ? await state.sbClient.auth.resend({ type: "signup", email, options: { emailRedirectTo: authEmailRedirectUrl() } })
       : await state.sbClient.auth.resetPasswordForEmail(email, { redirectTo: authRedirectUrl() });
     if (error) throw error;
     markEmailSent(kind, email);
@@ -6279,7 +8016,7 @@ async function resendConfirmation(ctx, button) {
   button.textContent = "Sending a new link…";
   let failure = null;
   try {
-    const { error } = await state.sbClient.auth.resend({ type: "signup", email, options: { emailRedirectTo: authRedirectUrl() } });
+    const { error } = await state.sbClient.auth.resend({ type: "signup", email, options: { emailRedirectTo: authEmailRedirectUrl() } });
     if (error) throw error;
     markEmailSent("signup", email);
   } catch (err) {
@@ -6339,7 +8076,7 @@ function renderAuth(mode) {
   state.authNotice = null;
   const recovering = state.passwordRecovery && state.sbUser;
   mountAuth(root.querySelector("#auth-panel"), {
-    mode: recovering ? "update-password" : mode || notice?.mode || "sign-in",
+    mode: recovering ? "update-password" : mode || notice?.mode || (readPendingLinks() ? "sign-up" : "sign-in"),
     notice,
     after: enterCloud,
     focus: recovering || Boolean(notice) || matchMedia("(pointer: fine)").matches,
@@ -6352,6 +8089,8 @@ async function enterCloud() {
   const loader = beginCourseLoad("Delightful Learn");
   try {
     await listCourses();
+    if (state.sbUser?.id !== user) return;
+    if (readPendingLinks()) await processPendingInviteLinks({ openJoined: false });
     if (state.sbUser?.id !== user) return;
     const saved = prefGet("active_course_" + user);
     const course = state.courses.find((c) => c.id === saved) || (STATIC_MODE ? state.courses[0] : null);
@@ -6443,7 +8182,7 @@ function renderCourses() {
     ${state.courses.length ? "" : "<p>Enter an invite code to join your first course.</p>"}
     <div class="course-join">
     <form id="join-course" class="join-course" aria-describedby="invite-help">
-      <label>Invite code<input name="code" class="text-field invite-input" pattern="[A-Z0-9]{6}" maxlength="6" autocapitalize="characters" autocomplete="off" placeholder="e.g. K7M9P2" required></label>
+      <label>Invite code<input name="code" class="text-field invite-input" pattern="[A-HJ-NP-Za-hj-np-z2-9]{6,8}" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="e.g. K7M9P2" required></label>
       <button type="submit" class="btn-tactile secondary pill">Join Course</button>
     </form>
     <p id="invite-help" class="invite-help">${mascotHtml("idle", 34)}<span>Have a teammate's invite code? Join their course anytime.</span></p>
@@ -6470,8 +8209,8 @@ function renderCourses() {
     const code = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     e.target.value = code;
     const button = form.querySelector("button");
-    button.classList.toggle("go", code.length === 6);
-    button.classList.toggle("secondary", code.length !== 6);
+    button.classList.toggle("go", code.length >= 6);
+    button.classList.toggle("secondary", code.length < 6);
   };
   form.onsubmit = (event) => {
     event.preventDefault();
@@ -6488,11 +8227,13 @@ function courseSettings(course, trigger) {
     ${course.role === "owner" && course.invite_code ? `<label>Invite code<input id="course-invite" class="text-field invite-input" readonly value="${esc(course.invite_code)}"></label>
       <div class="form-row"><button id="copy-invite" class="btn-tactile secondary">Copy Code</button>
       <button id="rotate-invite" class="btn-ghost">Rotate Invite Code</button></div>` : ""}
+    ${state.sbUser ? `<div class="settings-block share-block"><h3 class="modal-label">Share links</h3>${shareBarHtml({ invite: course.invite_code || "" })}</div>` : ""}
     <button id="leave-course" class="btn-ghost">Leave Course</button>
     <div id="leave-confirm" class="form-stack" hidden><p>Leave this course? You’ll need an invite to rejoin.</p>
       <div class="form-row"><button id="confirm-leave" class="btn-tactile secondary">Leave Course</button>
       <button id="cancel-leave" class="btn-ghost">Cancel</button></div></div>
   </div>`, trigger);
+  bindShareBar(document.getElementById("modal-host"));
   const invite = document.getElementById("course-invite");
   if (invite) {
     document.getElementById("copy-invite").onclick = async () => {
@@ -6539,6 +8280,7 @@ async function signOut() {
 
 async function clearSession() {
   clearInterval(state.timer.interval);
+  stopBoostTicker();
   state.timer.running = false;
   state.timer.left = state.timer.total;
   stopAuthTimer();
@@ -6556,6 +8298,8 @@ async function clearSession() {
   state.mascotColor = "#4F46E5";
   state.mascotAccessory = "none";
   state.mascotShape = "cube";
+  state.mascotEffect = "none";
+  state.leaderboard.entries = null;
   clearUserStorage();
   resetCourseView();
   closeModal();
@@ -6564,7 +8308,7 @@ async function clearSession() {
 }
 
 const RUN_LABEL = `${ICONS.play} Run &amp; Verify (${/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘Enter" : "Ctrl+Enter"})`;
-const NUMPY_CHALLENGES = new Set(["m0_returns", "m3_gae"]);
+const NUMPY_CHALLENGES = new Set(["m0_returns", "m3_gae", "m8_set_encoder"]);
 const RUNNER_URL = /^https?:\/\//i.test(CONFIG.localRunnerUrl || "")
   ? CONFIG.localRunnerUrl.replace(/\/+$/, "")
   : "http://127.0.0.1:8787";

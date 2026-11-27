@@ -97,6 +97,11 @@ window.Delight = (() => {
       { bell: true, volume: 0.065 });
   }
 
+  // A high, glassy arpeggio for a Streak Freeze rescue: crisp like ice, quieter than the fanfare.
+  function playFrostChime() {
+    return playNotes([[1318.51, 0, 0.16], [1567.98, 0.06, 0.16, 0.8], [2093, 0.12, 0.22, 0.6]], { bell: true, volume: 0.05 });
+  }
+
   function playSoftNudge() {
     return playNotes([[329.63, 0, 0.085], [261.63, 0.07, 0.11, 0.85]], { wood: true, volume: 0.06 });
   }
@@ -151,7 +156,7 @@ window.Delight = (() => {
     Promise.all(pieces.map((animation) => animation?.finished)).catch(() => {}).finally(() => nodes.forEach((node) => node.remove()));
   }
 
-  function flyXp(origin, target) {
+  function flyXp(origin, target, { golden = false } = {}) {
     const layer = document.getElementById("fx-layer");
     if (prefersReducedMotion() || !layer || !origin || !target?.animate) return;
     const from = origin.getBoundingClientRect();
@@ -162,7 +167,7 @@ window.Delight = (() => {
     const dy = to.top + to.height / 2 - y;
     const animations = Array.from({ length: 7 }, (_, index) => {
       const spark = document.createElement("span");
-      spark.className = "fx-xp-orb";
+      spark.className = golden ? "fx-xp-orb golden" : "fx-xp-orb";
       spark.style.left = `${x}px`;
       spark.style.top = `${y}px`;
       layer.append(spark);
@@ -192,6 +197,6 @@ window.Delight = (() => {
   return {
     setSoundEnabled: (readPreference) => { soundEnabled = readPreference; },
     primeAudio, prefersReducedMotion, withViewTransition, springCurve,
-    playComboChime, playCompleteFanfare, playSoftNudge, triggerHaptic, flyXp, sparkleRing,
+    playComboChime, playCompleteFanfare, playFrostChime, playSoftNudge, triggerHaptic, flyXp, sparkleRing,
   };
 })();
