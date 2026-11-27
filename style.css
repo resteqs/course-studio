@@ -532,7 +532,6 @@ button, input, textarea, select { font-family: inherit; }
   border-radius: 18px;
 }
 .ach-card, .squad-card, .daily-card { padding: 18px 20px; }
-.daily-card .daily-goal { margin: 0; padding: 0; background: transparent; border-radius: 0; }
 .sidebar-section { padding: 18px 20px; }
 .sidebar-section + .sidebar-section { border-top: 1px solid var(--line); }
 
@@ -2626,9 +2625,18 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
   .rank-meta { margin-top: 6px; font-size: 12px; }
   .next-unlock { margin-top: 10px; padding: 8px 10px; }
   .ach-card, .squad-card, .daily-card { padding: 13px 15px; }
-  .daily-card .daily-goal { gap: 6px; }
-  .daily-card .goal-chip { min-height: 34px; font-size: 12px; }
-  .daily-card .boost-ready, .daily-card .boost-pill.wide { min-height: 38px; font-size: 13px; }
+  .quest-card .rail-head { margin-bottom: 6px; }
+  .quest-card .quest-goal-toggle { min-height: 24px; }
+  .quest-card .quest-main { gap: 6px; }
+  .quest-card .quest-reward { margin-top: 3px; }
+  .quest-card .quest-goals { margin-top: 8px; }
+  .quest-card .goal-chip { min-height: 34px; font-size: 12px; }
+  .quest-card .boost-banner { margin-top: 8px; padding: 4px 5px 4px 8px; gap: 8px; }
+  .quest-card .boost-banner.active { padding: 6px 10px 12px 8px; }
+  .quest-card .boost-badge { width: 34px; height: 34px; }
+  .quest-card .boost-text strong { font-size: 13.5px; }
+  .quest-card .boost-sub { font-size: 12px; }
+  .quest-card .btn-tactile.boost-go { padding: 0 14px; }
   .ach-card .ach-row { padding: 8px 10px; }
   .ach-card .ach-row:nth-child(n+4) { display: none; }
 }
@@ -2945,7 +2953,7 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
   background: var(--go);
 }
 .bellman-track.is-negative > span { margin-left: calc((.5 - var(--amount)) * 100%); background: var(--danger); }
-.bellman-track > i { position: absolute; inset: -2px auto -2px calc(var(--at) * 100%); border-left: 1px dashed var(--ink); }
+.bellman-track > i { position: absolute; inset: -2px auto -2px calc(var(--at) * 100%); border-left: 1px solid color-mix(in srgb, var(--ink) 60%, transparent); }
 
 @media (max-width: 520px) {
   .bandit-choices { gap: 5px; }
@@ -3142,6 +3150,21 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
   --boost-ink: #92400e;
   --boost-tint: #fef3c7;
   --boost-border: #f59e0b;
+  /* Boost surfaces: text on them stays >= 5.5:1 (#78350f on #fef3c7, #92400e on #fffbeb). */
+  --boost-surface: #fffbeb;
+  --boost-surface-active: #fef3c7;
+  --boost-line: #fcd34d;
+  --boost-line-active: #d97706;
+  --boost-title: #451a03;
+  --boost-sub: #92400e;
+  --boost-cta: #fbbf24;
+  --boost-cta-ink: #451a03;
+  --boost-cta-lip: #b45309;
+  --boost-meter-track: rgb(180 83 9 / 0.16);
+  --chest-lid: #cbd5e1;
+  --chest-body: #94a3b8;
+  --chest-band: #64748b;
+  --chest-lock: #f1f5f9;
   --medal-gold: #fbbf24;
   --medal-gold-ink: #451a03;
   --medal-silver: #e2e8f0;
@@ -3161,6 +3184,18 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
   --boost-ink: #fde68a;
   --boost-tint: rgba(251, 191, 36, 0.16);
   --boost-border: #b45309;
+  /* #fde68a on the darkest boost surface measures >= 10:1, #fcd34d sub copy >= 8:1. */
+  --boost-surface: color-mix(in srgb, #f59e0b 9%, var(--surface));
+  --boost-surface-active: color-mix(in srgb, #f59e0b 18%, var(--surface));
+  --boost-line: color-mix(in srgb, #f59e0b 38%, var(--surface));
+  --boost-line-active: #d97706;
+  --boost-title: #fef3c7;
+  --boost-sub: #fcd34d;
+  --boost-meter-track: rgb(251 191 36 / 0.18);
+  --chest-lid: #7c8aa0;
+  --chest-body: #56657b;
+  --chest-band: #3b4658;
+  --chest-lock: #e2e8f0;
   --medal-silver: #cbd5e1;
   --flame: #fbbf24;
 }
@@ -3194,12 +3229,7 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
 .rank-stat-box.stat-btn.iced .rank-stat-lbl { color: var(--ice-ink); }
 .rank-stat-icon.gem, .gem-icon { color: var(--gem); display: inline-flex; }
 
-/* Daily goal */
-.daily-goal { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; padding: 12px; border-radius: 14px; background: var(--stage); }
-.daily-goal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.daily-goal-label { font-size: 13.5px; font-weight: 800; color: var(--ink); }
-.daily-goal-done { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; color: var(--go-ink); }
-.daily-goal-done svg { width: 14px; height: 14px; }
+/* Daily Quest */
 .goal-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 .goal-chip {
   min-height: 44px; padding: 0 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
@@ -3212,10 +3242,11 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
 /* 2× XP Boost */
 .boost-pill {
   display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 11px; flex-shrink: 0;
-  border-radius: 999px; border: 1px solid var(--boost-border); background: var(--boost-tint); color: var(--boost-ink);
+  border-radius: 999px; border: 1px solid var(--boost-line-active); background: var(--boost-cta); color: var(--boost-cta-ink);
   font-size: 13px; font-weight: 800; white-space: nowrap; position: relative; overflow: hidden; isolation: isolate;
+  box-shadow: 0 2px 0 var(--boost-cta-lip);
 }
-.boost-pill-icon { display: inline-flex; color: var(--warn); }
+.boost-pill-icon { display: inline-flex; color: inherit; }
 .boost-pill::after {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.4) 50%, transparent 70%);
@@ -3223,13 +3254,93 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
 }
 .boost-pill.wide { justify-content: center; min-height: 44px; width: 100%; }
 .boost-pill.large { min-height: 44px; font-size: 15px; padding: 0 16px; }
-.boost-ready {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 44px;
-  border-radius: 12px; border: 1px dashed var(--boost-border); background: var(--surface); color: var(--boost-ink);
-  font-size: 13.5px; font-weight: 800; cursor: pointer; transition: transform 120ms var(--ease-out), background-color 140ms var(--ease-out);
+.quest-goal-toggle {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 8px 0 10px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+  font: inherit; font-size: 12px; letter-spacing: 0; text-transform: none; cursor: pointer;
+  transition: border-color 140ms var(--ease-out), color 140ms var(--ease-out), transform 120ms var(--ease-out);
 }
-.boost-ready svg { color: var(--warn); }
-.boost-ready:active { transform: scale(0.97); }
+.quest-goal-toggle svg { transition: transform 160ms var(--ease-out); }
+.quest-goal-toggle[aria-expanded="true"] { border-color: var(--accent-solid); color: var(--accent); }
+.quest-goal-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.quest-goal-toggle:active { transform: scale(0.96); }
+.quest-row { display: flex; align-items: flex-end; gap: 8px; }
+.quest-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.quest-title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.quest-title { font-size: 14px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quest-count { font-size: 12.5px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
+.quest-track { position: relative; height: 12px; border-radius: 999px; background: var(--stage); box-shadow: inset 0 1px 0 rgb(0 0 0 / 0.06); overflow: hidden; }
+.quest-fill {
+  position: absolute; inset: 0; border-radius: inherit; background: var(--warn);
+  transform-origin: left center; transform: scaleX(var(--progress, 0)); transition: transform 320ms var(--ease-out);
+}
+.quest-fill::before { content: ""; position: absolute; top: 2px; left: 6px; right: 6px; height: 3px; border-radius: 999px; background: rgb(255 255 255 / 0.38); }
+.quest-card.done .quest-fill { background: var(--go); }
+.quest-chest { position: relative; flex-shrink: 0; display: grid; place-items: center; width: 34px; height: 34px; margin: -12px 0 -11px; }
+.quest-chest::before {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, rgb(251 191 36 / 0.45), transparent 68%);
+}
+.ico-chest { position: relative; display: block; }
+.chest-lid { fill: var(--chest-lid); }
+.chest-body { fill: var(--chest-body); }
+.chest-band { fill: var(--chest-band); }
+.chest-lock { fill: var(--chest-lock); }
+.quest-card.done .quest-chest::before { opacity: 1; }
+.quest-card.done .chest-lid { fill: #fbbf24; }
+.quest-card.done .chest-body { fill: #d97706; }
+.quest-card.done .chest-band { fill: #92400e; }
+.quest-card.done .chest-lock { fill: #fef3c7; }
+.quest-reward { margin: 6px 0 0; font-size: 12px; line-height: 1.3; font-weight: 700; color: var(--ink-2); }
+.quest-card.done .quest-reward { color: var(--go-ink); }
+.quest-goals { margin-top: 10px; }
+.quest-goals[hidden] { display: none; }
+
+/* 2× XP Elixir: potion glyph, medallion badge, rail banner, lesson offer */
+.ico-potion { display: block; }
+.potion-glass { fill: #fde68a; stroke: #b45309; stroke-width: 1.3; stroke-linejoin: round; }
+.potion-liquid { fill: #f59e0b; }
+.potion-bolt { fill: #ffffff; stroke: #92400e; stroke-width: 1; stroke-linejoin: round; paint-order: stroke; }
+.boost-badge, .ice-badge {
+  position: relative; flex-shrink: 0; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+}
+.boost-badge {
+  background: radial-gradient(circle at 50% 40%, #fff7d6, #fde68a 70%); border: 1.5px solid #f59e0b;
+  box-shadow: 0 2px 0 var(--boost-cta-lip);
+}
+.boost-badge > svg { position: relative; z-index: 1; }
+.ice-badge { background: var(--ice-tint); border: 1.5px solid var(--ice-border); color: var(--ice); box-shadow: 0 2px 0 var(--ice-border); }
+.ice-badge svg { width: 20px; height: 20px; }
+.boost-banner.ready .boost-badge::after {
+  content: ""; position: absolute; inset: -5px; border-radius: 50%; z-index: 0; pointer-events: none;
+  background: radial-gradient(circle, rgb(251 191 36 / 0.4), transparent 70%);
+  animation: boostGlow 2400ms ease-in-out infinite;
+}
+.boost-banner, .boost-offer {
+  position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px;
+  border: 1px solid var(--boost-line); background: var(--boost-surface); overflow: hidden;
+}
+.boost-banner { margin-top: 12px; }
+.boost-banner.active, .boost-offer.active { border-color: var(--boost-line-active); background: var(--boost-surface-active); box-shadow: 0 2px 0 var(--boost-line-active); }
+.boost-banner.active { padding-bottom: 14px; }
+.boost-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.25; }
+.boost-text strong { font-size: 14px; font-weight: 800; color: var(--boost-title); white-space: nowrap; }
+.boost-sub { font-size: 12.5px; font-weight: 700; color: var(--boost-sub); white-space: nowrap; }
+.boost-meter { position: absolute; left: 12px; right: 12px; bottom: 6px; height: 4px; border-radius: 999px; background: var(--boost-meter-track); overflow: hidden; }
+.boost-meter-fill {
+  position: absolute; inset: 0; border-radius: inherit; background: #f59e0b;
+  transform-origin: left center; transform: scaleX(var(--boost-left, 1)); transition: transform 1000ms linear;
+}
+.btn-tactile.boost-go {
+  flex-shrink: 0; min-height: 38px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 800;
+  background: var(--boost-cta); color: var(--boost-cta-ink); box-shadow: 0 3px 0 var(--boost-cta-lip);
+}
+.btn-tactile.boost-go:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--boost-cta-lip); transition-duration: 0ms; }
+.boost-offer { margin: 4px 0 14px; padding: 12px 14px; text-align: left; flex-wrap: wrap; }
+.boost-offer .boost-text strong { font-size: 15px; }
+.boost-offer .boost-sub { white-space: normal; }
+.medallion { width: 40px; height: 40px; }
+@keyframes boostGlow { 0%, 100% { opacity: 0.45; transform: scale(0.92); } 50% { opacity: 1; transform: scale(1.06); } }
 .boost-tag {
   display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px;
   background: var(--boost-tint); color: var(--boost-ink); font-size: 11.5px; font-weight: 800;
@@ -3262,8 +3373,6 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
 .shop-card-head h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--ink); }
 .shop-card-icon { width: 40px; height: 40px; flex-shrink: 0; display: grid; place-items: center; border-radius: 12px; }
 .shop-card-icon svg { width: 20px; height: 20px; }
-.shop-card-icon.boost { background: var(--boost-tint); color: var(--boost-ink); }
-.shop-card-icon.ice { background: var(--ice-tint); color: var(--ice); }
 .shop-card-icon.goal { background: var(--accent-tint); color: var(--accent); }
 .shop-meta { margin: 2px 0 0; font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
 .shop-copy { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
@@ -3391,7 +3500,8 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
 @media (hover: hover) and (pointer: fine) {
   .streak-btn:hover, .share-btn:not(.primary):not(.copied):hover, .goal-chip:not([aria-pressed="true"]):hover { border-color: var(--line-strong); background: var(--stage); }
   .rank-stat-box.stat-btn:hover { border-color: var(--line-strong); }
-  .boost-ready:hover { background: var(--boost-tint); }
+  .quest-goal-toggle:hover { border-color: var(--line-strong); color: var(--ink); }
+  .btn-tactile.boost-go:hover:not(:disabled) { filter: brightness(1.04); }
   .gem-buy:not([aria-disabled="true"]):hover { border-color: var(--gem); }
   .segmented button:not([aria-pressed="true"]):hover { color: var(--ink); }
 }
@@ -3412,7 +3522,9 @@ body:not(.mode-mission) #lesson-footer-host:empty { display: none; }
   .lesson-topbar-inner .boost-pill.compact { padding: 0 7px; min-height: 30px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fx-twinkle, .fx-flake, .fx-ember, .fx-tongue, .fx-flame-glow, .fx-orbit-spin, .fx-rainbow-spin, .kubo-halo, .boost-pill::after { animation: none !important; }
+  .fx-twinkle, .fx-flake, .fx-ember, .fx-tongue, .fx-flame-glow, .fx-orbit-spin, .fx-rainbow-spin, .kubo-halo, .boost-pill::after, .boost-banner.ready .boost-badge::after { animation: none !important; }
   .fx-ember { opacity: 0.8; }
-  .streak-btn, .goal-chip, .share-btn, .gem-buy, .boost-ready, .rank-stat-box.stat-btn { transition: none; }
+  .streak-btn, .goal-chip, .share-btn, .gem-buy, .quest-goal-toggle, .rank-stat-box.stat-btn { transition: none; }
+  .boost-meter-fill, .quest-fill { transition: none; }
+  .boost-banner.ready .boost-badge::after { animation: none !important; opacity: 0.5; }
 }

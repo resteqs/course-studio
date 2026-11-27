@@ -446,6 +446,8 @@ const ICONS = {
   info: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.7v.2"/></svg>`,
   checkCircle: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 4.9-5.3"/></svg>`,
   chevronDown: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`,
+  boostPotion: `<svg class="ico-potion" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path class="potion-glass" d="M9.2 2h5.6v2h-1v4.3l5.1 8.3A3.6 3.6 0 0 1 15.8 22H8.2a3.6 3.6 0 0 1-3.1-5.4l5.1-8.3V4h-1z"/><path class="potion-liquid" d="M7.2 14h9.6l1.4 2.4a2.2 2.2 0 0 1-1.9 3.3H7.7a2.2 2.2 0 0 1-1.9-3.3z"/><path class="potion-bolt" d="M12.9 9.2 9.8 14.3h2.3l-.8 4.2 3.4-5.4h-2.4z"/></svg>`,
+  chest: `<svg class="ico-chest" width="34" height="34" viewBox="0 0 32 32" aria-hidden="true"><path class="chest-lid" d="M4 14v-3.5A5.5 5.5 0 0 1 9.5 5h13a5.5 5.5 0 0 1 5.5 5.5V14z"/><path class="chest-body" d="M4 14h24v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path class="chest-band" d="M4 14h24v3H4z"/><rect class="chest-lock" x="13.5" y="12" width="5" height="7" rx="1.5"/></svg>`,
   snow: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M4.3 6.5l15.4 11M4.3 17.5l15.4-11"/><path d="m9.5 3.5 2.5 2 2.5-2M9.5 20.5l2.5-2 2.5 2M3.6 10.2l3 .6-.9 3M20.4 13.8l-3-.6.9-3M3.6 13.8l3-.6-.9-3M20.4 10.2l-3 .6.9 3"/></svg>`,
   trophy: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8M9.5 18h5"/></svg>`,
   gem: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5h11L22 9l-10 11.5L2 9l4.5-5.5Z"/><path d="M2 9h20M9.5 3.5 8 9l4 11.5L16 9l-1.5-5.5"/></svg>`,
@@ -2265,7 +2267,7 @@ function boostPillHtml(extraClass = "") {
   if (!left) return "";
   const mult = boostMultiplier();
   return `<span class="boost-pill ${extraClass}" role="timer" data-boost-mult="${mult}" aria-label="${boostSpokenLabel(mult, left)}">
-    <span class="boost-pill-icon" aria-hidden="true">${ICONS.bolt}</span><span class="boost-pill-label">${mult}× XP</span>
+    <span class="boost-pill-icon" aria-hidden="true">${ICONS.bolt}</span><span class="boost-pill-label">${mult}×</span>
     <span class="tabular" data-boost-countdown aria-hidden="true">${formatTime(left)}</span></span>`;
 }
 
@@ -2293,6 +2295,7 @@ function syncBoostTicker() {
 function tickBoost() {
   const left = boostRemaining();
   document.querySelectorAll("[data-boost-countdown]").forEach((el) => { el.textContent = formatTime(left); });
+  document.querySelectorAll("[data-boost-meter]").forEach((el) => { el.style?.setProperty?.("--boost-left", boostFraction(left)); });
   document.querySelectorAll("[data-boost-mult]").forEach((el) => {
     el.setAttribute?.("aria-label", boostSpokenLabel(Number(el.dataset?.boostMult) || 2, left));
   });
@@ -2461,6 +2464,112 @@ function bindGoalPicker(root, after) {
   });
 }
 
+// Daily Quest card: goal presets stay folded away until the learner opens them.
+function dailyQuestHtml(g = state.data?.gamification || {}) {
+  const goal = Number(g.daily_goal) || 50;
+  const xp = Number(g.daily_xp) || 0;
+  const done = xp >= goal;
+  const reward = `25 Gems &amp; ${BOOST_MINUTES}m 2× XP`;
+  return `<section class="daily-card quest-card ${done ? "done" : ""}" aria-labelledby="quest-head">
+    <div class="rail-head">
+      <h2 id="quest-head">Daily Quest</h2>
+      <button type="button" id="btn-goal-toggle" class="quest-goal-toggle" aria-expanded="false" aria-controls="quest-goals"
+        aria-label="Change daily goal, now ${goal} XP"><span class="tabular">${goal}</span> XP${ICONS.chevronDown}</button>
+    </div>
+    <div class="quest-row">
+      <div class="quest-main">
+        <div class="quest-title-row">
+          <strong class="quest-title">${done ? "Daily quest complete!" : `Earn ${goal} XP today`}</strong>
+          <span class="quest-count tabular">${numberFormat.format(Math.min(xp, goal))} / ${numberFormat.format(goal)} XP</span>
+        </div>
+        <div class="quest-track" role="progressbar" aria-label="Daily quest progress" aria-valuenow="${Math.min(xp, goal)}" aria-valuemax="${goal}">
+          <div class="quest-fill" style="--progress: ${goal ? Math.min(xp / goal, 1).toFixed(4) : 0}"></div>
+        </div>
+      </div>
+      <span class="quest-chest" aria-hidden="true">${ICONS.chest}</span>
+    </div>
+    <p class="quest-reward">${done ? `Reward claimed: ${reward}` : `Reward: ${reward}`}</p>
+    <div class="quest-goals" id="quest-goals" hidden>${goalPickerHtml("side-goal")}</div>
+    ${boostBannerHtml(g)}
+  </section>`;
+}
+
+function bindDailyQuest(root) {
+  const toggle = root.querySelector("#btn-goal-toggle");
+  const goals = root.querySelector("#quest-goals");
+  if (!toggle || !goals) return;
+  const setOpen = (open) => {
+    toggle.setAttribute("aria-expanded", String(open));
+    goals.hidden = !open;
+  };
+  toggle.onclick = () => {
+    playSound("tap");
+    const open = toggle.getAttribute("aria-expanded") !== "true";
+    setOpen(open);
+    if (open) goals.querySelector('[aria-pressed="true"]')?.focus();
+  };
+  goals.onkeydown = (event) => {
+    if (event.key !== "Escape") return;
+    setOpen(false);
+    toggle.focus();
+  };
+  bindGoalPicker(goals, () => renderMap());
+}
+
+function boostFraction(left = boostRemaining()) {
+  return Math.max(0, Math.min(1, left / (BOOST_MINUTES * 60))).toFixed(4);
+}
+
+// Right rail power-up: an active countdown banner, a ready-to-start row, or nothing at all.
+function boostBannerHtml(g = state.data?.gamification || {}) {
+  const left = boostRemaining(g);
+  if (left) {
+    const mult = boostMultiplier(g);
+    return `<div class="boost-banner active" role="timer" data-boost-mult="${mult}" aria-label="${boostSpokenLabel(mult, left)}">
+      <span class="boost-badge" aria-hidden="true">${ICONS.boostPotion}</span>
+      <span class="boost-text" aria-hidden="true"><strong>${mult}× XP Boost</strong><span class="boost-sub"><span class="tabular" data-boost-countdown>${formatTime(left)}</span> left</span></span>
+      <span class="boost-meter" aria-hidden="true"><span class="boost-meter-fill" data-boost-meter style="--boost-left: ${boostFraction(left)}"></span></span>
+    </div>`;
+  }
+  const tokens = Number(g.xp_boost_tokens) || 0;
+  if (!tokens) return "";
+  return `<div class="boost-banner ready">
+    <span class="boost-badge" aria-hidden="true">${ICONS.boostPotion}</span>
+    <span class="boost-text"><strong>2× XP Boost</strong><span class="boost-sub">${BOOST_MINUTES} min <span class="tabular">(${tokens} ready)</span></span></span>
+    <button type="button" id="btn-boost-ready" class="btn-tactile boost-go pill" aria-label="Start 2× XP Boost for ${BOOST_MINUTES} minutes">Start</button>
+  </div>`;
+}
+
+// Lesson complete: keep the momentum of a running boost, or offer a stored one.
+function boostOfferHtml(g = state.data?.gamification || {}) {
+  const left = boostRemaining(g);
+  if (left) {
+    const mult = boostMultiplier(g);
+    return `<div class="boost-offer active" role="timer" data-boost-mult="${mult}" aria-label="${boostSpokenLabel(mult, left)}">
+      <span class="boost-badge" aria-hidden="true">${ICONS.boostPotion}</span>
+      <span class="boost-text" aria-hidden="true"><strong>${mult}× XP Boost active</strong><span class="boost-sub"><span class="tabular" data-boost-countdown>${formatTime(left)}</span> left. Keep going!</span></span>
+    </div>`;
+  }
+  if (!(Number(g.xp_boost_tokens) > 0)) return "";
+  return `<div class="boost-offer ready">
+    <span class="boost-badge" aria-hidden="true">${ICONS.boostPotion}</span>
+    <span class="boost-text"><strong>2× XP Boost ready</strong><span class="boost-sub">Double XP for the next ${BOOST_MINUTES} min</span></span>
+    <button type="button" id="btn-complete-boost" class="btn-tactile boost-go pill">Start 2× XP</button>
+  </div>`;
+}
+
+function bindBoostOffer(root) {
+  const button = root.querySelector("#btn-complete-boost");
+  if (!button) return;
+  button.onclick = () => guarded(button, async () => {
+    await activateBoost();
+    spawnSparkles(button, 18);
+    const offer = button.closest(".boost-offer");
+    if (offer) offer.outerHTML = boostOfferHtml();
+    renderTopbar();
+  });
+}
+
 function lookTileHtml({ attr, id, name, unlocked, pressed, lockNote, level, buyId, art }) {
   const buyable = !unlocked && buyId && Object.hasOwn(SHOP_ITEMS, buyId);
   return `<div class="look-cell">
@@ -2520,13 +2629,13 @@ function boostsPanelHtml() {
        <button type="button" id="shop-activate-boost" class="btn-tactile go pill" ${tokens ? "" : 'aria-disabled="true"'}>${ICONS.bolt} Activate 2× Boost <span class="tabular">(${tokens})</span></button>`;
   return `<div class="shop-grid">
     <article class="shop-card boost">
-      <div class="shop-card-head"><span class="shop-card-icon boost" aria-hidden="true">${ICONS.bolt}</span>
+      <div class="shop-card-head"><span class="boost-badge medallion" aria-hidden="true">${ICONS.boostPotion}</span>
         <div><h3>2× XP Boost</h3><p class="shop-meta tabular">${numberFormat.format(tokens)} / ${MAX_BOOST_TOKENS} ready</p></div></div>
       ${boostCopy}
       <div class="shop-row"><span>Extra booster</span>${shopButtonHtml("xp_boost_15m")}</div>
     </article>
     <article class="shop-card ice">
-      <div class="shop-card-head"><span class="shop-card-icon ice" aria-hidden="true">${ICONS.snow}</span>
+      <div class="shop-card-head"><span class="ice-badge medallion" aria-hidden="true">${ICONS.snow}</span>
         <div><h3>Streak Freeze</h3><p class="shop-meta tabular">${numberFormat.format(freezes)} / ${MAX_STREAK_FREEZES} in stock</p></div></div>
       <p class="shop-copy">Automatically protects your streak if you miss a day.</p>
       <div class="shop-row"><span>Get one more</span>${shopButtonHtml("streak_freeze")}</div>
@@ -2657,7 +2766,7 @@ function openStreakModal(trigger) {
         </li>`).join("")}
       </ol>
       <div class="ice-stock">
-        <span class="shop-card-icon ice" aria-hidden="true">${ICONS.snow}</span>
+        <span class="ice-badge medallion" aria-hidden="true">${ICONS.snow}</span>
         <div class="ice-stock-copy"><strong class="tabular">${freezes} / ${MAX_STREAK_FREEZES} Streak Freezes</strong>
           <span>Automatically protects your streak if you miss a day.</span></div>
       </div>
@@ -3646,12 +3755,6 @@ function renderMap({ sheen = false } = {}) {
        <button id="btn-open-squad" class="btn-tactile secondary full small" data-open-squad>${ICONS.trophy} Open leaderboard</button>`;
   const dailyGoal = Number(g.daily_goal) || 50;
   const dailyXp = Number(g.daily_xp) || 0;
-  const tokens = Number(g.xp_boost_tokens) || 0;
-  const boostHtml = boostRemaining(g)
-    ? boostPillHtml("wide")
-    : tokens > 0
-      ? `<button type="button" id="btn-boost-ready" class="boost-ready">${ICONS.bolt}<span>2× Boost ready <span class="tabular">(${tokens})</span></span></button>`
-      : "";
 
   const pops = jumpPopoversHtml();
   renderPreserving(root, `
@@ -3718,17 +3821,7 @@ function renderMap({ sheen = false } = {}) {
       <div class="path-column">${pathHtml}</div>
 
       <aside class="path-right-rail" aria-label="Daily goal, leaderboard, and achievements">
-        <div class="daily-card">
-          <div class="daily-goal">
-            <div class="daily-goal-head">
-              <span class="daily-goal-label">Today: <span class="tabular">${numberFormat.format(dailyXp)} / ${numberFormat.format(dailyGoal)} XP</span></span>
-              ${dailyXp >= dailyGoal ? `<span class="daily-goal-done">${ICONS.check} Goal met</span>` : ""}
-            </div>
-            ${progressBarHtml(Math.min(dailyXp, dailyGoal), dailyGoal, "Daily XP goal")}
-            ${goalPickerHtml("side-goal")}
-            ${boostHtml}
-          </div>
-        </div>
+        ${dailyQuestHtml(g)}
 
         <div class="squad-card">
           <div class="rail-head">
@@ -3773,7 +3866,7 @@ function renderMap({ sheen = false } = {}) {
   document.getElementById("btn-gems").onclick = (event) => { playSound("tap"); openRewardsModal(event.currentTarget, "boosts"); };
   const quickDaily = document.getElementById("quick-daily");
   if (quickDaily) quickDaily.onclick = (event) => { playSound("tap"); openRewardsModal(event.currentTarget, "boosts"); };
-  bindGoalPicker(root, () => renderMap());
+  bindDailyQuest(root);
   const boostReady = document.getElementById("btn-boost-ready");
   if (boostReady) boostReady.onclick = () => guarded(boostReady, async () => { await activateBoost(); renderMap(); });
   syncBoostTicker();
@@ -6431,6 +6524,7 @@ function advanceLesson(isLast) {
         <div class="lesson-summary-tile"><dt>Best combo</dt><dd>${numberFormat.format(state.lesson.bestCombo)}</dd></div>
         <div class="lesson-summary-tile lesson-review-tile">${lessonReviewSummaryHtml()}</div>
       </dl>
+      ${boostOfferHtml()}
       <div class="form-row wrap">
         ${next ? `<button id="next-lesson" class="btn-tactile go pill">${next.lesson.id === state.lesson.lesson.id && next.di === state.districtIdx ? "Resume lesson" : "Next lesson"}</button>` : ""}
         <button id="course-from-lesson" class="btn-tactile secondary pill">Back to course</button>
@@ -6438,6 +6532,7 @@ function advanceLesson(isLast) {
     thread.append(end);
     if (next) end.querySelector("#next-lesson").onclick = () => openLesson(next.di, next.li);
     end.querySelector("#course-from-lesson").onclick = leaveLesson;
+    bindBoostOffer(end);
     renderTopbar();
     renderMissionFooter();
     showLessonBeat(end, "center");
