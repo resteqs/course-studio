@@ -311,6 +311,7 @@ function applyUserAccessory(acc) {
 
 // Crisp Single-Weight Icons
 const ICONS = {
+  keyboard: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8"/></svg>`,
   close: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
   check: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
   star: `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.9 8.6l6.6.9-4.8 4.6 1.2 6.6L12 17.5l-5.9 3.2 1.2-6.6-4.8-4.6 6.6-.9L12 2.5Z"/></svg>`,
@@ -487,65 +488,51 @@ function mascotHtml(mood = "idle", size = 56, customColor = null, speaking = fal
   const restMouth = (mood === "happy" || mood === "proud")
     ? `<path class="kubo-mouth-smile" d="M26 37.5c2 3.2 10 3.2 12 0" stroke="#18181B" stroke-width="2.6" stroke-linecap="round" fill="none"/>`
     : mood === "oops"
-      ? `<path class="kubo-mouth-smile" d="M28 40c2-1.8 6-1.8 8 0" stroke="#18181B" stroke-width="2.4" stroke-linecap="round" fill="none"/>`
+      ? `<path class="kubo-mouth-smile" d="M27.5 39.6q2.2-1.6 4.5 0t4.5 0" stroke="#18181B" stroke-width="2.3" stroke-linecap="round" fill="none"/>`
       : mood === "thinking"
         ? `<path class="kubo-mouth-smile" d="M28.5 38.2c1.5 1.8 5.5 1.8 7 0" stroke="#18181B" stroke-width="2.4" stroke-linecap="round" fill="none"/>`
         : `<path class="kubo-mouth-smile" d="M27.5 38c1.6 2.2 7.4 2.2 9 0" stroke="#18181B" stroke-width="2.4" stroke-linecap="round" fill="none"/>`;
 
   const talkMouth = `<ellipse class="kubo-mouth-talk" cx="32" cy="39" rx="4.2" ry="3.0" fill="#18181B"/>`;
 
-  let eyesEl = "";
-  if (mood === "happy" || mood === "proud") {
-    eyesEl = `
-      <path d="M20 31c1.6-3.2 5.4-3.2 7 0" stroke="#18181B" stroke-width="3" stroke-linecap="round" fill="none"/>
-      <path d="M37 31c1.6-3.2 5.4-3.2 7 0" stroke="#18181B" stroke-width="3" stroke-linecap="round" fill="none"/>
-      <ellipse cx="18" cy="36.5" rx="3.2" ry="1.8" fill="var(--mascot-cheek)" opacity="0.85"/>
-      <ellipse cx="46" cy="36.5" rx="3.2" ry="1.8" fill="var(--mascot-cheek)" opacity="0.85"/>`;
-  } else if (mood === "oops") {
-    eyesEl = `
-      <circle cx="23.5" cy="31" r="4.6" fill="#FFFFFF"/>
-      <circle cx="40.5" cy="31" r="4.6" fill="#FFFFFF"/>
-      <circle cx="24" cy="31.5" r="2.3" fill="#18181B"/>
-      <circle cx="41" cy="31.5" r="2.3" fill="#18181B"/>`;
-  } else if (mood === "thinking") {
-    // Warm, curious & encouraging: bright centered eyes, a little sparkle, soft cheeks.
-    eyesEl = `
-      <g class="kubo-eyes">
-        <circle cx="23.5" cy="30.2" r="5.3" fill="#FFFFFF"/>
-        <circle cx="40.5" cy="30.2" r="5.3" fill="#FFFFFF"/>
-        <circle cx="23.7" cy="29.8" r="2.7" fill="#18181B"/>
-        <circle cx="40.7" cy="29.8" r="2.7" fill="#18181B"/>
-        <circle cx="24.9" cy="28.4" r="1.05" fill="#FFFFFF"/>
-        <circle cx="41.9" cy="28.4" r="1.05" fill="#FFFFFF"/>
-      </g>
-      <ellipse cx="18" cy="36.5" rx="2.8" ry="1.5" fill="var(--mascot-cheek)" opacity="0.7"/>
-      <ellipse cx="46" cy="36.5" rx="2.8" ry="1.5" fill="var(--mascot-cheek)" opacity="0.7"/>`;
-  } else {
-    eyesEl = `
-      <g class="kubo-eyes">
-        <circle cx="23.5" cy="30.5" r="5.2" fill="#FFFFFF"/>
-        <circle cx="40.5" cy="30.5" r="5.2" fill="#FFFFFF"/>
-        <circle cx="24.3" cy="30.5" r="2.5" fill="#18181B"/>
-        <circle cx="41.3" cy="30.5" r="2.5" fill="#18181B"/>
-        <circle cx="25.5" cy="29" r="1" fill="#FFFFFF"/>
-        <circle cx="42.5" cy="29" r="1" fill="#FFFFFF"/>
-      </g>
-      <ellipse cx="18" cy="36.5" rx="2.6" ry="1.4" fill="var(--mascot-cheek)" opacity="0.55"/>
-      <ellipse cx="46" cy="36.5" rx="2.6" ry="1.4" fill="var(--mascot-cheek)" opacity="0.55"/>`;
-  }
+  const warm = mood === "happy" || mood === "proud";
+  const eyeY = warm ? 30.6 : 30.2;
+  const brows = mood === "oops" ? "M19 24.4q4-1.6 8-.6 M37 20.6q4.6-3.6 9 .2"
+    : mood === "thinking" ? "M18 24q4-3 9-2 M37 23q5-4 9-2"
+    : "M19 24q4-2 8-1 M37 23q4-1 8 1";
+  const eyes = [23.5, 40.5];
+  const eyesEl = `<g class="kubo-eyes">
+    <g class="kubo-eyes-open">
+      ${eyes.map((x) => `<ellipse cx="${x}" cy="${eyeY}" rx="5.2" ry="${warm ? 4.2 : 5.2}" fill="#fff"/>`).join("")}
+      <g class="kubo-pupils">${eyes.map((x) => `<circle cx="${x}" cy="${eyeY}" r="2.35" fill="#18181B"/>
+        <circle cx="${x + 0.8}" cy="${eyeY - 1}" r=".8" fill="#fff"/>`).join("")}</g>
+    </g>
+    <path class="kubo-lids" d="M19 31q4.5 3 9 0 M36 31q4.5 3 9 0" stroke="#18181B" stroke-width="2.2" stroke-linecap="round"/>
+  </g>`;
+  const cheeks = `<g class="kubo-cheeks" fill="var(--mascot-cheek)" opacity="${warm ? 0.9 : 0.55}">
+    <ellipse cx="18" cy="36.5" rx="${warm ? 3.2 : 2.6}" ry="1.7"/>
+    <ellipse cx="46" cy="36.5" rx="${warm ? 3.2 : 2.6}" ry="1.7"/>
+  </g>`;
 
   return `
     <span ${idAttr ? `id="${idAttr}"` : ""} class="kubo-wrap mood-${mood} acc-${acc} shape-${shapeId} ${speaking ? "speaking" : ""}" ${colorVars} aria-hidden="true">
       <svg class="kubo-svg" viewBox="0 0 64 60" width="${size}" height="${Math.round(size * 0.94)}" fill="none">
-        ${layers.back}
-        <ellipse cx="32" cy="56" rx="18" ry="3.5" fill="currentColor" opacity="0.12"/>
         <g class="kubo-body-group">
+          <ellipse class="kubo-shadow" cx="32" cy="56" rx="18" ry="3.5" fill="currentColor" opacity="0.12"/>
+          <g class="kubo-actor"><g class="kubo-breath">
+          ${layers.back}
           ${geo.body("var(--kubo-shade)", 3)}
           ${geo.body("var(--kubo-body)", 0)}
           <path d="${geo.hi}" stroke="var(--kubo-hi)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/>
-          <g class="kubo-face" transform="translate(0 ${geo.face})">${eyesEl}${restMouth}${talkMouth}</g>
+          <g class="kubo-face-group" transform="translate(0 ${geo.face})">
+            ${cheeks}
+            <path class="kubo-brows" d="${brows}" stroke="#18181B" stroke-width="1.55" stroke-linecap="round"/>
+            ${eyesEl}
+            <g class="kubo-mouth">${restMouth}${talkMouth}</g>
+          </g>
           <g transform="translate(0 ${layers.head ? geo.head : geo.face})">${layers.front}</g>
           ${crown ? `<g transform="translate(0 ${geo.head})">${crown}</g>` : ""}
+          </g></g>
         </g>
       </svg>
     </span>`;
@@ -555,7 +542,10 @@ function mascotHtml(mood = "idle", size = 56, customColor = null, speaking = fal
 let audioCtx = null;
 let audioMaster = null;
 
+window.Delight.setSoundEnabled(() => Boolean(state.data?.gamification.sound_enabled));
+
 function primeAudio() {
+  window.Delight.primeAudio();
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
@@ -695,10 +685,20 @@ function playClick(ctx) {
 }
 
 function playSound(kind = "correct", comboBoost = 0) {
+  const delight = window.Delight;
+  if (kind === "tap") delight.triggerHaptic("tap");
+  if (kind === "correct" || kind === "code_pass") delight.triggerHaptic("correct");
+  const missed = kind === "miss" || kind === "wrong";
+  if (missed) delight.triggerHaptic("wrong");
   if (state.data && !state.data.gamification.sound_enabled) return;
+  if (comboBoost > 0 && (kind === "correct" || kind === "code_pass")) delight.playComboChime(comboBoost);
   const name = sfxNameFor(kind, comboBoost);
   if (!name) return;
-  playWav(name).catch(() => playSynth(kind, comboBoost));
+  const fallback = () => playWav(name).catch(() => playSynth(kind, comboBoost));
+  if (missed) delight.playSoftNudge().then((played) => {
+    if (!played && state.data?.gamification.sound_enabled) fallback();
+  });
+  else fallback();
 }
 
 // Web Audio synth fallback (used only if a .wav cannot be played).
@@ -736,7 +736,7 @@ async function playSynth(kind = "correct", comboBoost = 0) {
 }
 
 function prefersReducedMotion() {
-  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return window.Delight.prefersReducedMotion();
 }
 
 function spawnSparkles(anchorEl, count = 14, spread = 1) {
@@ -772,6 +772,7 @@ function spawnConfetti(originEl, count = 28) {
   const layer = document.getElementById("fx-layer");
   if (!layer || !originEl || prefersReducedMotion() || !originEl.animate) return;
   const { left, top, width, height } = originEl.getBoundingClientRect();
+  const easing = window.Delight.springCurve("bouncy");
   const colors = ["#6366F1", "#22C55E", "#F59E0B", "#38BDF8", "#F472B6"];
   for (let i = 0; i < count; i++) {
     const piece = document.createElement("span");
@@ -787,7 +788,7 @@ function spawnConfetti(originEl, count = 28) {
       { transform: "translate(0, 0) scale(.45)", opacity: 1 },
       { transform: `translate(${dx * .7}px, ${dy - 90}px) rotate(180deg) scale(1)`, opacity: 1, offset: .45 },
       { transform: `translate(${dx}px, ${dy + 125}px) rotate(420deg)`, opacity: 0 },
-    ], { duration: 700 + Math.random() * 300, easing: "cubic-bezier(.2,.7,.35,1)" });
+    ], { duration: 700 + Math.random() * 300, easing });
     animation.onfinish = animation.oncancel = () => piece.remove();
   }
 }
@@ -798,19 +799,44 @@ function recordLessonCheck(correct) {
   lesson.bestCombo = Math.max(lesson.bestCombo, lesson.correctChecks);
 }
 
+function actKubo(el, motion, mood) {
+  if (!el) return;
+  if (!el.classList.contains(`mood-${mood}`)) {
+    const size = Number(el.querySelector(".kubo-svg").getAttribute("width"));
+    const template = document.createElement("template");
+    template.innerHTML = mascotHtml(mood, size);
+    const replacement = template.content.firstElementChild;
+    el.replaceWith(replacement);
+    el = replacement;
+  }
+  el.classList.remove("kubo-jump", "kubo-shake");
+  if (prefersReducedMotion()) return;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (!el.isConnected) return;
+    el.classList.add(motion);
+    if (motion === "kubo-jump") setTimeout(() => el.isConnected && window.Delight.sparkleRing?.(el), 90);
+  }));
+}
+
+function kuboJump(el) {
+  actKubo(el, "kubo-jump", el?.classList.contains("mood-proud") ? "proud" : "happy");
+}
+
+function kuboShake(el) {
+  actKubo(el, "kubo-shake", "oops");
+}
+
 function animateLessonCheck(correct, target, advanceCombo = true, sparkles = 14) {
   if (!target) return;
   if (advanceCombo) recordLessonCheck(correct);
   const motionClass = correct ? "check-pop" : "nudge-shake";
   target.classList.remove("check-pop", "nudge-shake");
-  requestAnimationFrame(() => target.classList.add(motionClass));
-  if (!correct) return;
-  spawnSparkles(target, sparkles);
+  if (!prefersReducedMotion()) requestAnimationFrame(() => target.classList.add(motionClass));
   const kubo = target.closest(".lesson-beat")?.querySelector(".kubo-wrap");
-  if (kubo) {
-    kubo.classList.remove("kubo-hop");
-    requestAnimationFrame(() => kubo.classList.add("kubo-hop"));
-  }
+  if (correct) {
+    kuboJump(kubo);
+    spawnSparkles(target, sparkles);
+  } else kuboShake(kubo);
 }
 
 function countLessonXp(element, xp) {
@@ -1124,7 +1150,62 @@ function mdToHtml(md, inline = false) {
   return out.replace(/@@MATH(\d+)@@/g, (slot, i) => mathSlots[Number(i)] ?? slot);
 }
 
+const MATH_SYMBOLS = new Map(Object.entries({
+  gamma: "γ", varepsilon: "ε", epsilon: "ε", lambda: "λ", pi: "π",
+  theta: "θ", delta: "δ", phi: "φ", Phi: "Φ", alpha: "α", mu: "μ",
+  sigma: "σ", pm: "±", le: "≤", leq: "≤", ge: "≥", geq: "≥", neq: "≠",
+  approx: "≈", times: "×", cdot: "·", to: "→", rightarrow: "→", infty: "∞",
+  sum: "∑", mid: "|", sim: "~", left: "", right: "",
+}));
+
+function appendFallbackMath(parent, expression) {
+  const text = expression
+    .replace(/\\(?:text|mathrm|mathbb|mathcal)\{([^{}]*)\}/g, "$1")
+    .replace(/\\([a-zA-Z]+)/g, (_, command) => MATH_SYMBOLS.get(command) ?? command)
+    .replace(/[ \t]+/g, " ")
+    .replace(/\\[,;! ]/g, " ");
+  let end = 0;
+  for (const match of text.matchAll(/([_^])(?:\{([^{}]+)\}|([\p{L}\p{N}]))/gu)) {
+    parent.append(text.slice(end, match.index).replace(/[{}]/g, ""));
+    const script = document.createElement(match[1] === "_" ? "sub" : "sup");
+    script.textContent = match[2] ?? match[3];
+    parent.append(script);
+    end = match.index + match[0].length;
+  }
+  parent.append(text.slice(end).replace(/[{}]/g, ""));
+}
+
+function fallbackMathInElement(el) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const pending = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (!node.parentElement?.closest("script, noscript, style, textarea, pre, code, select, option, .math-fallback")) {
+      pending.push(node);
+    }
+  }
+  const delimiters = /(?<!\\)\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\((.+?)\\\)|(?<![\\$])\$(?!\$)((?:\\.|[^$\n])+?)\$(?!\$)/g;
+  for (const node of pending) {
+    let end = 0;
+    const fragment = document.createDocumentFragment();
+    for (const match of node.data.matchAll(delimiters)) {
+      fragment.append(node.data.slice(end, match.index));
+      const math = document.createElement("span");
+      math.className = "math-fallback";
+      if (match[1] || match[2]) math.classList.add("math-fallback-display");
+      appendFallbackMath(math, match[1] ?? match[2] ?? match[3] ?? match[4]);
+      fragment.append(math);
+      end = match.index + match[0].length;
+    }
+    if (end) {
+      fragment.append(node.data.slice(end));
+      node.replaceWith(fragment);
+    }
+  }
+}
+
 function renderMath(el) {
+  if (!el) return;
   if (window.renderMathInElement) {
     window.renderMathInElement(el, {
       delimiters: [
@@ -1135,7 +1216,7 @@ function renderMath(el) {
       ],
       throwOnError: false,
     });
-  }
+  } else fallbackMathInElement(el);
 }
 
 async function request(path, body = null, options = {}) {
@@ -1262,20 +1343,22 @@ function openLesson(di, li, stepId = null) {
     : beats.findIndex((beat) => !isStepDone(beat.stepId) && beat.beatIndex >= Number(prefGet(beatCheckpointKey(beat)) || 0));
   if (start < 0) start = 0;
   primeAudio();
-  state.districtIdx = di;
-  state.beatIdx = start;
-  state.lesson = {
-    lesson, beats, checks: new Map(), correctChecks: 0, bestCombo: 0,
-    gained: 0, startingCards: state.data.srs.unlocked_count, complete: false,
-  };
-  if (lessonDone(lesson) && !stepId) {
-    for (const id of lesson.step_ids) {
-      delete state.stepFeedback[id];
-      delete state.selectedMcq[id];
+  window.Delight.withViewTransition(() => {
+    state.districtIdx = di;
+    state.beatIdx = start;
+    state.lesson = {
+      lesson, beats, checks: new Map(), correctChecks: 0, bestCombo: 0,
+      gained: 0, startingCards: state.data.srs.unlocked_count, complete: false,
+    };
+    if (lessonDone(lesson) && !stepId) {
+      for (const id of lesson.step_ids) {
+        delete state.stepFeedback[id];
+        delete state.selectedMcq[id];
+      }
     }
-  }
-  state.view = "mission";
-  render();
+    state.view = "mission";
+    render();
+  }, "enter-lesson");
 }
 
 function beatCheckpointKey(beat) {
@@ -1567,6 +1650,15 @@ document.addEventListener("keydown", (event) => {
 // Calm Top Bar
 let lastPresentedStreak;
 
+function showCoursePath(kind = "tab") {
+  if (state.inFlight || state.view === "map") return;
+  playSound("tap");
+  window.Delight.withViewTransition(() => {
+    state.view = "map";
+    render();
+  }, kind);
+}
+
 function renderTopbar() {
   const bar = document.getElementById("topbar");
   const g = state.data.gamification;
@@ -1597,7 +1689,7 @@ function renderTopbar() {
         <div class="lesson-topbar-right">
           ${state.lesson.correctChecks >= 2 ? `<span class="lesson-combo" role="status">${state.lesson.correctChecks} in a row!</span>` : ""}
           <span class="lesson-stat" title="Day streak"><span class="lesson-stat-icon warn ${streakIncreased ? "streak-lit" : ""}">${ICONS.flame}</span><span class="tabular">${esc(g.streak_days)}</span><span class="sr-only"> day streak</span></span>
-          <span class="lesson-stat" title="Total XP"><span class="lesson-stat-icon accent">${ICONS.bolt}</span><span class="tabular">${numberFormat.format(g.xp)}</span><span class="sr-only"> XP</span></span>
+          <span class="lesson-stat" title="Total XP" data-xp-total><span class="lesson-stat-icon accent">${ICONS.bolt}</span><span class="tabular">${numberFormat.format(g.xp)}</span><span class="sr-only"> XP</span></span>
           ${timerWidgetHtml()}
           ${soundButton}
         </div>
@@ -1613,7 +1705,7 @@ function renderTopbar() {
   renderPreserving(bar, `
     <div class="topbar-inner">
       <div class="topbar-left">
-        <button id="btn-brand" class="wordmark">${mascotHtml("idle", 28)}<span>Delightful Learn</span></button>
+        <button id="btn-brand" class="wordmark" aria-label="Delightful Learn, Course Home">${mascotHtml("idle", 28)}<span>Delightful Learn</span></button>
         <nav class="nav-tabs" aria-label="Sections">
           ${state.sbUser ? `<button id="btn-courses" class="nav-tab courses-tab">${ICONS.book}<span>Courses</span></button>` : ""}
           <button id="tab-map" class="nav-tab ${state.view === "map" ? "active" : ""}" ${state.view === "map" ? 'aria-current="page"' : ""}>${ICONS.book}<span>Course</span></button>
@@ -1632,8 +1724,8 @@ function renderTopbar() {
     </div>`);
 
   document.getElementById("btn-courses")?.addEventListener("click", showCourses);
-  document.getElementById("btn-brand").onclick = () => { if (state.inFlight) return; playSound("tap"); state.view = "map"; render(); };
-  document.getElementById("tab-map").onclick = () => { if (state.inFlight) return; playSound("tap"); state.view = "map"; render(); };
+  document.getElementById("btn-brand").onclick = () => showCoursePath();
+  document.getElementById("tab-map").onclick = () => showCoursePath();
   document.getElementById("tab-drill").onclick = () => { playSound("tap"); startDrillSession(); };
   document.getElementById("btn-account").onclick = (event) => { playSound("tap"); openSettingsModal("account", event.currentTarget); };
   document.getElementById("btn-theme").onclick = toggleTheme;
@@ -2317,11 +2409,11 @@ function achievementRowsHtml(filter = "all", preview = false) {
   const tag = preview ? "button" : "article";
   return shown.map((a) => {
     const progress = !preview && !unlocked(a) ? achievementProgress(a.id) : null;
-    let progressHtml = "";
+    let progressHtml = !preview && unlocked(a) ? '<span class="ach-earned">Earned</span>' : "";
     if (progress) {
       const [value, goal, unit] = progress;
       progressHtml = `<span class="ach-progress tabular">${value} / ${goal} ${unit}</span>
-        <span class="ach-meter" style="--progress: ${goal ? Math.min(value / goal, 1) : 0}" aria-hidden="true"><span></span></span>`;
+        <span class="ach-meter" style="--progress: ${goal ? Math.min(value / goal, 1) : 0}" aria-hidden="true"><span class="ach-meter-fill"></span></span>`;
     }
     return `
     <${tag} ${preview ? 'type="button" aria-haspopup="dialog"' : ""} class="ach-row ${unlocked(a) ? "unlocked" : ""}">
@@ -2463,11 +2555,12 @@ function renderMap({ sheen = false } = {}) {
 
     return `
       <section class="district-section" id="unit-${di}" aria-labelledby="unit-title-${di}">
-        <div class="unit-banner" style="--unit-bg:${bg}; --unit-lip:${bannerLipColor(bg)};">
+        <div class="unit-banner" style="--unit-bg:${bg}; --unit-lip:${bannerLipColor(bg)}; --unit-art:${colorHex(d.color)};">
           <div class="unit-banner-text">
             <div class="unit-kicker">Unit ${di + 1}</div>
             <h2 class="unit-title" id="unit-title-${di}">${esc(d.chapter)}</h2>
           </div>
+          ${window.Illustrations.unitMotifSvg(d.id)}
           <span class="unit-progress-pill" aria-label="${unitDone} of ${lessons.length} lessons done">${unitDone} / ${lessons.length}</span>
         </div>
         <div class="nodes-track">${nodes}</div>
@@ -2614,7 +2707,7 @@ function setRangeFill(el) {
 }
 
 function mountAgentLoop(container) {
-  const phases = ["Observe sₜ", "Pick action aₜ", "World reacts", "Get reward rₜ", "Learn & repeat"];
+  const phases = ["Observe sₜ", "Pick <span>action aₜ</span>", "World reacts", "Get <span>reward rₜ</span>", "Learn &amp; repeat"];
   const scenarios = {
     "Board Game": [
       "The agent sees its position, cash, and the properties it can buy.",
@@ -2642,11 +2735,12 @@ function mountAgentLoop(container) {
       <path class="loop-arrow" data-outcome-head d="m153 122-10-3 3 10"/>
       <text x="260" y="24">Action aₜ</text>
       <text x="260" y="181">Next state sₜ₊₁ &amp; reward rₜ</text>
-      <rect class="loop-node" data-agent x="15" y="65" width="128" height="70" rx="14"/>
-      <rect class="loop-node" data-world x="377" y="65" width="128" height="70" rx="14"/>
-      <text x="79" y="97">Agent</text><text class="loop-detail" x="79" y="119">Policy π</text>
-      <text x="441" y="97">Environment</text><text data-world-label class="loop-detail" x="441" y="119"></text>
-      <g data-pulse class="loop-pulse" hidden><circle class="loop-halo" r="11"/><circle r="6"/></g>
+      <rect class="loop-node" data-agent x="8" y="43" width="135" height="114" rx="14"/>
+      <rect class="loop-node" data-world x="377" y="43" width="135" height="114" rx="14"/>
+      <text x="75.5" y="67">Agent</text>
+      <text x="444.5" y="67">Environment</text>
+      <foreignObject x="14" y="69" width="123" height="80"><div class="loop-actor-art" data-loop-actor aria-hidden="true"></div></foreignObject>
+      <foreignObject x="382" y="73" width="125" height="74"><div class="loop-world-art" data-board-art>${window.Illustrations.boardTrackSvg()}</div><div class="loop-world-art" data-robot-art hidden>${window.Illustrations.robotGridSvg()}</div></foreignObject>
     </svg>
     <ol class="loop-phases">${phases.map((phase, i) => `<li><button type="button" class="loop-phase-btn" aria-pressed="false">${i + 1}. ${phase}</button></li>`).join("")}</ol>
     <p class="viz-insight" role="status" aria-live="polite"></p>
@@ -2662,12 +2756,40 @@ function mountAgentLoop(container) {
   const phaseButtons = [...container.querySelectorAll(".loop-phase-btn")];
   const insight = find(".viz-insight");
   const play = find("[data-play]");
-  const pulse = find("[data-pulse]");
-  let scenario = "Board Game", phase = 0, timer = null, movement = null, arcDraw = null;
+  let scenario = "Board Game", phase = 0, timer = null, movement = null, nod = null, standing = null;
+  const hop = (piece, height) => piece?.animate?.([
+    { transform: "translateY(0) scale(1)" },
+    { transform: "translateY(2px) scale(1.12, .86)", offset: .14 },
+    { transform: `translateY(-${height}px) scale(.94, 1.08)`, offset: .5 },
+    { transform: "translateY(0) scale(1.1, .9)", offset: .82 },
+    { transform: "translateY(0) scale(1)" },
+  ], { duration: 440, easing: "cubic-bezier(.33, 0, .25, 1)" });
   function draw() {
     scenarioButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.scenario === scenario)));
     phaseButtons.forEach((button, i) => button.setAttribute("aria-pressed", String(i === phase)));
-    find("[data-world-label]").textContent = scenario === "Board Game" ? "Board" : "Robot grid";
+    const board = find("[data-board-art]");
+    const robot = find("[data-robot-art]");
+    const actor = find("[data-loop-actor]");
+    board.hidden = scenario !== "Board Game";
+    robot.hidden = !board.hidden;
+    board.style.setProperty("--pawn-x", `${phase < 2 ? 22 : 86}px`);
+    robot.style.setProperty("--robot-x", `${phase < 2 ? 63 : 87}px`);
+    const spot = `${scenario}:${phase < 2 ? 0 : 1}`;
+    const moving = standing !== null && standing !== spot && !prefersReducedMotion();
+    if (moving) hop((board.hidden ? robot : board).querySelector(".pawn-hop"), board.hidden ? 9 : 16);
+    if (phase === 2 && !board.hidden && !prefersReducedMotion()) board.querySelector(".board-die")?.animate?.([
+      { transform: "translateY(0) rotate(0deg)" },
+      { transform: "translateY(-10px) rotate(200deg) scale(1.08)", offset: .45 },
+      { transform: "translateY(0) rotate(352deg) scale(.96, 1.04)", offset: .8 },
+      { transform: "translateY(0) rotate(360deg)" },
+    ], { duration: 560, easing: "cubic-bezier(.33, 0, .25, 1)" });
+    standing = spot;
+    const mood = phase === 3 ? "happy" : "idle";
+    if (actor.dataset.mood !== mood) {
+      actor.innerHTML = mascotHtml(mood, 72);
+      actor.dataset.mood = mood;
+      if (mood === "happy") kuboJump(actor.firstElementChild);
+    }
     insight.textContent = scenarios[scenario][phase];
     find("[data-agent]").classList.toggle("is-active", [0, 1, 4].includes(phase));
     find("[data-world]").classList.toggle("is-active", [2, 3].includes(phase));
@@ -2676,21 +2798,21 @@ function mountAgentLoop(container) {
     outcome.classList.toggle("is-active", phase === 3);
     find("[data-action-head]").classList.toggle("is-active", phase === 1);
     find("[data-outcome-head]").classList.toggle("is-active", phase === 3);
-    arcDraw?.cancel();
+    // The arc lights up instantly via .is-active; one short transform pop on the arrow head
+    // marks the direction, and the pawn, die or Kubo above carries the meaning.
     movement?.cancel();
-    pulse.setAttribute("hidden", "");
-    if ((phase !== 1 && phase !== 3) || prefersReducedMotion() || !pulse.animate) return;
-    const path = phase === 1 ? action : outcome;
-    const distance = path.getTotalLength();
-    arcDraw = path.animate([
-      { strokeDasharray: `${distance}px`, strokeDashoffset: distance },
-      { strokeDasharray: `${distance}px`, strokeDashoffset: 0 },
-    ], { duration: 420, easing: getComputedStyle(path).getPropertyValue("--ease-out").trim() || "ease-out" });
-    pulse.removeAttribute("hidden");
-    movement = pulse.animate(Array.from({ length: 21 }, (_, i) => {
-      const { x, y } = path.getPointAtLength(distance * i / 20);
-      return { transform: `translate(${x}px, ${y}px)`, opacity: i === 0 || i === 20 ? 0 : 1 };
-    }), { duration: 640, delay: 420, fill: "both", easing: "cubic-bezier(0.65, 0, 0.35, 1)" });
+    nod?.cancel();
+    if ((phase !== 1 && phase !== 3) || prefersReducedMotion()) return;
+    movement = find(phase === 1 ? "[data-action-head]" : "[data-outcome-head]").animate?.([
+      { transform: "scale(1)" },
+      { transform: "scale(1.5)", offset: .35 },
+      { transform: "scale(1)" },
+    ], { duration: 240, easing: "cubic-bezier(.23, 1, .32, 1)" });
+    if (phase === 1) nod = actor.firstElementChild?.animate?.([
+      { transform: "translateY(0) rotate(0deg)" },
+      { transform: "translateY(-4px) rotate(-4deg)", offset: .4 },
+      { transform: "translateY(0) rotate(0deg)" },
+    ], { duration: 260, easing: "cubic-bezier(.23, 1, .32, 1)" });
   }
   const next = () => { phase = (phase + 1) % phases.length; draw(); };
   const pause = () => {
@@ -2724,26 +2846,139 @@ function mountAgentLoop(container) {
   draw();
 }
 
+// Settle bump on the running total. One call per manual pull, or once at the end of an autoplay batch.
+function bumpBanditTotal(total, track = (animation) => animation) {
+  if (prefersReducedMotion() || !total.animate) return;
+  total.getAnimations?.().forEach((bump) => bump.cancel());
+  track(total.animate([
+    { transform: "translateY(0) scale(1)" },
+    { transform: "translateY(-3px) scale(1.2)", offset: .35 },
+    { transform: "translateY(0) scale(1)" },
+  ], { duration: 320, easing: "cubic-bezier(.23, 1, .32, 1)" }));
+}
+
+// `light` is the autoplay variant: a single quick coin, no puff, no bump (the batch bumps once at the end).
+function animateBanditReward(stage, choice, total, reward, { track = (animation) => animation, light = false } = {}) {
+  if (prefersReducedMotion() || (light && !reward)) return;
+  const frame = stage.getBoundingClientRect();
+  const from = choice.querySelector(".restaurant-art").getBoundingClientRect();
+  const to = total.getBoundingClientRect();
+  const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+  const dy = to.top + to.height / 2 - from.top;
+  const flights = light ? 1 : reward ? 3 : 1;
+  for (let i = light ? 1 : 0; i < (light ? 2 : flights); i++) {
+    const particle = document.createElement("span");
+    particle.className = reward ? "bandit-coin" : "bandit-puff";
+    particle.setAttribute("aria-hidden", "true");
+    particle.style.left = `${from.left + from.width / 2 - frame.left}px`;
+    particle.style.top = `${from.top - frame.top}px`;
+    if (reward) particle.innerHTML = window.Illustrations.rewardCoinSvg();
+    stage.append(particle);
+    const animation = particle.animate(Array.from({ length: 15 }, (_, n) => {
+      const t = n / 14;
+      const arc = t * (1 - t);
+      return reward
+        ? { transform: `translate3d(${dx * t + (i - 1) * 105 * arc}px, ${dy * t - (220 + i * 38) * arc}px, 0) rotate(${(i - 1) * 100 * t}deg) scale(${1 - .6 * t})`, opacity: Math.min(1, (1 - t) * 7) }
+        : { transform: `translateY(${-25 * t}px) scale(${.4 + 1.4 * t})`, opacity: .55 * (1 - t) };
+    }), { duration: light ? 420 : reward ? 640 : 380, delay: light ? 0 : i * 55 });
+    track(animation);
+    animation.oncancel = () => particle.remove();
+    animation.onfinish = () => {
+      particle.remove();
+      if (!light && reward && i === 2) bumpBanditTotal(total, track);
+    };
+  }
+}
+
+function bindDinerDrag(token, choices, pull, track = (animation) => animation) {
+  let drag = null;
+  let suppressClick = false;
+  let returning = null;
+  const choiceAt = (event) => document.elementFromPoint(event.clientX, event.clientY)?.closest(".bandit-arm");
+  token.onpointerdown = (event) => {
+    if (drag || event.button !== 0) return;
+    // Grabbing the token mid-return hands it straight to the pointer: no tug-of-war with the spring.
+    returning?.cancel();
+    returning = null;
+    token.setPointerCapture(event.pointerId);
+    token.classList.remove("is-beckoning");
+    const box = token.getBoundingClientRect?.();
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false, at: [0, 0],
+      home: box ? [box.left + box.width / 2, box.top + box.height / 2] : null };
+    suppressClick = false;
+  };
+  // Offset from the token's home to the centre of a storefront's illustration.
+  const centreOf = (choice) => {
+    const box = (choice?.querySelector?.(".restaurant-art") ?? choice)?.getBoundingClientRect?.();
+    return box && drag?.home ? [box.left + box.width / 2 - drag.home[0], box.top + box.height / 2 - drag.home[1]] : null;
+  };
+  token.onpointermove = (event) => {
+    if (drag?.id !== event.pointerId) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+    drag.moved = true;
+    token.classList.add("is-dragging");
+    const target = choiceAt(event);
+    const magnet = centreOf(target);
+    // Over a storefront the token is pulled a quarter of the way toward it, so the drop feels magnetic.
+    drag.at = magnet ? [dx + (magnet[0] - dx) * .25, dy + (magnet[1] - dy) * .25] : [dx, dy];
+    token.style.transform = `translate3d(${drag.at[0]}px, ${drag.at[1]}px, 0) scale(1.1) rotate(${Math.max(-8, Math.min(8, dx / 12))}deg)`;
+    choices.forEach((choice) => choice.classList.toggle("drop-hover", choice === target));
+  };
+  const finish = (event) => {
+    if (drag?.id !== event.pointerId) return;
+    const target = drag.moved && event.type === "pointerup" ? choices.indexOf(choiceAt(event)) : -1;
+    const snap = target !== -1 ? centreOf(choices[target]) : null;
+    const [atX, atY] = drag.at;
+    suppressClick = drag.moved;
+    drag = null;
+    token.classList.remove("is-dragging");
+    token.style.removeProperty("transform");
+    if (snap && token.animate && !prefersReducedMotion()) {
+      const animation = track(token.animate([
+        { transform: `translate3d(${atX}px, ${atY}px, 0) scale(1.1)` },
+        { transform: `translate3d(${snap[0]}px, ${snap[1]}px, 0) scale(.88)`, offset: .3 },
+        { transform: `translate3d(${snap[0]}px, ${snap[1]}px, 0) scale(.94)`, offset: .42 },
+        { transform: "translate3d(0, 0, 0) scale(1)" },
+      ], { duration: 640, easing: "cubic-bezier(.23, 1, .32, 1)" }));
+      returning = animation;
+      const done = () => { if (returning === animation) returning = null; };
+      animation.addEventListener("finish", done);
+      animation.addEventListener("cancel", done);
+    }
+    choices.forEach((choice) => choice.classList.remove("drop-hover"));
+    if (target !== -1) pull(target);
+  };
+  token.onpointerup = token.onpointercancel = token.onlostpointercapture = finish;
+  token.onclick = (event) => {
+    if (!suppressClick || event.detail === 0) choices[0].focus();
+    suppressClick = false;
+  };
+}
+
 function mountExploreExploit(container) {
   const arms = [
-    { name: "Neighborhood Café", shortName: "Café", chance: .45 },
-    { name: "New Bistro", shortName: "Bistro", chance: .78 },
-    { name: "Corner Diner", shortName: "Diner", chance: .30 },
+    { name: "Neighborhood Café", shortName: "Café", chance: .45, storefront: "cafe" },
+    { name: "New Bistro", shortName: "Bistro", chance: .78, storefront: "bistro" },
+    { name: "Corner Diner", shortName: "Diner", chance: .30, storefront: "diner" },
   ];
   const bestArm = arms.reduce((best, arm, i) => arm.chance > arms[best].chance ? i : best, 0);
-  container.innerHTML = `<div class="viz-stage discovery-viz">
+  container.innerHTML = `<div class="viz-stage discovery-viz bandit-playground">
     <p>Each restaurant serves a great meal (+1) with its own hidden probability. Which would you keep visiting?</p>
+    <div class="bandit-stage">
+    <div class="diner-home">
+      <button type="button" class="diner-token is-beckoning" aria-label="Diner token" aria-describedby="diner-hint">${mascotHtml("idle", 46)}</button>
+      <span id="diner-hint">Drag onto a restaurant, or tap any storefront</span>
+    </div>
     <div class="bandit-choices">
       ${arms.map((arm, i) => `<button type="button" class="bandit-arm" data-arm="${i}">
-        <strong>${arm.name}</strong><span data-sample>No visits yet</span>
+        ${window.Illustrations.restaurantSvg(arm.storefront)}
+        <strong><span class="bandit-name">${arm.name}</span><span class="bandit-short-name" aria-hidden="true">${arm.shortName}</span></strong><span data-sample>No visits yet</span>
         <span class="viz-meter" aria-hidden="true"><span></span><i class="viz-target" style="--at:${arm.chance}"></i></span>
         <span class="bandit-reward" data-reward aria-hidden="true"></span>
       </button>`).join("")}
     </div>
-    <div class="range-group">
-      <label for="bandit-epsilon"><span>Exploration rate ε</span><output id="bandit-epsilon-value" for="bandit-epsilon">15%</output></label>
-      <input id="bandit-epsilon" class="slider-range" type="range" min="0" max="100" step="1" value="15">
-      <div class="bandit-range-labels"><span>0% Greedy</span><span>100% Random</span></div>
     </div>
     <dl class="viz-stats bandit-stats">
       <div><dt>Pulls</dt><dd data-pulls>0</dd></div>
@@ -2752,6 +2987,11 @@ function mountExploreExploit(container) {
       <div><dt>True best</dt><dd data-true>Hidden</dd></div>
       <div><dt>Optimal picks</dt><dd data-optimal>0%</dd></div>
     </dl>
+    <div class="range-group">
+      <label for="bandit-epsilon"><span>Exploration rate ε</span><output id="bandit-epsilon-value" for="bandit-epsilon">15%</output></label>
+      <input id="bandit-epsilon" class="slider-range" type="range" min="0" max="100" step="1" value="15">
+      <div class="bandit-range-labels"><span>0% Greedy</span><span>100% Random</span></div>
+    </div>
     <p class="viz-insight" role="status"></p>
     <div class="viz-actions">
       <button type="button" class="btn-tactile go pill" data-auto aria-pressed="false">Auto-pull 10×</button>
@@ -2765,7 +3005,19 @@ function mountExploreExploit(container) {
   const slider = find("input");
   const reveal = find("[data-reveal]");
   const auto = find("[data-auto]");
-  let counts, totals, last = null, shown = false, batchTimer = null;
+  const stage = find(".bandit-playground");
+  const total = find("[data-total]");
+  let counts, totals, last = null, shown = false, batchTimer = null, batchWins = 0;
+  // Every transient animation on this stage (coins, recoil, token return), so Reset can stop them all.
+  const motion = new Set();
+  const track = (animation) => {
+    if (!animation) return animation;
+    motion.add(animation);
+    const forget = () => motion.delete(animation);
+    animation.addEventListener?.("finish", forget);
+    animation.addEventListener?.("cancel", forget);
+    return animation;
+  };
   const average = (i) => counts[i] ? totals[i] / counts[i] : 0;
   const leaders = () => {
     const highest = Math.max(...counts.map((count, i) => count ? average(i) : -1));
@@ -2804,26 +3056,32 @@ function mountExploreExploit(container) {
       : "Try 10–20% exploration. Occasional visits to alternatives can uncover a better restaurant while most visits go to the current favorite.";
     find(".viz-insight").textContent = (last ? `${last.name} just earned +${last.reward}. ` : "") + lesson;
   }
-  function pull(i) {
+  function pull(i, batch = false) {
+    find(".diner-token")?.classList.toggle("is-beckoning", false);
     const arm = arms[i];
     const reward = Number(Math.random() < arm.chance);
     counts[i]++;
     totals[i] += reward;
     last = { name: arm.name, reward };
+    choices.forEach((choice, index) => choice.classList.toggle("has-latest-reward", index === i));
     const pop = choices[i].querySelector("[data-reward]");
     pop.textContent = `+${reward}`;
-    if (reward) spawnSparkles(choices[i], 5, 0.4);
+    // Autoplay batches feedback: a light tick and coin on every third win instead of ten stacked chimes.
+    const accent = !batch || (reward && ++batchWins % 3 === 1);
+    if (reward && accent) window.Delight.playComboChime(1);
     pop.classList.toggle("is-winning", reward === 1);
     choices[i].getAnimations?.().forEach((animation) => animation.cancel());
-    if (!prefersReducedMotion()) choices[i].animate?.(
-      [{ transform: "scale(1.03)" }, { transform: "scale(1)" }], { duration: 160, easing: "ease-out" });
+    if (!prefersReducedMotion()) track(choices[i].animate?.(
+      [{ transform: "scale(1.03)" }, { transform: "scale(1)" }], { duration: 160, easing: "ease-out" }));
     pop.getAnimations?.().forEach((animation) => animation.cancel());
-    if (!prefersReducedMotion()) pop.animate?.([
+    if (!prefersReducedMotion()) track(pop.animate?.([
       { transform: "translateY(5px) scale(.8)", opacity: 0 },
       { transform: "translateY(-6px) scale(1.12)", opacity: 1, offset: .3 },
       { transform: "translateY(-18px) scale(1)", opacity: 0 },
-    ], { duration: 600, easing: "ease-out" });
+    ], { duration: batch ? 360 : 600, easing: "ease-out" }));
     draw();
+    if (!batch) animateBanditReward(stage, choices[i], total, reward, { track });
+    else if (reward && accent) animateBanditReward(stage, choices[i], total, reward, { track, light: true });
   }
   function stopAuto() {
     clearTimeout(batchTimer);
@@ -2833,9 +3091,15 @@ function mountExploreExploit(container) {
   }
   function reset() {
     stopAuto();
+    [...motion].forEach((animation) => animation.cancel());
+    motion.clear();
+    stage?.querySelectorAll?.(".bandit-coin, .bandit-puff").forEach((node) => node.remove());
     counts = arms.map(() => 0);
     totals = arms.map(() => 0);
-    choices.forEach((choice) => choice.querySelector("[data-reward]").getAnimations?.().forEach((animation) => animation.cancel()));
+    choices.forEach((choice) => {
+      choice.classList.toggle("has-latest-reward", false);
+      choice.querySelector("[data-reward]").getAnimations?.().forEach((animation) => animation.cancel());
+    });
     last = null;
     shown = false;
     slider.value = "15";
@@ -2846,19 +3110,26 @@ function mountExploreExploit(container) {
     auto.setAttribute("aria-pressed", "true");
     auto.textContent = "Stop";
     let remaining = 10;
+    batchWins = 0;
     const step = () => {
       const beat = container.closest(".lesson-beat");
       if (!container.isConnected || (beat && !beat.hasAttribute("aria-current"))) return stopAuto();
       const best = leaders();
       const explore = !best.length || Math.random() * 100 < Number(slider.value);
       const options = explore ? arms.map((_, i) => i) : best;
-      pull(options[Math.floor(Math.random() * options.length)]);
-      if (--remaining === 0) return stopAuto();
+      pull(options[Math.floor(Math.random() * options.length)], true);
+      if (--remaining === 0) {
+        // One clean settle for the whole batch.
+        bumpBanditTotal(total, track);
+        if (batchWins) window.Delight.playComboChime(2);
+        return stopAuto();
+      }
       batchTimer = setTimeout(step, prefersReducedMotion() ? 0 : 115);
     };
     step();
   };
   choices.forEach((choice, i) => { choice.onclick = () => pull(i); });
+  bindDinerDrag(find(".diner-token"), choices, pull, track);
   slider.oninput = draw;
   reveal.onclick = () => { shown = !shown; draw(); };
   find("[data-reset]").onclick = reset;
@@ -3297,11 +3568,20 @@ function mountBellmanBackup(container) {
       <div class="viz-grid">
         <div class="viz-cell">
           <div class="viz-cell-header"><span class="viz-cell-name">The board</span><span id="bb-pill1" class="viz-pill">p* = 0.53</span></div>
-          <svg id="bb-board" viewBox="0 0 340 192" width="100%" role="img" aria-label="Three squares with learned values"></svg>
+          <div class="bellman-board" role="group" aria-label="Three board squares with learned values">
+            ${[["go", "Go"], ["safe", "Safe Street"], ["hotel", "Hotel Trap"]].map(([tile, name]) => `<button type="button" class="bellman-tile" data-bellman-tile="${tile}">
+              ${window.Illustrations.bellmanTileSvg(tile)}
+              <strong>${name}</strong><span class="bellman-value" data-value></span>
+              <span class="bellman-track" aria-hidden="true"><span></span><i></i></span>
+              <small data-tile-action></small>
+            </button>`).join("")}
+          </div>
+          <p class="bellman-path">Go → Safe Street<br>Safe Street → Win (1−p) or Hotel Trap (p)</p>
         </div>
         <div class="viz-cell">
           <div class="viz-cell-header"><span class="viz-cell-name">Targets for Safe Street</span><span id="bb-pill2" class="viz-pill">sweeps: 0</span></div>
           <svg id="bb-targets" viewBox="0 0 340 192" width="100%" role="img" aria-label="Number line of TD and Bellman targets"></svg>
+          <p class="bellman-readout tabular" data-bellman-readout></p>
         </div>
       </div>
       <div class="viz-legend">
@@ -3318,75 +3598,95 @@ function mountBellmanBackup(container) {
   let token = "go";
   let lastTarget = null;
   let lastAction = "sweep";
+  let penalty = -1;
+  const tiles = [...container.querySelectorAll("[data-bellman-tile]")];
 
   const draw = () => {
     const gamma = readRange(container, "bb-gamma", 2);
     const p = readRange(container, "bb-p", 2);
     readRange(container, "bb-alpha", 2);
-    const exact = { hotel: -1, safe: 1 - p - gamma * p };
+    const exact = { hotel: penalty, safe: 1 - p + gamma * p * penalty };
     exact.go = gamma * exact.safe;
-    container.querySelector(vizIdSelector("bb-pill1")).textContent = `p* = ${(1 / (1 + gamma)).toFixed(2)}`;
+    const tipping = 1 / (1 - gamma * penalty);
+    container.querySelector(vizIdSelector("bb-pill1")).textContent = `p* = ${tipping.toFixed(2)}`;
     container.querySelector(vizIdSelector("bb-pill2")).textContent = lastAction === "td" && lastTarget !== null
       ? `last TD target: ${fmtSigned(lastTarget)}`
       : `sweeps: ${sweeps}`;
 
-    const squares = [["go", "Go", 10], ["safe", "Safe Street", 132], ["hotel", "Hotel Trap", 254]];
-    const barX = (x, v) => x + 38 + Math.max(-1, Math.min(1, v)) * 30;
-    let board = `
-      <text x="110" y="30" font-size="13" fill="var(--ink-2)" text-anchor="middle">r=0</text>
-      <text x="232" y="30" font-size="13" fill="var(--ink-2)" text-anchor="middle">p, r=0</text>
-      <path d="M88 64h38M210 64h38" stroke="var(--line-strong)" stroke-width="2" marker-end="url(#bb-arrow)"/>
-      <path d="M170 122v24M292 122v24" stroke="var(--line-strong)" stroke-width="2" marker-end="url(#bb-arrow)"/>
-      <text x="176" y="139" font-size="13" fill="var(--ink-2)">1−p, +1</text>
-      <text x="298" y="139" font-size="13" fill="var(--ink-2)">r=−1</text>
-      <rect x="140" y="152" width="60" height="24" rx="12" fill="var(--go-tint)" stroke="var(--go)"/>
-      <text x="170" y="169" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">win</text>
-      <rect x="262" y="152" width="60" height="24" rx="12" fill="var(--danger-tint)" stroke="var(--danger)"/>
-      <text x="292" y="169" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">lose</text>
-      <defs><marker id="bb-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8Z" fill="var(--line-strong)"/></marker></defs>`;
-    squares.forEach(([key, name, x]) => {
-      const v = V[key];
-      const zero = x + 38;
-      board += `
-        <rect x="${x}" y="40" width="76" height="82" rx="14" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.5"/>
-        <text x="${zero}" y="58" font-size="12" font-weight="700" fill="var(--ink-2)" text-anchor="middle">${name}</text>
-        <text x="${zero}" y="88" font-size="18" font-weight="900" fill="var(--ink)" text-anchor="middle">${fmtSigned(v)}</text>
-        <rect x="${x + 8}" y="100" width="60" height="7" rx="3.5" fill="var(--line)"/>
-        <rect x="${Math.min(zero, barX(x, v))}" y="100" width="${Math.abs(barX(x, v) - zero)}" height="7" rx="3.5" fill="${v >= 0 ? "var(--go)" : "var(--danger)"}"/>
-        <line transform="translate(${barX(x, exact[key])} 0)" x1="0" y1="96" x2="0" y2="111" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="2 2"/>`;
-      board += `<circle visibility="${token === key ? "visible" : "hidden"}" cx="${zero}" cy="40" r="6.5" fill="var(--accent-solid)" stroke="var(--surface)" stroke-width="2.5"/>`;
+    tiles.forEach((tile) => {
+      const key = tile.dataset.bellmanTile;
+      const value = V[key];
+      const track = tile.querySelector(".bellman-track");
+      tile.querySelector("[data-value]").textContent = fmtSigned(value);
+      tile.querySelector("[data-tile-action]").textContent = {
+        go: "Back up Go", safe: "Back up V(Safe)", hotel: penalty === -1 ? "Penalty −1" : "Penalty −0.5",
+      }[key];
+      tile.classList.toggle("has-token", token === key);
+      track.style.setProperty("--amount", Math.abs(value) / 2);
+      track.style.setProperty("--at", (exact[key] + 1) / 2);
+      track.classList.toggle("is-negative", value < 0);
     });
-    updateVizChart(container.querySelector(vizIdSelector("bb-board")), board);
 
     const toX = (v) => 24 + ((Math.max(-1.2, Math.min(1.2, v)) + 1.2) / 2.4) * 292;
     const hotelTarget = gamma * V.hotel;
     const bellman = p * gamma * V.hotel + (1 - p);
     setVizInsight(container, lastAction === "td" && lastTarget !== null
       ? `The sampled outcome gave a TD target of ${fmtSigned(lastTarget)}. The Bellman target averages both outcomes at ${fmtSigned(bellman)}.`
-      : `A sweep averages the two outcomes. With the current estimates, the Bellman target for Safe Street is ${fmtSigned(bellman)}.`);
+      : lastAction === "tile"
+        ? `${{ go: "Go backed up", safe: "Safe Street backed up", hotel: "Hotel penalty changed" }[token]}. The Bellman target for Safe Street is ${fmtSigned(bellman)}.`
+        : `A sweep averages the two outcomes. With the current estimates, the Bellman target for Safe Street is ${fmtSigned(bellman)}.`);
+    // Plain-text twin of the chart, so nobody has to read the numbers off the SVG.
+    container.querySelector("[data-bellman-readout]").textContent =
+      `V(Safe Street) = ${V.safe.toFixed(2)}, Bellman target = ${bellman.toFixed(2)}, Tipping risk p* = ${tipping.toFixed(2)}`;
     updateVizChart(container.querySelector(vizIdSelector("bb-targets")), `
-      <text x="24" y="28" font-size="14" font-weight="700" fill="var(--accent)">Bellman target ${fmtSigned(bellman)}</text>
-      <text x="24" y="50" font-size="14" font-weight="700" fill="var(--go-ink)">V(Safe) ${fmtSigned(V.safe)}</text>
+      <text x="24" y="28" font-size="16" font-weight="700" fill="var(--accent)">Bellman target ${fmtSigned(bellman)}</text>
+      <text x="24" y="52" font-size="16" font-weight="700" fill="var(--go-ink)">V(Safe) ${fmtSigned(V.safe)}</text>
       <line x1="24" y1="112" x2="316" y2="112" stroke="var(--line-strong)" stroke-width="1.5"/>
       ${[-1, 0, 1].map((t) => `<line x1="${toX(t)}" y1="106" x2="${toX(t)}" y2="118" stroke="var(--line-strong)"/>
-        <text x="${toX(t)}" y="138" font-size="13" fill="var(--ink-2)" text-anchor="middle">${t === 0 ? "0" : fmtSigned(t).replace(".00", "")}</text>`).join("")}
+        <text x="${toX(t)}" y="140" font-size="15" font-weight="600" fill="var(--ink-2)" text-anchor="middle">${t === 0 ? "0" : fmtSigned(t).replace(".00", "")}</text>`).join("")}
       <line visibility="${lastTarget !== null ? "visible" : "hidden"}" x1="${toX(lastTarget ?? 0)}" y1="76" x2="${toX(lastTarget ?? 0)}" y2="148" stroke="var(--warn)" stroke-width="2.5" stroke-linecap="round"/>
       <circle cx="${toX(hotelTarget)}" cy="112" r="${3 + 7 * p}" fill="var(--ink-3)" opacity="0.8"/>
       <circle cx="${toX(1)}" cy="112" r="${3 + 7 * (1 - p)}" fill="var(--ink-3)" opacity="0.8"/>
       <path d="M0 -9 9 0 0 9 -9 0Z" transform="translate(${toX(bellman)} 112)" fill="var(--accent-solid)" stroke="var(--surface)" stroke-width="1.5"/>
       <circle cx="${toX(V.safe)}" cy="112" r="5.5" fill="var(--go)" stroke="var(--surface)" stroke-width="2"/>
-      <text x="170" y="176" font-size="13" fill="var(--ink-2)" text-anchor="middle">Value scale (−1.2 to +1.2)</text>`);
+      <text x="170" y="178" font-size="15" fill="var(--ink-2)" text-anchor="middle">Value scale (−1.2 to +1.2)</text>`);
   };
 
-  container.querySelector(vizIdSelector("bb-sweep")).onclick = () => {
+  const backUp = (old) => {
     const gamma = Number(container.querySelector(vizIdSelector("bb-gamma")).value);
     const p = Number(container.querySelector(vizIdSelector("bb-p")).value);
-    const old = { ...V };
-    V = { hotel: -1, safe: p * gamma * old.hotel + (1 - p) * 1, go: gamma * old.safe };
+    return { hotel: penalty, safe: p * gamma * old.hotel + 1 - p, go: gamma * old.safe };
+  };
+  container.querySelector(vizIdSelector("bb-sweep")).onclick = () => {
+    V = backUp(V);
     sweeps++;
     lastAction = "sweep";
     draw();
   };
+  tiles.forEach((tile) => {
+    const key = tile.dataset.bellmanTile;
+    tile.onclick = () => {
+      if (key === "hotel") penalty = penalty === -1 ? -.5 : -1;
+      V[key] = backUp(V)[key];
+      token = key;
+      lastAction = "tile";
+      lastTarget = null;
+      draw();
+      if (prefersReducedMotion()) return;
+      tile.querySelectorAll(".bellman-ripple").forEach((ripple) => ripple.remove());
+      const ripple = document.createElement("span");
+      ripple.className = "bellman-ripple";
+      ripple.setAttribute("aria-hidden", "true");
+      // The delayed outer ring (::after) finishes last, so it owns the cleanup.
+      ripple.addEventListener("animationend", (event) => { if (event.pseudoElement === "::after") ripple.remove(); });
+      setTimeout(() => ripple.remove(), 1000);
+      tile.append(ripple);
+      const value = tile.querySelector("[data-value]");
+      value.getAnimations?.().forEach((animation) => animation.cancel());
+      value.animate?.([{ transform: "scale(1.16)" }, { transform: "scale(1)" }],
+        { duration: 320, easing: getComputedStyle(tile).getPropertyValue("--spring-snappy").trim() || "ease-out" });
+    };
+  });
   container.querySelector(vizIdSelector("bb-td")).onclick = () => {
     const gamma = Number(container.querySelector(vizIdSelector("bb-gamma")).value);
     const p = Number(container.querySelector(vizIdSelector("bb-p")).value);
@@ -3405,7 +3705,7 @@ function mountBellmanBackup(container) {
         token = "go";
       }
     } else {
-      target = -1;
+      target = penalty;
       token = "go";
     }
     V[sq] += alpha * (target - V[sq]);
@@ -3415,6 +3715,7 @@ function mountBellmanBackup(container) {
   };
   container.querySelector(vizIdSelector("bb-reset")).onclick = () => {
     V = { go: 0, safe: 0, hotel: 0 };
+    penalty = -1;
     sweeps = 0;
     token = "go";
     lastTarget = null;
@@ -4060,12 +4361,12 @@ function sourcesHtml(sources) {
 function leaveLesson() {
   if (state.inFlight) return;
   playSound("tap");
-  state.view = "map";
-  state.lesson = null;
-  render();
-  document.getElementById(`unit-${state.districtIdx}`)?.scrollIntoView({
-    behavior: prefersReducedMotion() ? "instant" : "smooth", block: "start",
-  });
+  window.Delight.withViewTransition(() => {
+    state.view = "map";
+    state.lesson = null;
+    render();
+    document.getElementById(`unit-${state.districtIdx}`)?.scrollIntoView({ behavior: "instant", block: "start" });
+  }, "leave-lesson");
 }
 
 function applyLessonProgress(path, body, step) {
@@ -4175,8 +4476,16 @@ function renderMissionFooter({ focus = false } = {}) {
       if (res.correct && s.kind === "numeric") document.getElementById("num-ans").readOnly = true;
       patchQuizFeedback(s);
       if (["mcq", "numeric"].includes(s.kind)) {
-        animateLessonCheck(res.correct, document.querySelector("#active-beat .beat-feedback"));
-      } else recordLessonCheck(res.correct);
+        const target = s.kind === "mcq" && res.correct
+          ? document.querySelector("#active-beat .choice-tile.correct")
+          : document.querySelector("#active-beat .beat-feedback");
+        animateLessonCheck(res.correct, target);
+      } else {
+        recordLessonCheck(res.correct);
+        const kubo = document.querySelector("#active-beat .kubo-wrap");
+        if (res.correct) kuboJump(kubo);
+        else kuboShake(kubo);
+      }
       renderTopbar();
       renderMissionFooter({ focus: document.activeElement === primary });
       if (res.correct) pulseLessonFooter();
@@ -4307,11 +4616,13 @@ function bindMicroCheck(node, beat, idx) {
       if (correct) {
         promptRow.prepend(kubo);
         kubo.innerHTML = mascotHtml("happy", 42);
+        kuboJump(kubo.firstElementChild);
         option.classList.add("check-pop");
         spawnSparkles(option, 14);
       } else {
         feedbackRow.prepend(kubo);
-        kubo.innerHTML = `<span class="nudge-shake">${mascotHtml("oops", 42)}</span>`;
+        kubo.innerHTML = mascotHtml("oops", 42);
+        kuboShake(kubo.firstElementChild);
       }
       renderMath(feedback);
       renderTopbar();
@@ -4324,9 +4635,8 @@ function bindMicroCheck(node, beat, idx) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (state.view !== "mission" || state.modalOpen || state.timer.popoverOpen || event.defaultPrevented
-      || event.repeat || event.isComposing || event.altKey || event.ctrlKey || event.metaKey
-      || event.target?.closest?.("input, textarea, select, [contenteditable]")) return;
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (state.view !== "mission" || singleKeyShortcutBlocked(event)) return;
   const optionIndex = ["1", "2", "3"].indexOf(event.key);
   if (optionIndex < 0) return;
   const option = document.querySelector(`#active-beat .micro-options [data-check-option="${optionIndex}"]:enabled`);
@@ -4368,6 +4678,51 @@ function checkSummaryHtml(check, picked, correct) {
   </div>`;
 }
 
+function bindKuboGaze(beat) {
+  const selector = ".choice-tile, .bandit-arm, .algorithm-card";
+  if (!beat.querySelector(selector)) return;
+  if (!beat.querySelector(".kubo-wrap")) {
+    beat.insertAdjacentHTML("afterbegin", `<span class="beat-kubo">${mascotHtml("thinking", 44)}</span>`);
+  }
+
+  let hovered = null;
+  let focused = null;
+  const pointAt = () => {
+    const pupils = beat.querySelector(".kubo-pupils");
+    if (!pupils) return;
+    const control = hovered || focused;
+    if (!control || prefersReducedMotion() || beat.id !== "active-beat") {
+      pupils.style.removeProperty("transform");
+      return;
+    }
+    const target = control.getBoundingClientRect();
+    const face = pupils.getBoundingClientRect();
+    const dx = (target.left + target.width / 2 - face.left - face.width / 2) / 30;
+    const dy = (target.top + target.height / 2 - face.top - face.height / 2) / 30;
+    const scale = 1 / Math.max(1, Math.hypot(dx / 2.5, dy / 1.8));
+    pupils.style.transform = `translate(${dx * scale}px, ${dy * scale}px)`;
+  };
+
+  beat.addEventListener("pointerover", (event) => {
+    if (event.pointerType === "touch") return;
+    hovered = event.target.closest(selector);
+    pointAt();
+  });
+  beat.addEventListener("pointerout", (event) => {
+    if (event.pointerType === "touch") return;
+    hovered = beat.contains(event.relatedTarget) ? event.relatedTarget.closest(selector) : null;
+    pointAt();
+  });
+  beat.addEventListener("focusin", (event) => {
+    focused = event.target.closest(selector);
+    pointAt();
+  });
+  beat.addEventListener("focusout", (event) => {
+    focused = beat.contains(event.relatedTarget) ? event.relatedTarget.closest(selector) : null;
+    pointAt();
+  });
+}
+
 function mountBeat(thread, beat, i, active) {
   const node = document.createElement("article");
   node.className = active ? "lesson-beat beat-enter" : "lesson-beat";
@@ -4388,7 +4743,12 @@ function mountBeat(thread, beat, i, active) {
     beat_check: () => active ? microCheckHtml(beat.check || {}, i)
       : priorCheckHtml(beat),
   };
-  node.innerHTML = heading + (Object.hasOwn(beatBody, kind) ? beatBody[kind]()
+  // One editorial scene per unit per lesson thread: the bet and the first concept of a unit share
+  // art, so a later step never repeats the scene the reader just saw.
+  let scene = beat.beatIndex === 0 ? window.Illustrations.lessonSceneSvg(s.id, kind) : "";
+  const sceneUnit = /data-art-unit="(M\d)"/.exec(scene)?.[1];
+  if (sceneUnit && thread.querySelector(`.lesson-scene[data-art-unit="${sceneUnit}"]`)) scene = "";
+  node.innerHTML = heading + scene + (Object.hasOwn(beatBody, kind) ? beatBody[kind]()
     : !active && interactive ? priorBeatHtml(beat) : missionBeatHtml(s, beat.followsIntro));
   if (kind.startsWith("beat_") && beat.isLastOfStep && s.sources) {
     node.insertAdjacentHTML("beforeend", sourcesHtml(s.sources));
@@ -4399,6 +4759,7 @@ function mountBeat(thread, beat, i, active) {
     if (!active) namespaceBeatIds(node, i);
   } else if (active && kind === "beat_check") bindMicroCheck(node, { ...beat, check: beat.check || {} }, i);
   else if (active && !kind.startsWith("beat_")) bindMissionBeat(node, s);
+  if (active) bindKuboGaze(node);
   renderMath(node);
   return node;
 }
@@ -4439,17 +4800,20 @@ function lessonCardsEarned() {
 function lessonReviewSummaryHtml() {
   const cards = lessonCardsEarned();
   const count = cards || state.lesson.lesson.step_ids.length;
-  return `<dt>${cards ? "Cards unlocked" : "Steps reviewed"}</dt><dd>${numberFormat.format(count)}</dd>`;
+  return `<dt>${cards ? "Cards unlocked" : "Steps"}</dt><dd>${numberFormat.format(count)}</dd>`;
 }
 
 function celebrateLesson(card, xp) {
   const xpDisplay = card.querySelector(".lesson-xp");
   const reducedMotion = prefersReducedMotion();
-  if (!reducedMotion) xpDisplay.textContent = "+0 XP";
+  if (xp > 0 && !reducedMotion) xpDisplay.textContent = "+0 XP";
+  window.Delight.playCompleteFanfare();
+  window.Delight.triggerHaptic("complete");
   const celebrate = () => {
-    playSound("achievement");
+    kuboJump(card.querySelector(".kubo-wrap"));
+    if (xp <= 0 || reducedMotion) return;
     card.classList.add("is-celebrating");
-    if (reducedMotion) return;
+    window.Delight.flyXp(xpDisplay, document.querySelector("#topbar .lesson-stat[data-xp-total]"));
     spawnConfetti(card, 32);
     setTimeout(() => {
       if (xpDisplay.isConnected) countLessonXp(xpDisplay, xp);
@@ -4473,6 +4837,7 @@ function advanceLesson(isLast) {
   const beat = activeLessonBeat();
   current.removeAttribute("aria-current");
   current.removeAttribute("id");
+  current.querySelector(".kubo-pupils")?.style.removeProperty("transform");
   disposeEditor();
   namespaceBeatIds(current, state.beatIdx);
   current.querySelectorAll("button, input, textarea, select").forEach((control) => {
@@ -4499,7 +4864,9 @@ function advanceLesson(isLast) {
     end.innerHTML = `<div class="completion-kubo">${mascotHtml("proud", 72)}</div>
       <h2 id="lesson-complete-title">Lesson complete</h2>
       <dl class="lesson-summary">
-        <div class="lesson-summary-tile"><dt>XP earned</dt><dd><span class="sr-only">${numberFormat.format(state.lesson.gained)} XP</span><span class="lesson-xp${state.lesson.gained === 0 ? " is-zero" : ""}" aria-hidden="true">+${numberFormat.format(state.lesson.gained)} XP</span></dd></div>
+        ${state.lesson.gained > 0
+          ? `<div class="lesson-summary-tile"><dt>XP earned</dt><dd><span class="sr-only">${numberFormat.format(state.lesson.gained)} XP</span><span class="lesson-xp" aria-hidden="true">+${numberFormat.format(state.lesson.gained)} XP</span></dd></div>`
+          : `<div class="lesson-summary-tile lesson-replay-tile"><dt>Status</dt><dd><span class="lesson-replay">Reviewed</span><span class="replay-badge">${ICONS.checkCircle}XP already earned</span></dd></div>`}
         <div class="lesson-summary-tile"><dt>Best combo</dt><dd>${numberFormat.format(state.lesson.bestCombo)}</dd></div>
         <div class="lesson-summary-tile lesson-review-tile">${lessonReviewSummaryHtml()}</div>
       </dl>
@@ -4513,7 +4880,7 @@ function advanceLesson(isLast) {
     renderTopbar();
     renderMissionFooter();
     showLessonBeat(end, "center");
-    if (state.lesson.gained > 0) celebrateLesson(end, state.lesson.gained);
+    celebrateLesson(end, state.lesson.gained);
     return;
   }
   state.beatIdx++;
@@ -4711,15 +5078,19 @@ function bindMissionBeat(root, s) {
 // VIEW 3: Anki Cards (spaced-repetition review)
 function startDrillSession() {
   if (state.inFlight) return;
-  state.view = "drill";
-  state.drillCards = [...(state.data.srs.due_cards || [])];
-  state.drillIdx = 0;
-  state.drillRevealed = false;
-  state.drillSessionXp = 0;
-  state.drillGoodCount = 0;
-  state.drillCombo = 0;
-  state.drillMood = "thinking";
-  render();
+  const begin = () => {
+    state.view = "drill";
+    state.drillCards = [...(state.data.srs.due_cards || [])];
+    state.drillIdx = 0;
+    state.drillRevealed = false;
+    state.drillSessionXp = 0;
+    state.drillGoodCount = 0;
+    state.drillCombo = 0;
+    state.drillMood = "thinking";
+    render();
+  };
+  if (state.view === "drill") begin();
+  else window.Delight.withViewTransition(begin, "tab");
   if (cloudCourse() && canUseAnkiCompanion()) {
     const course = state.course, user = userScope();
     readAnkiCompanionStatus().then((status) => {
@@ -4728,8 +5099,19 @@ function startDrillSession() {
   }
 }
 
+function drillShortcutsOn() {
+  return prefGet("anki_shortcuts") !== "off";
+}
+
 function drillRevealButtonHtml() {
-  return `<button id="d-reveal" class="btn-tactile accent full pill" aria-keyshortcuts="Space">Show answer <kbd class="keycap" aria-hidden="true">Space</kbd></button>`;
+  return drillShortcutsOn()
+    ? `<button id="d-reveal" class="btn-tactile accent full pill" aria-keyshortcuts="Space">Show answer <kbd class="keycap" aria-hidden="true">Space</kbd></button>`
+    : `<button id="d-reveal" class="btn-tactile accent full pill">Show answer</button>`;
+}
+
+function drillShortcutsToggleHtml() {
+  const on = drillShortcutsOn();
+  return `<button type="button" id="btn-anki-shortcuts" class="btn-ghost small shortcuts-toggle" aria-pressed="${on}" title="Space reveals, 1 to 4 rate">${ICONS.keyboard}<span>Shortcuts</span></button>`;
 }
 
 function masteryPanelHtml() {
@@ -4767,6 +5149,20 @@ function ankiStatusHtml() {
 function bindDrillChrome(root) {
   const setup = root.querySelector("#btn-anki-setup");
   if (setup) setup.onclick = () => { playSound("tap"); openSettingsModal("anki", setup); };
+  const shortcuts = root.querySelector("#btn-anki-shortcuts");
+  if (shortcuts) shortcuts.onclick = () => {
+    const on = !drillShortcutsOn();
+    prefSet("anki_shortcuts", on ? "on" : "off");
+    shortcuts.setAttribute("aria-pressed", String(on));
+    const rev = root.querySelector("#d-reveal");
+    if (rev) {
+      rev.toggleAttribute("aria-keyshortcuts", on);
+      if (on) rev.setAttribute("aria-keyshortcuts", "Space");
+      rev.querySelector(".keycap")?.toggleAttribute("hidden", !on);
+      if (on && !rev.querySelector(".keycap")) rev.insertAdjacentHTML("beforeend", ` <kbd class="keycap" aria-hidden="true">Space</kbd>`);
+    }
+    playSound("tap");
+  };
   const toggle = root.querySelector("#btn-mastery");
   toggle.onclick = () => {
     state.masteryOpen = !state.masteryOpen;
@@ -4817,7 +5213,7 @@ function renderDrill() {
         ${masteryPanelHtml()}
       </div>`;
     bindDrillChrome(root);
-    document.getElementById("d-home").onclick = () => { if (state.inFlight) return; playSound("tap"); state.view = "map"; render(); };
+    document.getElementById("d-home").onclick = () => showCoursePath();
     document.getElementById("d-again").onclick = () => { playSound("tap"); startDrillSession(); };
     return;
   }
@@ -4826,7 +5222,7 @@ function renderDrill() {
 
   renderPreserving(root, `
     <div class="drill-stage">
-      <div class="drill-head"><h1 class="drill-title">Anki Cards</h1>${ankiStatusHtml()}</div>
+      <div class="drill-head"><h1 class="drill-title">Anki Cards</h1><div class="drill-head-actions">${drillShortcutsToggleHtml()}${ankiStatusHtml()}</div></div>
       <div class="drill-hud">
         <div class="drill-hud-left">
           ${mascotHtml(state.drillMood, 44)}
@@ -4879,10 +5275,11 @@ function renderDrill() {
       }
       const deck = b.closest(".drill-deck");
       if (!prefersReducedMotion() && deck.animate) {
+        const side = q >= 3 ? 1 : -1;
         await deck.animate([
-          { transform: "translateX(0)", opacity: 1 },
-          { transform: "translateX(-20px)", opacity: 0 },
-        ], { duration: 180, easing: "ease-out", fill: "forwards" }).finished.catch(() => {});
+          { transform: "translateX(0) rotate(0deg)", opacity: 1 },
+          { transform: `translateX(${side * 64}px) translateY(-4px) rotate(${side * 3.5}deg)`, opacity: 0 },
+        ], { duration: 210, easing: "cubic-bezier(.32, .72, 0, 1)", fill: "forwards" }).finished.catch(() => {});
       }
       state.drillIdx++;
       state.drillRevealed = false;
@@ -4905,8 +5302,19 @@ function renderDrill() {
       state.drillRevealed = true;
       const slot = document.getElementById("d-answer-slot");
       const actions = document.getElementById("d-actions");
-      slot.closest(".drill-card")?.classList.add("is-revealing");
-      slot.innerHTML = `<div class="flashcard-back answer-enter">${cardHtml(c.back)}</div>`;
+      const card = slot.closest(".drill-card");
+      // A keyboard reveal lands mid deck entrance: settle the deck at once and
+      // show the answer crisply instead of stacking a second spring on top.
+      const keyed = rev.dataset.keyed === "true";
+      if (keyed) {
+        const deck = card?.closest(".drill-deck");
+        deck?.getAnimations().forEach((animation) => animation.finish());
+        deck?.classList.add("is-settled");
+        card?.classList.remove("entering", "is-revealing");
+      } else {
+        card?.classList.add("is-revealing");
+      }
+      slot.innerHTML = `<div class="flashcard-back${keyed ? "" : " answer-enter"}">${cardHtml(c.back)}</div>`;
       actions.innerHTML = ratingButtonsHtml(c, false);
       renderMath(slot);
       bindRatings();
@@ -4918,14 +5326,32 @@ function renderDrill() {
   }
 }
 
+function overlayOpen() {
+  if (document.querySelector('dialog[open], #timer-popover[data-open="true"]')) return true;
+  try { return Boolean(document.querySelector(":popover-open")); } catch (_) { return false; }
+}
+
+// Single-key shortcuts must never fire with modifiers, inside fields, or while an
+// overlay is open (WCAG 2.1.4). Lesson micro-checks and Anki both use this guard.
+function singleKeyShortcutBlocked(e) {
+  return e.defaultPrevented || e.repeat || e.isComposing || e.ctrlKey || e.metaKey || e.altKey
+    || state.modalOpen || state.timer.popoverOpen
+    || overlayOpen()
+    || e.target?.closest?.("input, textarea, select, [contenteditable]:not([contenteditable=\"false\"]), .cm-editor");
+}
+
 // Anki Cards keyboard shortcuts: Space reveals, 1-4 rate
 document.addEventListener("keydown", (e) => {
-  if (e.repeat || state.inFlight || state.view !== "drill" || state.modalOpen || state.timer.popoverOpen) return;
-  if (document.activeElement?.matches("input, textarea, select, button, [contenteditable]") && e.code === "Space") return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (state.inFlight || state.view !== "drill" || !drillShortcutsOn() || singleKeyShortcutBlocked(e)) return;
+  if (document.activeElement?.matches("button") && e.code === "Space") return;
   if (e.code === "Space" && !state.drillRevealed) {
     e.preventDefault();
     const rev = document.getElementById("d-reveal");
-    if (rev) rev.click();
+    if (rev) {
+      rev.dataset.keyed = "true";
+      rev.click();
+    }
   } else if (state.drillRevealed) {
     const map = { Digit1: "0", Digit2: "3", Digit3: "4", Digit4: "5" };
     if (map[e.code]) {
@@ -5950,14 +6376,17 @@ let courseHubProgress = new Map();
 function showCourses() {
   if (state.inFlight) return;
   if (!state.sbUser) return;
-  state.view = "courses";
-  render();
   const user = state.sbUser.id;
-  listCourses().then(() => {
-    if (state.view !== "courses" || state.sbUser?.id !== user) return;
-    renderCourses();
-    return loadCourseHubProgress(user);
-  }).catch((err) => toast(err.message));
+  window.Delight.withViewTransition(() => {
+    if (state.sbUser?.id !== user) return;
+    state.view = "courses";
+    render();
+    listCourses().then(() => {
+      if (state.view !== "courses" || state.sbUser?.id !== user) return;
+      renderCourses();
+      return loadCourseHubProgress(user);
+    }).catch((err) => toast(err.message));
+  }, "hub");
 }
 
 async function loadCourseHubProgress(user) {
@@ -5986,7 +6415,7 @@ function renderCourses() {
   const bar = document.getElementById("topbar");
   const canReturn = Boolean(state.course || !STATIC_MODE || state.data);
   bar.innerHTML = `<div class="topbar-inner courses-topbar">
-    <button type="button" id="btn-brand" class="wordmark" ${canReturn ? "" : "disabled"}>${mascotHtml("idle", 28)}<span>Delightful Learn</span></button>
+    <button type="button" id="btn-brand" class="wordmark" aria-label="Delightful Learn, Course Home" ${canReturn ? "" : "disabled"}>${mascotHtml("idle", 28)}<span>Delightful Learn</span></button>
     <button id="btn-theme" class="icon-ghost" aria-label="Toggle color theme">${state.theme === "dark" ? ICONS.sun : ICONS.moon}</button>
     ${state.sbProfile ? `<button type="button" id="hub-account" class="avatar-btn">${mascotHtml("idle", 22)}<span>@${esc(state.sbProfile.username)}</span></button>` : ""}
     <button id="hub-signout" class="btn-ghost">Sign out</button>
@@ -6022,9 +6451,8 @@ function renderCourses() {
   </section>`;
   root.querySelector("#create-course").onclick = () => toast("Custom course authoring is coming soon!");
   const backToCourse = () => {
-    if (state.inFlight || !state.data) return;
-    state.view = "map";
-    render();
+    if (!state.data) return;
+    showCoursePath("hub");
   };
   bar.querySelector("#btn-brand").onclick = backToCourse;
   const back = root.querySelector("#btn-courses-back");
@@ -6140,8 +6568,6 @@ const NUMPY_CHALLENGES = new Set(["m0_returns", "m3_gae"]);
 const RUNNER_URL = /^https?:\/\//i.test(CONFIG.localRunnerUrl || "")
   ? CONFIG.localRunnerUrl.replace(/\/+$/, "")
   : "http://127.0.0.1:8787";
-const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
-const CM_DEPS = "?deps=@codemirror/state@6.7.6,@codemirror/view@6.44.0";
 
 const EDITOR_MIN = 220;
 const EDITOR_MAX = 680;
@@ -6196,56 +6622,7 @@ function runInBrowser(code, checks) {
     frame.hidden = true;
     frame.sandbox = "allow-scripts";
     const channel = new MessageChannel();
-    const worker = `
-      self.onmessage = async ({data}) => {
-        try {
-          importScripts(${JSON.stringify(PYODIDE_BASE + "pyodide.js")});
-          const python = await loadPyodide({ indexURL: ${JSON.stringify(PYODIDE_BASE)} });
-          await python.loadPackage("numpy");
-          const stdout = [], stderr = [];
-          python.setStdout({ batched: (line) => { if (stdout.length < 200) stdout.push(line.slice(0, 1024)); } });
-          python.setStderr({ batched: (line) => { if (stderr.length < 200) stderr.push(line.slice(0, 1024)); } });
-          self.postMessage({ ready: true });
-          const results = [];
-          const detail = (error) => String(error).trim().split("\\n").at(-1);
-          try {
-            await python.runPythonAsync(data.code, { filename: "solution.py" });
-            for (const check of data.checks) {
-              try {
-                await python.runPythonAsync(check.code);
-                results.push({ name: check.name, passed: true });
-              } catch (error) {
-                results.push({ name: check.name, passed: false, detail: detail(error) });
-                stderr.push(String(error).slice(0, 4096));
-                break;
-              }
-            }
-          } catch (error) {
-            results.push({ name: "Loads without errors", passed: false, detail: detail(error) });
-            stderr.push(String(error).slice(0, 4096));
-          }
-          self.postMessage({ passed: results.length === data.checks.length && results.every((r) => r.passed),
-            checks: results, stdout: stdout.join("\\n"), stderr: stderr.join("\\n") });
-        } catch {
-          self.postMessage({ error: "Could not start browser Python. Check your connection or open Local Studio." });
-        }
-      };`;
-    const bootstrap = `
-      addEventListener("message", (event) => {
-        if (event.source !== parent || !event.ports.length) return;
-        const port = event.ports[0];
-        const url = URL.createObjectURL(new Blob([${JSON.stringify(worker)}], {type: "text/javascript"}));
-        const runner = new Worker(url);
-        runner.onmessage = (event) => port.postMessage(event.data);
-        runner.onerror = (event) => {
-          event.preventDefault();
-          port.postMessage({error: "Browser Python could not start."});
-        };
-        runner.postMessage(event.data);
-      }, {once: true});`;
-    frame.srcdoc = `<!doctype html><meta http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src blob:; connect-src https://cdn.jsdelivr.net">
-      <script>${bootstrap}<\/script>`;
+    frame.src = ASSET_BASE + "/python-runner.html";
     let timeout = setTimeout(() => finish(new Error("Browser Python took too long to load.")), 60000);
     function finish(err, result) {
       clearTimeout(timeout);
@@ -6293,14 +6670,10 @@ function patchRunnerCard(step) {
 }
 
 function loadEditorModules() {
-  editorModules ??= Promise.all([
-    import("https://esm.sh/codemirror@6.0.1" + CM_DEPS),
-    import("https://esm.sh/@codemirror/lang-python@6.1.6" + CM_DEPS),
-    import("https://esm.sh/@codemirror/theme-one-dark@6.1.2" + CM_DEPS),
-    import("https://esm.sh/@codemirror/view@6.44.0?deps=@codemirror/state@6.7.6"),
-    import("https://esm.sh/@codemirror/commands@6.11.2" + CM_DEPS),
-    import("https://esm.sh/@codemirror/state@6.7.6"),
-  ]).catch(() => null);
+  editorModules ??= import(ASSET_BASE + "/vendor/codemirror.bundle.mjs").catch(() => {
+    editorModules = null;
+    return null;
+  });
   return editorModules;
 }
 
@@ -6448,8 +6821,7 @@ function mountCodeEditor(step) {
 
   loadEditorModules().then((modules) => {
     if (!modules || !shell.isConnected || currentStepId() !== step.id || edited || document.activeElement === ed) return;
-    const [{ basicSetup }, { python }, { oneDark }, { EditorView, keymap },
-      { indentMore, indentLess }, { Compartment }] = modules;
+    const { basicSetup, python, oneDark, EditorView, keymap, indentMore, indentLess, Compartment } = modules;
     const theme = new Compartment();
     try {
       cm = new EditorView({
@@ -6575,4 +6947,14 @@ function mountLab(step) {
   });
 }
 
+async function registerServiceWorker() {
+  if (!STATIC_MODE && window.location.protocol !== "https:") return;
+  try {
+    await navigator.serviceWorker?.register(ASSET_BASE + (STATIC_MODE ? "/sw.js" : "/sw.js?studio"));
+  } catch (_) {
+    // The app still works when the browser or hosting environment disables workers.
+  }
+}
+
+void registerServiceWorker();
 init();
